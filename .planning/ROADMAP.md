@@ -44,7 +44,11 @@ Plans:
   2. The app accepts both `audio/*` and `application/octet-stream` MIME types without rejecting the share
   3. Audio bytes are copied to private cache storage before any async work begins — verified by sharing while immediately backgrounding the app (no "permission denied" crash)
   4. A real WhatsApp `.opus` voice message decodes to audible 16kHz mono PCM — verified by writing to a WAV file and playing it back
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — ShareReceiverActivity + AudioCopier + manifest intent-filters (Wave 1)
+- [ ] 02-02-PLAN.md — AudioDecoder + PcmResampler + WavWriter + device verification (Wave 2)
 
 ### Phase 3: End-to-End Pipeline and Output
 **Goal**: Sharing a real voice message from WhatsApp or Telegram produces a transcript on the clipboard with a toast notification — the complete working MVP
@@ -65,5 +69,5 @@ Phases execute in strict numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | Complete | 2026-02-27 |
-| 2. Share Intent and Audio Decoding | 0/? | Not started | - |
+| 2. Share Intent and Audio Decoding | 0/2 | In progress | - |
 | 3. End-to-End Pipeline and Output | 0/? | Not started | - |
