@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 3 of 3 (End-to-End Pipeline and Output)
-Plan: Not yet planned
-Status: Phase 2 complete — share-to-decode pipeline verified on device
-Last activity: 2026-02-27 — Phase 2 device verification passed (WhatsApp Opus → 10s decoded audio)
+Plan: 2 of 2
+Status: Plan 03-01 complete — full transcription pipeline wired
+Last activity: 2026-02-27 — End-to-end pipeline: ShareReceiver -> TranscriptionActivity -> ViewModel -> WhisperEngine -> HallucinationFilter
 
-Progress: [██████░░░░] 66%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 7
 - Average duration: 4 min
-- Total execution time: 0.3 hours
+- Total execution time: 0.5 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██████░░░░] 66%
 |-------|-------|-------|----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | 16 min | 4 min |
 | 2. Share Intent and Audio Decoding | 2/2 | 9 min | 4.5 min |
+| 3. End-to-End Pipeline and Output | 1/2 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min), 02-01 (3 min), 02-02 Tasks 1-2 (3 min)
-- Trend: fast (Kotlin utility classes, no native build changes)
+- Last 5 plans: 01-04 Task 1 (2 min), 02-01 (3 min), 02-02 Tasks 1-2 (3 min), 03-01 (3 min)
+- Trend: fast (Kotlin ViewModels and Activities, no native build changes)
 
 *Updated after each plan completion*
 
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - **02-02 Opus decode output:** MediaCodec Opus decoder always outputs 48kHz regardless of source rate — must read KEY_SAMPLE_RATE from outputFormat and resample
 - **02-02 Resampler approach:** Linear interpolation handles any input rate (48kHz, 44.1kHz, etc.) with a single code path — no need for special-case 3:1 decimation
 - **02-02 Verification WAVs:** Two WAVs written per decode: one at native rate (pre-resample) and one at 16kHz (Whisper-ready) for adb pull testing
+- **03-01 WhisperEngine per-ViewModel:** Per-ViewModel instance, not Application singleton — 136ms load time negligible vs 12-15s inference; simpler lifecycle
+- **03-01 Engine cleanup:** Deferred to process death in onCleared() — viewModelScope cancelled by super.onCleared(), cannot launch release coroutine; acceptable for single-use activity
+- **03-01 Conditional clipboard toast:** Toast shown on API 32 and below only — Android 13+ shows automatic system visual confirmation
+- **03-01 HallucinationFilter approach:** Pure Kotlin post-processing (no whisper.cpp param changes) — detects non-speech markers and repetitive text (6+ words with <1/3 unique)
 
 ### Pending Todos
 
@@ -86,5 +91,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Phase 3 context gathered
-Next step: /gsd:plan-phase 3 → /gsd:execute-phase 3
+Stopped at: Completed 03-01-PLAN.md
+Next step: Execute 03-02-PLAN.md (release APK build + end-to-end device verification)

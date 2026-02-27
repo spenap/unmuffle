@@ -62,7 +62,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — HallucinationFilter + TranscriptionViewModel + TranscriptionActivity + layout + ShareReceiverActivity wiring (Wave 1)
+- [x] 03-01-PLAN.md — HallucinationFilter + TranscriptionViewModel + TranscriptionActivity + layout + ShareReceiverActivity wiring (Wave 1)
 - [ ] 03-02-PLAN.md — Release APK build + end-to-end device verification checkpoint (Wave 2)
 
 ## Progress
@@ -74,4 +74,4 @@ Phases execute in strict numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | Complete | 2026-02-27 |
 | 2. Share Intent and Audio Decoding | 2/2 | Complete | 2026-02-27 |
-| 3. End-to-End Pipeline and Output | 0/2 | In Progress | - |
+| 3. End-to-End Pipeline and Output | 1/2 | In Progress | - |

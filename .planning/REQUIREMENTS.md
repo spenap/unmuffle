@@ -16,14 +16,14 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Transcription
 
 - [ ] **TRANS-01**: Audio decoded from OGG/Opus to 16kHz mono PCM using platform MediaCodec
-- [ ] **TRANS-02**: Whisper small multilingual model transcribes audio on-device via whisper.cpp JNI
-- [ ] **TRANS-03**: Transcription runs off main thread (no ANR)
-- [ ] **TRANS-04**: Anti-hallucination params set (no_timestamps=true, no_speech_thold=0.6)
+- [x] **TRANS-02**: Whisper small multilingual model transcribes audio on-device via whisper.cpp JNI
+- [x] **TRANS-03**: Transcription runs off main thread (no ANR)
+- [x] **TRANS-04**: Anti-hallucination params set (no_timestamps=true, no_speech_thold=0.6)
 
 ### Output
 
-- [ ] **OUT-01**: Transcript automatically copied to clipboard on completion
-- [ ] **OUT-02**: Toast notification displays transcript text
+- [x] **OUT-01**: Transcript automatically copied to clipboard on completion
+- [x] **OUT-02**: Toast notification displays transcript text
 
 ### Model Management
 
@@ -82,11 +82,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SHARE-02 | Phase 2 | Complete (02-01) |
 | SHARE-03 | Phase 2 | Complete (02-01) |
 | TRANS-01 | Phase 2 | Pending |
-| TRANS-02 | Phase 3 | Pending |
-| TRANS-03 | Phase 3 | Pending |
-| TRANS-04 | Phase 3 | Pending |
-| OUT-01 | Phase 3 | Pending |
-| OUT-02 | Phase 3 | Pending |
+| TRANS-02 | Phase 3 | Complete (03-01) |
+| TRANS-03 | Phase 3 | Complete (03-01) |
+| TRANS-04 | Phase 3 | Complete (03-01) |
+| OUT-01 | Phase 3 | Complete (03-01) |
+| OUT-02 | Phase 3 | Complete (03-01) |
 
 **Coverage:**
 - v1 requirements: 12 total
@@ -95,4 +95,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after 02-01 completion — SHARE-01, SHARE-02, SHARE-03 marked complete*
+*Last updated: 2026-02-27 after 03-01 completion — TRANS-02, TRANS-03, TRANS-04, OUT-01, OUT-02 marked complete*
