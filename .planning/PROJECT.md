@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An Android service that acts as a share target for audio voice messages from messaging apps (WhatsApp, Telegram, etc.). It uses a local Whisper speech-to-text model to transcribe the audio on-device, then copies the transcript to the clipboard and shows a toast — no internet required, no data leaves the phone.
+An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone.
 
 ## Core Value
 
@@ -12,53 +12,55 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 
 ### Validated
 
-(None yet — ship to validate)
+- Receive audio files via Android share intent (voice messages in .opus/.ogg format) — v1.0
+- Transcribe audio locally using Whisper small model (~190MB q5_1 quantized) — v1.0
+- Support Spanish transcription (multilingual model auto-detects language) — v1.0
+- Display transcript on result screen with Copy and Share buttons — v1.0
+- No network permissions — fully offline operation — v1.0
+- Anti-hallucination post-processing for silent/noise audio — v1.0
 
 ### Active
 
-- [ ] Receive audio files via Android share intent (voice messages in .opus/.ogg format)
-- [ ] Transcribe audio locally using Whisper small model (~244MB)
-- [ ] Support Spanish transcription for PoC (multilingual model)
-- [ ] Copy transcript to clipboard automatically
-- [ ] Show toast notification with transcript text
-- [ ] No network permissions — fully offline operation
+(None — start next milestone to define v1.1 requirements)
 
 ### Out of Scope
 
-- Full UI/activity with history — MVP is headless share-target only
+- Transcript history / saved transcripts — violates ephemeral privacy model
 - Cloud-based transcription — defeats the privacy purpose
 - Real-time/streaming transcription — batch processing of shared files only
-- Non-voice audio (music, podcasts) — optimized for short voice messages
-- User-configurable model size — deferred to v2
-- Multi-language selection UI — deferred to v2 (hardcoded Spanish for PoC)
+- Background/batch transcription — fundamentally different product architecture
+- Speaker diarization — not supported by Whisper small
+- iOS version — Android only
+- AI post-processing (summary, action items) — requires cloud API or second large model
 
 ## Context
 
-- Target users are Android users who receive voice messages they can't listen to (meetings, public transit, quiet environments)
-- Privacy is the key differentiator — existing transcription apps send audio to cloud services
-- Existing open source projects to research: vilassn/whisper_android, F-Droid Whisper app
-- WhatsApp voice messages are typically .opus in .ogg container; Telegram similar
-- Whisper small multilingual model supports 99 languages including Spanish
-- On-device inference requires careful memory management on mid-range phones
+Shipped v1.0 MVP with 2,635 LOC Kotlin + whisper.cpp native layer.
+Tech stack: Kotlin, whisper.cpp (v1.7.4) via JNI, NDK 26.1, MediaCodec, Jetpack ViewModel + StateFlow.
+User feedback: "Better than the built-in WhatsApp transcript feature."
+Inference takes 12-15s on arm64-v8a test device (release build).
 
 ## Constraints
 
 - **Platform**: Android only (no iOS)
-- **Language**: Kotlin
+- **Language**: Kotlin + C++ (JNI bridge)
 - **Privacy**: Zero network permissions — must work fully offline
-- **Model**: Whisper small multilingual (~244MB) — balances accuracy and device resources
+- **Model**: Whisper small multilingual q5_1 (~190MB) — balances accuracy and device resources
 - **Input**: Short voice messages (typically under 2 minutes)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Local-only (no cloud) | Privacy is the core value | — Pending |
-| Whisper small model | Balance between accuracy and device size/speed | — Pending |
-| Share target (no standalone UI) | MVP simplicity — no pages needed for v1 | — Pending |
-| Kotlin | Modern Android standard, user preference | — Pending |
-| Research existing projects before build-vs-fork decision | User wants to see options first | — Pending |
-| Spanish for PoC, multilingual later | User's immediate need; expand in v2 | — Pending |
+| Local-only (no cloud) | Privacy is the core value | Good — key differentiator |
+| Whisper small q5_1 model | Balance between accuracy and device size/speed | Good — 12-15s inference, accurate Spanish |
+| whisper.cpp via JNI | Only viable on-device Whisper runtime for Android | Good — stable, well-tested |
+| File path model loading (not byte array) | Byte array causes OOM on all device tiers | Good — 136ms load time |
+| Synchronous URI copy in onCreate | Permission expires on backgrounding | Good — prevented crash |
+| Kotlin post-processing for hallucination | whisper params (no_timestamps) filtered real speech on q5_1 | Good — catches markers + repetition |
+| Explicit Copy/Share buttons (no auto-clipboard) | Clipboard readable by other apps on older Android | Good — privacy improvement |
+| newSingleThreadExecutor for whisper.cpp | Guarantees sequential access to non-thread-safe native code | Good — no race conditions |
+| Linear interpolation resampler | Handles any input rate (48kHz, 44.1kHz) with single code path | Good — simple and universal |
 
 ---
-*Last updated: 2026-02-27 after initialization*
+*Last updated: 2026-02-27 after v1.0 milestone*
