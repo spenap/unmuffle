@@ -62,21 +62,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROG-01 | TBD | Pending |
-| PROG-02 | TBD | Pending |
-| DIST-01 | TBD | Pending |
-| DIST-02 | TBD | Pending |
-| DIST-03 | TBD | Pending |
-| DIST-04 | TBD | Pending |
-| REL-01 | TBD | Pending |
-| REL-02 | TBD | Pending |
-| REPO-01 | TBD | Pending |
+| PROG-01 | Phase 5 | Pending |
+| PROG-02 | Phase 5 | Pending |
+| DIST-01 | Phase 6 | Pending |
+| DIST-02 | Phase 6 | Pending |
+| DIST-03 | Phase 6 | Pending |
+| DIST-04 | Phase 6 | Pending |
+| REL-01 | Phase 4 | Pending |
+| REL-02 | Phase 4 | Pending |
+| REPO-01 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9
+- Mapped to phases: 9
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after v1.1 milestone definition*
+*Last updated: 2026-02-27 after v1.1 roadmap creation*

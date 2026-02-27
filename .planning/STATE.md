@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** v1.1 Polish & Distribution — defining requirements
+**Current focus:** Phase 4 — R8 Release Configuration
 
 ## Current Position
 
 Milestone: v1.1 Polish & Distribution
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-27 — Milestone v1.1 started
+Phase: 4 of 7 (R8 Release Configuration)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-02-27 — v1.1 roadmap created
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (v1.1 scope)
 
 ## Performance Metrics
 
@@ -39,6 +39,11 @@ Progress: [░░░░░░░░░░] 0%
 ### Decisions
 
 All v1.0 decisions documented in PROJECT.md Key Decisions table.
+v1.1 decisions:
+
+- [Roadmap]: Use AtomicInteger polling for progress callback (eliminates JNI threading pitfalls 15, 16)
+- [Roadmap]: Phase order: R8 first (validates release), then progress bar, then F-Droid, branch rename last
+- [Roadmap]: F-Droid as distribution target (open-source, privacy-aligned)
 
 ### Pending Todos
 
@@ -46,7 +51,7 @@ All v1.0 decisions documented in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None — v1.0 shipped successfully.
+None.
 
 ### Inference Timing Benchmark (Phase 1 Baseline)
 
@@ -59,5 +64,5 @@ None — v1.0 shipped successfully.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: v1.1 milestone started — defining requirements
-Next step: Define requirements → create roadmap → /gsd:plan-phase 4
+Stopped at: v1.1 roadmap created, ready to plan Phase 4
+Next step: /gsd:plan-phase 4
