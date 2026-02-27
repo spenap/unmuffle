@@ -50,7 +50,7 @@ Plans:
   3. The progress callback works correctly in both debug and release builds (R8 does not strip the callback interface)
 **Plans:** 2 plans
 Plans:
-- [ ] 05-01-PLAN.md — Wire whisper.cpp progress_callback through JNI using AtomicInteger polling pattern
+- [x] 05-01-PLAN.md — Wire whisper.cpp progress_callback through JNI using AtomicInteger polling pattern
 - [ ] 05-02-PLAN.md — Connect progress data to ViewModel UiState and CircularProgressIndicator UI
 
 ### Phase 6: F-Droid Distribution Prep
@@ -82,6 +82,6 @@ Plans:
 | 2. Share Intent and Audio Decoding | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 3. End-to-End Pipeline and Output | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 4. R8 Release Configuration | v1.1 | 1/1 | Complete | 2026-02-27 |
-| 5. Transcription Progress Bar | v1.1 | 0/2 | Planned | - |
+| 5. Transcription Progress Bar | v1.1 | 1/2 | In Progress | - |
 | 6. F-Droid Distribution Prep | v1.1 | 0/? | Not started | - |
 | 7. Branch Rename | v1.1 | 0/? | Not started | - |

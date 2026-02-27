@@ -10,7 +10,7 @@ Requirements for v1.1 Polish & Distribution release. Each maps to roadmap phases
 ### Progress Feedback
 
 - [ ] **PROG-01**: Determinate progress bar shows 0-100% during Whisper inference
-- [ ] **PROG-02**: Progress updates driven by whisper.cpp progress callback via JNI
+- [x] **PROG-02**: Progress updates driven by whisper.cpp progress callback via JNI
 
 ### Distribution
 
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PROG-01 | Phase 5 | Pending |
-| PROG-02 | Phase 5 | Pending |
+| PROG-02 | Phase 5 | Complete |
 | DIST-01 | Phase 6 | Pending |
 | DIST-02 | Phase 6 | Pending |
 | DIST-03 | Phase 6 | Pending |

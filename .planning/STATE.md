@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** Phase 4 — R8 Release Configuration
+**Current focus:** Phase 5 — Transcription Progress Bar
 
 ## Current Position
 
 Milestone: v1.1 Polish & Distribution
-Phase: 4 of 7 (R8 Release Configuration) -- COMPLETE
-Plan: 1 of 1 in current phase (all complete)
-Status: Phase 4 complete, ready for Phase 5
-Last activity: 2026-02-27 -- Phase 4 R8 release configuration complete
+Phase: 5 of 7 (Transcription Progress Bar) -- IN PROGRESS
+Plan: 1 of 2 in current phase (plan 01 complete)
+Status: Plan 05-01 complete (JNI progress bridge), ready for plan 05-02
+Last activity: 2026-02-27 -- Phase 5 Plan 01 JNI progress bridge complete
 
-Progress: [##░░░░░░░░] 25% (v1.1 scope: 1/4 phases complete)
+Progress: [###░░░░░░░] 37% (v1.1 scope: 1/4 phases complete, 1/2 plans in phase 5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 4.2 min
+- Total plans completed: 10
+- Average duration: 3.8 min
 - Total execution time: ~0.6 hours
 
 **By Phase:**
@@ -32,6 +32,7 @@ Progress: [##░░░░░░░░] 25% (v1.1 scope: 1/4 phases complete)
 | 2. Share Intent and Audio Decoding | 2/2 | 9 min | 4.5 min |
 | 3. End-to-End Pipeline and Output | 2/2 | 3 min | 1.5 min |
 | 4. R8 Release Configuration | 1/1 | 8 min | 8 min |
+| 5. Transcription Progress Bar | 1/2 | 2 min | 2 min |
 
 *Updated after each plan completion*
 
@@ -48,6 +49,9 @@ v1.1 decisions:
 - [Phase 4]: Used -dontobfuscate for readable crash reports and F-Droid transparency
 - [Phase 4]: Kept sealed class hierarchies defensively -- negligible cost, prevents ClassNotFoundException risk
 - [Phase 4]: Commented ProgressCallback placeholder for Phase 5 to uncomment
+- [Phase 5]: File-scoped ProgressState atomic (not per-context) since single-thread executor serializes access
+- [Phase 5]: Poller on Dispatchers.Default to avoid deadlock with blocked executor thread
+- [Phase 5]: 200ms poll interval balances UI responsiveness vs JNI call overhead
 
 ### Pending Todos
 
@@ -68,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 04-01-PLAN.md (Phase 4 complete)
-Next step: /gsd:plan-phase 5
+Stopped at: Completed 05-01-PLAN.md (JNI progress bridge)
+Next step: Execute 05-02-PLAN.md (ViewModel/UI progress bar)
