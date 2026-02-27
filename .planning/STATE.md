@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 2 of 3 (Share Intent and Audio Decoding)
-Plan: 1 of 2 in current phase — COMPLETE
-Status: 02-01 complete — ShareReceiverActivity + AudioCopier + manifest intent-filters
-Last activity: 2026-02-27 — 02-01 share target and audio copier implemented
+Plan: 2 of 2 in current phase — PAUSED AT CHECKPOINT (Task 3: device verification)
+Status: 02-02 Tasks 1-2 complete — AudioDecoder + PcmResampler + WavWriter + pipeline wired into ShareReceiverActivity
+Last activity: 2026-02-27 — 02-02 audio decode pipeline implemented, awaiting device verification
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -28,11 +28,11 @@ Progress: [█████░░░░░] 50%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | 16 min | 4 min |
-| 2. Share Intent and Audio Decoding | 1/2 | 3 min | 3 min |
+| 2. Share Intent and Audio Decoding | 1/2 (02-02 paused at checkpoint) | 6 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7 min), 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min), 02-01 (3 min)
-- Trend: fast (Kotlin Activity + manifest, no native build changes)
+- Last 5 plans: 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min), 02-01 (3 min), 02-02 Tasks 1-2 (3 min)
+- Trend: fast (Kotlin utility classes, no native build changes)
 
 *Updated after each plan completion*
 
@@ -63,6 +63,9 @@ Recent decisions affecting current work:
 - **01-04 Inference benchmark:** Record silence/sine inference times from SmokeTestActivity in STATE.md before Phase 2 begins — establishes UX copy baseline for speed claims
 - **02-01 KDoc comment pitfall:** Avoid literal `audio/*` in KDoc block comments — Kotlin lexer treats `/*` as nested comment opener, causing unclosed comment error
 - **02-01 Sealed result pattern:** AudioCopier.CopyResult with Success/TooLarge/NoContent/CopyFailed — exhaustive when-match in ShareReceiverActivity
+- **02-02 Opus decode output:** MediaCodec Opus decoder always outputs 48kHz regardless of source rate — must read KEY_SAMPLE_RATE from outputFormat and resample
+- **02-02 Resampler approach:** Linear interpolation handles any input rate (48kHz, 44.1kHz, etc.) with a single code path — no need for special-case 3:1 decimation
+- **02-02 Verification WAVs:** Two WAVs written per decode: one at native rate (pre-resample) and one at 16kHz (Whisper-ready) for adb pull testing
 
 ### Pending Todos
 
@@ -83,5 +86,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 02-01-PLAN.md
-Next step: Execute 02-02-PLAN.md (AudioDecoder + PcmResampler + WavWriter)
+Stopped at: 02-02-PLAN.md Task 3 checkpoint (device verification)
+Next step: User verifies WAV playback on device, then continue 02-02 or mark complete
