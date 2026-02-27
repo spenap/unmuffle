@@ -36,7 +36,9 @@ Full details: `milestones/v1.0-ROADMAP.md`
   2. Release APK built with `minifyEnabled true` launches, transcribes a voice message, and displays the result correctly on a physical device
   3. JNI native methods, ViewModels, and UiState sealed hierarchy survive R8 shrinking (no `NoSuchMethodError` or `ClassNotFoundException` at runtime)
   4. A placeholder keep rule for the future `ProgressCallback` interface is present (commented) so Phase 5 can uncomment it
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 04-01-PLAN.md — Replace blanket keep with surgical R8 rules, enable resource shrinking, verify on device
 
 ### Phase 5: Transcription Progress Bar
 **Goal**: Users see a real 0-100% progress bar during Whisper inference instead of an indeterminate spinner
@@ -76,7 +78,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 | 1. Whisper Engine and Model Bootstrap | v1.0 | 4/4 | Complete | 2026-02-27 |
 | 2. Share Intent and Audio Decoding | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 3. End-to-End Pipeline and Output | v1.0 | 2/2 | Complete | 2026-02-27 |
-| 4. R8 Release Configuration | v1.1 | 0/? | Not started | - |
+| 4. R8 Release Configuration | v1.1 | 0/1 | Not started | - |
 | 5. Transcription Progress Bar | v1.1 | 0/? | Not started | - |
 | 6. F-Droid Distribution Prep | v1.1 | 0/? | Not started | - |
 | 7. Branch Rename | v1.1 | 0/? | Not started | - |
