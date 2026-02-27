@@ -21,7 +21,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 ### v1.1 Polish & Distribution
 
 - [x] **Phase 4: R8 Release Configuration** - Replace blanket ProGuard keep with surgical R8 rules and verify release build
-- [ ] **Phase 5: Transcription Progress Bar** - Wire whisper.cpp progress callback through JNI to a determinate progress indicator
+- [x] **Phase 5: Transcription Progress Bar** - Wire whisper.cpp progress callback through JNI to a determinate progress indicator
 - [ ] **Phase 6: F-Droid Distribution Prep** - Add license, fastlane metadata, build recipe, and version bump for F-Droid submission
 - [ ] **Phase 7: Branch Rename** - Rename default branch from master to main with reference audit
 
@@ -51,7 +51,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 05-01-PLAN.md — Wire whisper.cpp progress_callback through JNI using AtomicInteger polling pattern
-- [ ] 05-02-PLAN.md — Connect progress data to ViewModel UiState and CircularProgressIndicator UI
+- [x] 05-02-PLAN.md — Connect progress data to ViewModel UiState and CircularProgressIndicator UI
 
 ### Phase 6: F-Droid Distribution Prep
 **Goal**: Repository contains all metadata and configuration required for F-Droid submission
@@ -82,6 +82,6 @@ Plans:
 | 2. Share Intent and Audio Decoding | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 3. End-to-End Pipeline and Output | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 4. R8 Release Configuration | v1.1 | 1/1 | Complete | 2026-02-27 |
-| 5. Transcription Progress Bar | v1.1 | 1/2 | In Progress | - |
+| 5. Transcription Progress Bar | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 6. F-Droid Distribution Prep | v1.1 | 0/? | Not started | - |
 | 7. Branch Rename | v1.1 | 0/? | Not started | - |

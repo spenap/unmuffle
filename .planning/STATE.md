@@ -10,12 +10,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Milestone: v1.1 Polish & Distribution
-Phase: 5 of 7 (Transcription Progress Bar) -- IN PROGRESS
-Plan: 1 of 2 in current phase (plan 01 complete)
-Status: Plan 05-01 complete (JNI progress bridge), ready for plan 05-02
-Last activity: 2026-02-27 -- Phase 5 Plan 01 JNI progress bridge complete
+Phase: 5 of 7 (Transcription Progress Bar) -- COMPLETE
+Plan: 2 of 2 in current phase (all plans complete)
+Status: Phase 5 complete, ready for Phase 6
+Last activity: 2026-02-27 -- Phase 5 Plan 02 ViewModel/UI progress bar complete
 
-Progress: [###░░░░░░░] 37% (v1.1 scope: 1/4 phases complete, 1/2 plans in phase 5)
+Progress: [#####░░░░░] 50% (v1.1 scope: 2/4 phases complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [###░░░░░░░] 37% (v1.1 scope: 1/4 phases complete, 1/2 p
 | 2. Share Intent and Audio Decoding | 2/2 | 9 min | 4.5 min |
 | 3. End-to-End Pipeline and Output | 2/2 | 3 min | 1.5 min |
 | 4. R8 Release Configuration | 1/1 | 8 min | 8 min |
-| 5. Transcription Progress Bar | 1/2 | 2 min | 2 min |
+| 5. Transcription Progress Bar | 2/2 | 4 min | 2 min |
 
 *Updated after each plan completion*
 
@@ -52,6 +52,8 @@ v1.1 decisions:
 - [Phase 5]: File-scoped ProgressState atomic (not per-context) since single-thread executor serializes access
 - [Phase 5]: Poller on Dispatchers.Default to avoid deadlock with blocked executor thread
 - [Phase 5]: 200ms poll interval balances UI responsiveness vs JNI call overhead
+- [Phase 5]: UiState.Processing progress=-1 sentinel for indeterminate state avoids nullable field and null checks
+- [Phase 5]: setProgressCompat(progress, true) handles animated indeterminate-to-determinate transition automatically
 
 ### Pending Todos
 
@@ -72,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 05-01-PLAN.md (JNI progress bridge)
-Next step: Execute 05-02-PLAN.md (ViewModel/UI progress bar)
+Stopped at: Completed 05-02-PLAN.md (ViewModel/UI progress bar)
+Next step: Plan Phase 6 (F-Droid Distribution Prep)
