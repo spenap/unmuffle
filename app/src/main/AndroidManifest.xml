@@ -10,7 +10,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TransChat">
 
-        <!-- MainActivity routes to DownloadActivity or ReadyActivity; added in Plan 03 -->
+        <!-- Router: checks model and navigates to Download or Ready -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Model download screen (first launch) -->
+        <activity
+            android:name=".DownloadActivity"
+            android:exported="false" />
+
+        <!-- Post-download / already-downloaded screen -->
+        <activity
+            android:name=".ReadyActivity"
+            android:exported="false" />
 
     </application>
 
