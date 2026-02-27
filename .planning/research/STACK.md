@@ -1,215 +1,402 @@
 # Technology Stack
 
-**Project:** TransChat - Android Audio Transcription App
+**Project:** TransChat v1.1 — Progress Bar, F-Droid, ProGuard
 **Researched:** 2026-02-27
-**Research Mode:** Ecosystem
+**Research Mode:** Milestone-scoped (v1.1 additions only)
+**Scope note:** v1.0 stack (whisper.cpp v1.7.4, Kotlin, NDK 26.1, MediaCodec, ViewModel + StateFlow) is validated and unchanged. This document covers ONLY what changes or is added for v1.1.
 
 ---
 
-## Recommended Stack
+## What Is NOT Changing
 
-### Inference Runtime
+The following v1.0 decisions are locked and not re-researched here:
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| whisper.cpp | v1.7.x (latest stable: v1.8.3, Jan 2025) | On-device Whisper inference | CPU-only GGML-native runtime; no Maven/AAR needed; official Android JNI example in repo; directly consumes gguf/ggml model files without conversion |
+- whisper.cpp v1.7.4 via JNI (already compiled and working in codebase)
+- `NDK 26.1.10909125` (already installed in environment)
+- `compileSdk 34`, `minSdk 26`, `targetSdk 34`
+- `arm64-v8a` only ABI filter
+- Kotlin + AndroidViewModel + StateFlow pattern
+- MediaCodec audio decoding pipeline
 
-**Why whisper.cpp and not alternatives:**
+---
 
-- whisper.cpp is the **reference C/C++ implementation** of OpenAI Whisper; all other runtimes ultimately convert from OpenAI's model weights into a different format, introducing conversion complexity or accuracy loss.
-- The official `examples/whisper.android` directory ships a working Kotlin app; it is the closest thing to an "official Android sample."
-- It uses the GGML format directly; models can be downloaded as `.bin` files from Hugging Face (`ggerganov/whisper.cpp`) without any conversion toolchain.
-- whisper.cpp has GPU acceleration on **other** platforms (CUDA, Metal) but on Android CPU-only is the practical baseline; GPU via OpenCL/CLBlast is theoretically possible but produces incorrect results in several community reports (see PITFALLS.md).
+## Feature 1: Transcription Progress Callbacks
 
-### Core Framework
+### What the whisper.cpp API Provides (Confirmed from source in repo)
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Kotlin | 2.x (stable) | App language | Modern Android standard; coroutines native; JNI from Kotlin is identical to Java |
-| Android SDK | minSdk 26 (Android 8.0), targetSdk 35 | Platform | API 26+ gets reliable native Opus decoding in MediaCodec; most modern Android devices exceed this |
-| Android NDK | r27 LTS | Compile whisper.cpp C++ | Required for CMake/JNI; r27 is the current long-term support NDK release |
-| CMake | 3.22+ | Native build system | whisper.cpp uses CMake; AGP integrates via `externalNativeBuild` |
+The bundled `whisper.cpp/include/whisper.h` at v1.7.4 exposes two relevant callbacks in `whisper_full_params`:
 
-### Audio Decoding
+```c
+// Called on each progress update (0..100 integer)
+typedef void (*whisper_progress_callback)(
+    struct whisper_context * ctx,
+    struct whisper_state   * state,
+    int                      progress,   // 0-100
+    void                   * user_data);
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Android MediaExtractor + MediaCodec | Platform (API 21+) | Decode .ogg/.opus files to PCM | Native, no dependency; Opus-in-Ogg supported natively since API 21; zero added APK size |
-| Android MediaExtractor resampling (manual) | Platform | Resample to 16kHz mono PCM Float | whisper.cpp expects 16kHz mono float32; MediaCodec can output `ENCODING_PCM_FLOAT`; linear resampling in Kotlin is trivial for the 3:1 ratio (48kHz→16kHz) |
+// Called whenever a new text segment is produced
+typedef void (*whisper_new_segment_callback)(
+    struct whisper_context * ctx,
+    struct whisper_state   * state,
+    int                      n_new,      // number of new segments since last call
+    void                   * user_data);
+```
 
-**Audio format reality for WhatsApp/Telegram:**
-- WhatsApp voice notes: Opus codec in `.opus` container (MIME: `audio/ogg; codecs=opus`)
-- Telegram voice notes: Opus codec in `.ogg` container
-- Both decode identically; the container is Ogg, the codec is Opus
+Both are set on `whisper_full_params` (passed to `whisper_full()`):
 
-**Opus support on Android:**
-- **API 21+**: Ogg/Opus decoding supported natively via `MediaExtractor` + `MediaCodec`
-- **API 29+**: `.opus` file extension is recognized (API 28 and below need `.ogg` extension)
-- Confirmed: `MediaExtractor` handles Ogg containers with Opus audio on API 21+ without any third-party library
+```c
+wparams.progress_callback           = my_progress_fn;
+wparams.progress_callback_user_data = my_data_ptr;
 
-### Background Work
+wparams.new_segment_callback           = my_segment_fn;
+wparams.new_segment_callback_user_data = my_data_ptr;
+```
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Kotlin Coroutines | 1.8.x | Async inference on background thread | Inference runs on `Dispatchers.Default`; lightweight; cancellable if Activity dies |
-| Android Foreground Service (`mediaProcessing` type) | API 29+ | Hold CPU lock during transcription | Android 14+ requires declaring `foregroundServiceType`; `mediaProcessing` is the correct type for "processing a media file" — no microphone access required; allows up to 6 hours runtime |
+**Confirmed from `src/whisper.cpp` source (lines 5526-5530, in repo):** `progress_callback` fires with `progress_cur = (100*(seek - seek_start))/(seek_end - seek_start)` — integer 0 to 100, called once per audio chunk of WHISPER_CHUNK_SIZE (30s). For a sub-2-minute voice message (1-4 chunks), expect 3-6 firings.
 
-**Service type declaration (Android 14+ mandatory):**
+**Confirmed from `src/whisper.cpp` source (lines 6166-6227):** `new_segment_callback` fires after each decoded text segment is committed. For a 30-second message this may fire 3-10 times.
+
+### Recommendation: Use `new_segment_callback`, Not `progress_callback`
+
+For short voice messages (12-60 seconds), `progress_callback` fires too infrequently for a meaningful UI — voice messages map to 1-2 audio chunks, so you get at most 2 firings. `new_segment_callback` fires per transcript segment (a phrase or sentence), which is more frequent and semantically meaningful.
+
+**Chosen approach:** `new_segment_callback` driving a determinate-style progress bar approximation using time offsets. Alternatively, use it to stream partial text in a "typing" style — but the simpler implementation is to count segments and use a weighted progress estimate.
+
+### JNI Callback Architecture (No New Libraries)
+
+This is a pure C++ + Kotlin change inside the existing JNI bridge. No new dependencies.
+
+**The threading constraint:** `new_segment_callback` fires on the same thread that called `whisper_full()` — which is the `newSingleThreadExecutor` coroutine dispatcher in `WhisperContext`. This thread is NOT the JVM main thread, so calling back into Kotlin from it requires care.
+
+**Implementation pattern (two approaches):**
+
+**Approach A — Shared mutable reference (recommended, zero overhead):**
+Store a Kotlin lambda reference in a C++ struct passed as `user_data`. Access is safe because the callback runs on the same thread as `whisper_full()`, which is already serialized by the single-thread executor.
+
+```cpp
+// In whisper_jni.cpp — extend fullTranscribeWithCallback
+
+struct ProgressCallbackData {
+    JavaVM* jvm;
+    jobject callbackGlobalRef;  // global ref to Kotlin functional interface
+    jmethodID onProgressMethod;
+};
+
+static void new_segment_callback_jni(
+    struct whisper_context* ctx, struct whisper_state* state,
+    int n_new, void* user_data)
+{
+    auto* data = static_cast<ProgressCallbackData*>(user_data);
+    JNIEnv* env = nullptr;
+    bool didAttach = false;
+    int status = data->jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+    if (status == JNI_EDETACHED) {
+        data->jvm->AttachCurrentThread(&env, nullptr);
+        didAttach = true;
+    }
+    // Call back into Kotlin
+    env->CallVoidMethod(data->callbackGlobalRef, data->onProgressMethod, n_new);
+    if (didAttach) data->jvm->DetachCurrentThread();
+}
+```
+
+**Approach B — AtomicInteger (zero JNI upcall, simpler):**
+In C++, just write `atomic_int segment_count++` into the user_data struct. In Kotlin, poll it from a coroutine with a `delay(100)` loop. Simpler, but polling adds latency and complexity.
+
+**Recommendation: Approach A (direct JNI upcall)** because:
+- No polling loop to manage or cancel
+- Progress updates arrive immediately
+- The single-thread executor guarantees sequential execution — no race between the callback and segment reading
+
+**Required JNI changes:**
+- `whisper_jni.cpp`: Add new `fullTranscribeWithCallback(contextPtr, numThreads, audioData, callback)` JNI function
+- `WhisperLib.kt`: Add corresponding `external fun fullTranscribeWithCallback(...)` declaration
+- `WhisperContext.kt`: Add `transcribeDataWithCallback(data, onSegment: (Int) -> Unit)` overload
+- `WhisperEngine.kt`: Expose `transcribe(audioData, onSegment)` overload
+- `TranscriptionViewModel.kt`: Wire callback to `_progressState: MutableStateFlow<Int>`
+- `TranscriptionActivity.kt`: Observe new `progressState` flow, show/hide progress bar
+
+**New StateFlow in ViewModel:**
+```kotlin
+private val _progress = MutableStateFlow(0)
+val progress: StateFlow<Int> = _progress
+```
+
+Emitted from the callback: `_progress.value = segmentCount * estimatedWeight`.
+
+**No new Gradle dependencies required for this feature.**
+
+### UI: ProgressBar Widget (Already Available)
+
+`android.widget.ProgressBar` is a framework widget — no library needed. Use `style="?android:attr/progressBarStyleHorizontal"` for a horizontal bar.
+
 ```xml
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
-
-<service
-    android:name=".TranscriptionService"
-    android:foregroundServiceType="mediaProcessing"
-    android:exported="false" />
+<ProgressBar
+    android:id="@+id/progress_bar"
+    style="?android:attr/progressBarStyleHorizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:max="100"
+    android:progress="0"
+    android:indeterminate="false" />
 ```
 
-### Model
+For indeterminate mode (during model load, before first segment fires): set `android:indeterminate="true"` initially, switch to determinate when the first segment callback arrives.
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| Model | `ggml-small-q5_1.bin` | Multilingual; 190 MB on disk (HuggingFace: `ggerganov/whisper.cpp`) |
-| Format | GGML binary | Consumed directly by whisper.cpp JNI |
-| Distribution | Download-on-first-use | See "Model Distribution" section below |
-| Fallback | `ggml-base.bin` (142 MB unquantized) | Smaller alternative if 190 MB is too large for initial testing |
-
-**Model size facts (sourced from HuggingFace `ggerganov/whisper.cpp`, verified 2026-02-27):**
-
-| Model | Size |
-|-------|------|
-| `ggml-small.bin` (full precision) | 488 MB |
-| `ggml-small-q8_0.bin` | 264 MB |
-| `ggml-small-q5_1.bin` | 190 MB |
-| `ggml-base.bin` | 142 MB |
-| `ggml-tiny.bin` | 75 MB |
-
-`q5_1` at 190 MB is the best balance: multilingual accuracy is maintained at Q5 precision; the ~244 MB target stated in requirements is achievable if a future model variant arrives, but `q5_1` at 190 MB is the current smallest-with-acceptable-accuracy option.
-
-### Model Distribution Strategy
-
-**Recommendation: Download-on-first-use, stored in `filesDir`**
-
-| Strategy | Pros | Cons | Verdict |
-|----------|------|------|---------|
-| Bundle in APK/AAB | Instant availability | APK > 200 MB violates Play Store limits; 190 MB model alone exceeds the uncompressed APK limit | NOT viable |
-| Play Asset Delivery (install-time) | Seamless install | Requires Play Store; 190 MB is within PAD limits; complex setup for a simple app | Overkill for MVP |
-| Download-on-first-use to `filesDir` | Simple; sideload-friendly; works outside Play Store | User sees a download progress screen on first use | **Recommended for MVP** |
-
-**Implementation:** On first launch, check for `context.filesDir/models/ggml-small-q5_1.bin`. If absent, show a one-time download screen (progress bar) fetching from HuggingFace or a self-hosted URL. Use Android `DownloadManager` or `OkHttp` + coroutine. Store checksum (SHA256) to verify integrity.
-
-For F-Droid distribution, self-hosting the model on a reliable CDN is required since HuggingFace URLs may be subject to rate limits.
-
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `androidx.core:core-ktx` | 1.13.x | Kotlin extensions for Android framework | Always |
-| `androidx.lifecycle:lifecycle-runtime-ktx` | 2.8.x | `lifecycleScope` for coroutine-aware lifecycle | Share target Activity scope |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-android` | 1.8.x | Coroutines on Android MainThread dispatcher | Always |
-| `androidx.activity:activity-ktx` | 1.9.x | `ComponentActivity` result APIs | Share intent handling |
-
-No networking libraries needed at runtime (privacy requirement: no network during transcription). OkHttp or similar only in a "model download" module that is optional.
+**Confidence: HIGH** — confirmed from whisper.h and whisper.cpp source in the repository, and from Android framework docs.
 
 ---
 
-## Alternatives Considered and Rejected
+## Feature 2: F-Droid Distribution
 
-### Alternative Runtimes
+### Submission Model
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Inference | whisper.cpp JNI | sherpa-onnx | Requires converting Whisper to ONNX format; sherpa-onnx's Maven artifact (`com.bihe0832.android:lib-sherpa-onnx`) is an unofficial third-party wrapper, not from the k2-fsa team; higher CER vs faster-whisper in some tests; added complexity for no benefit given whisper.cpp already has a Kotlin Android example |
-| Inference | whisper.cpp JNI | TFLite (vilassn/whisper_android) | TFLite models require conversion toolchain; the vilassn/whisper_android project was last meaningfully updated ~2023; accuracy of quantized TFLite small model is inferior to ggml format |
-| Inference | whisper.cpp JNI | WhisperKitAndroid | Deprecated as of 2024; argmax-sdk-kotlin rewrite not yet production-ready; Qualcomm-specific |
-| Inference | whisper.cpp JNI | MediaPipe | MediaPipe's Whisper integration targets on-device LLMs differently; no well-documented Whisper path; larger framework overhead |
-| Inference | whisper.cpp JNI | ONNX Runtime directly | Requires exporting Whisper to ONNX (encoder + decoder separately); significantly more complex integration; no net performance benefit on Android CPU vs ggml |
-| Audio decode | MediaExtractor | ExoPlayer/Media3 | Media3 can decode Opus but adds ~2 MB of library overhead; for a transcription app that never plays audio, full ExoPlayer is overkill; raw `MediaExtractor` + `MediaCodec` is 0-dependency |
-| Audio decode | MediaExtractor | FFmpeg Android | GPL-3 license implications; adds 10-30 MB to APK; unnecessary given platform-native Opus support on API 21+ |
-| Audio decode | MediaExtractor | android-opus-codec JNI | JNI Opus library bypasses MediaCodec; redundant for API 21+ devices; another .so to ship |
-| Background work | Foreground Service | WorkManager | WorkManager is designed for deferrable, not-time-critical work; transcription is user-initiated with immediate result expectation; WorkManager adds scheduling latency; sharing intent must complete before Android kills the receive context |
+F-Droid is a community-maintained repository. Apps are NOT submitted via self-service upload (unlike Play Store). The process:
+
+1. Developer opens a merge request against [fdroid/fdroiddata](https://gitlab.com/fdroid/fdroiddata) with a metadata `.yml` file
+2. F-Droid volunteer reviewers inspect the app source and build script
+3. F-Droid's build server clones the repo, builds the APK from source, and signs it with F-Droid's key (by default)
+4. Reproducible build path: F-Droid can verify developer-signed APK matches their own build — then serve the developer's APK
+
+### Required Files in the App Repository
+
+No files need to be added to fdroiddata — those live in F-Droid's own repo. Files that must be in THIS repo:
+
+#### Fastlane Metadata Structure (for descriptions/screenshots)
+
+F-Droid reads fastlane-compatible metadata directly from the app repository. Place at the repo root:
+
+```
+fastlane/
+  metadata/
+    android/
+      en-US/
+        short_description.txt   # REQUIRED. Max 80 chars, no trailing period
+        full_description.txt    # REQUIRED. Max 4000 chars (Play Store limit respected by F-Droid)
+        changelogs/
+          2.txt                 # Named by versionCode. Max 500 chars. versionCode 2 = v1.1
+        images/
+          icon.png              # 512x512 recommended
+          featureGraphic.png    # 1024x500 optional
+          phoneScreenshots/
+            01.png              # Optional. Portrait preferred.
+```
+
+**Key constraints (confirmed from F-Droid docs):**
+- `short_description.txt`: one line, no trailing period, under 80 characters
+- `full_description.txt`: plain text (no markdown), under 4000 characters
+- Changelog filename must match the `versionCode` in `build.gradle.kts` exactly (`2.txt` for `versionCode = 2`)
+- All fastlane files must be at `fastlane/metadata/android/`, NOT inside `app/` subdirectory
+- F-Droid docs confirm: "placing the structure anywhere else, like in the gradle module's root, won't work"
+
+#### F-Droid-Specific Build Requirements
+
+**Anti-features to declare (if applicable):**
+- The app downloads a model on first run — this may need the `NonFreeNet` anti-feature tag if downloading from a non-free service (HuggingFace). Hosting the model on a CDN or self-hosted URL avoids this.
+- No ads, no trackers, no Play Services dependencies — clean for F-Droid inclusion.
+
+**Network permission for model download:** TransChat currently has `INTERNET` permission for model download only. F-Droid is fine with this; the zero-network-during-transcription constraint is an app-level policy, not a manifest issue.
+
+**No proprietary SDKs:** The stack is clean — no Firebase, no Google Play Services, no Crashlytics. Confirm `libs.versions.toml` has no proprietary deps (verified: all deps are `androidx.*`, `material`, `kotlinx.*` — all Apache 2.0/open source).
+
+### Fdroiddata Metadata YAML
+
+This file does NOT live in the app repo — it lives in fdroiddata. Shown here for reference only:
+
+```yaml
+# metadata/com.simonpena.transchat.yml  (in fdroiddata repo, not this repo)
+Categories:
+  - Multimedia
+License: Apache-2.0  # or whatever the app license is
+AuthorName: Simon Pena
+SourceCode: https://github.com/<user>/transchat-app
+IssueTracker: https://github.com/<user>/transchat-app/issues
+
+AutoName: TransChat
+
+RepoType: git
+Repo: https://github.com/<user>/transchat-app
+
+Builds:
+  - versionName: '1.1'
+    versionCode: 2
+    commit: v1.1
+    subdir: app
+    gradle:
+      - yes
+    ndk: 26.1.10909125
+    buildjni:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.1'
+CurrentVersionCode: 2
+```
+
+**Key fields:**
+- `ndk`: must match `ndkVersion` in `app/build.gradle.kts` exactly
+- `buildjni: yes` is required — tells F-Droid server to compile native code
+- `gradle: yes` means build the default Gradle variant
+- `subdir: app` points to the Gradle module directory
+
+**Reproducible builds (optional, recommended):**
+To opt into F-Droid's reproducible build verification:
+1. Generate a release signing key (not debug keystore)
+2. Sign your release APK with it
+3. Provide the APK SHA-256 signing key fingerprint in fdroiddata:
+   ```yaml
+   AllowedAPKSigningKeys: <sha256-of-your-cert>
+   Binaries: https://github.com/<user>/transchat-app/releases/download/v{v}/transchat-v{v}.apk
+   ```
+4. F-Droid builds from source, compares byte-for-byte, and if matching, serves YOUR signed APK
+
+**Reproducible build is NOT required for v1.1.** Standard F-Droid signing is simpler for first submission. Reproducible builds are a best practice for later adoption.
+
+### Reproducible Build Prerequisites (if adopted later)
+
+To achieve byte-for-byte reproducibility:
+- Pin all tool versions: AGP, Kotlin, NDK (already done — `ndkVersion` is explicit in build.gradle.kts)
+- Set `SOURCE_DATE_EPOCH` in the build environment for timestamp stability
+- Ensure no build-time generated files that embed timestamps (check CMake outputs)
+- Use `--reproducible` flag with apksigner
+
+**Confidence: HIGH** for fastlane file structure (confirmed from F-Droid official docs in search).
+**Confidence: MEDIUM** for the fdroiddata YAML format (confirmed structure, specific field values need verification against current fdroiddata templates when submitting).
 
 ---
 
-## JNI Bridge Architecture
+## Feature 3: ProGuard / R8 Configuration
 
-whisper.cpp does not have an official Maven/AAR release. The integration approach is:
+### Current State
 
-1. Include the `whisper.cpp` source (or a Git submodule) in the Android project at `app/src/main/cpp/`
-2. Write a `CMakeLists.txt` that compiles `whisper.cpp` + `ggml` sources for Android targets (`arm64-v8a` is the primary; `armeabi-v7a` optional for old devices)
-3. Expose a `LibWhisper.kt` Kotlin object backed by `@JvmStatic external fun` declarations
-4. The JNI `.c` wrapper matches the pattern in `examples/whisper.android/lib/src/main/java/com/whispercpp/whisper/WhisperLib.kt`
+`app/proguard-rules.pro` already has basic JNI keep rules (from v1.0). The existing file is:
 
-**Key build.gradle snippet:**
-```kotlin
-android {
-    defaultConfig {
-        ndk { abiFilters += listOf("arm64-v8a") }  // x86_64 for emulator testing
-    }
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
+```proguard
+# Keep all JNI-facing native methods
+-keepclassmembers class * {
+    native <methods>;
 }
-```
-
-**Key CMake flags for Android:**
-```cmake
-set(CMAKE_ANDROID_STL_TYPE c++_shared)
-# Do NOT enable GGML_USE_CLBLAST — OpenCL produces incorrect results on many Android devices
-# Do NOT enable GGML_USE_VULKAN — not supported in whisper.cpp Android builds as of v1.8.3
-```
-
----
-
-## Audio Pipeline
-
-```
-Share Intent URI (content://)
-        |
-        v
-MediaExtractor.setDataSource(fd)      # Open file via ContentResolver
-        |
-        v
-MediaCodec decoder (Opus)             # Platform native, no dependency
-        |  ENCODING_PCM_FLOAT
-        v
-FloatArray at native sample rate      # Typically 48000 Hz
-        |
-        v
-Linear resample to 16000 Hz           # Kotlin, pure JVM, no library needed
-        |
-        v
-whisper_full() via JNI                # C++ inference on Dispatchers.Default
-        |
-        v
-String transcript
-        |
-        v
-ClipboardManager.setPrimaryClip()     # Copy to clipboard
-Toast.makeText()                      # Notify user
-```
-
-**Sample rate note:** WhatsApp and Telegram encode voice messages at 16kHz internally (they already use Opus at 16kHz for speech), so resampling may be a no-op in many real-world cases. Confirm by checking `MediaFormat.KEY_SAMPLE_RATE` at runtime before resampling.
-
----
-
-## Installation Reference
-
-**app/build.gradle.kts:**
-```kotlin
-dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-ktx:1.9.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    // No whisper.cpp Gradle dep — built via CMake externalNativeBuild
+-keepclasseswithmembernames class * {
+    native <methods>;
 }
+
+# Keep the entire transchat package to preserve JNI name mangling
+-keep class com.simonpena.transchat.** { *; }
+
+# Keep WhisperLib companion object specifically
+-keep class com.simonpena.transchat.WhisperLib { *; }
+-keep class com.simonpena.transchat.WhisperLib$Companion { *; }
 ```
 
-No additional repositories required (all deps on `google()` and `mavenCentral()`).
+### What Needs to Change for v1.1
+
+**Problem with the existing rules:** `-keep class com.simonpena.transchat.** { *; }` keeps EVERYTHING in the package including all Kotlin classes, all methods, all fields. This defeats the purpose of R8 shrinking — no dead code elimination, no obfuscation. For a small app this is not a correctness problem, but it wastes shrinking benefit.
+
+**The correct targeted approach for JNI apps:**
+
+```proguard
+# --- JNI: Native method declarations in Kotlin ---
+# These are the Kotlin-side external fun declarations that JNI C++ calls by name.
+# R8 must not rename them or the JNI name mangling breaks at runtime.
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
+
+# --- JNI: WhisperLib companion object ---
+# The JNI function names are mangled from the Kotlin class+companion name.
+# Java_com_simonpena_transchat_WhisperLib_00024Companion_initContext etc.
+# must not be renamed.
+-keep class com.simonpena.transchat.WhisperLib { *; }
+-keep class com.simonpena.transchat.WhisperLib$Companion { *; }
+
+# --- v1.1 addition: Progress callback interface ---
+# If using a functional interface for the JNI upcall, keep it.
+# Replace with actual interface name once implemented.
+# -keep interface com.simonpena.transchat.SegmentCallback { *; }
+
+# --- Android Activity entry points (kept by AGP automatically via manifest) ---
+# No manual keep needed for Activity subclasses — AGP generates keep rules from AndroidManifest.
+
+# --- Kotlin coroutines ---
+# kotlinx.coroutines ships its own consumer rules via AAR; no manual keep needed.
+
+# --- ViewModel ---
+# AndroidViewModel is kept by the lifecycle AAR's consumer rules; no manual keep needed.
+
+# --- StateFlow / Flow ---
+# Kotlin stdlib and kotlinx.coroutines are kept by their bundled rules.
+
+# --- Debugging: preserve stack traces in release builds ---
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+```
+
+**What to REMOVE from the existing rules:**
+- `-keep class com.simonpena.transchat.** { *; }` — overly broad, keeps all internal Kotlin classes that R8 could otherwise shrink/obfuscate. Replace with targeted keeps above.
+
+### Why `includedescriptorclasses` Matters
+
+The flag `-keepclasseswithmembernames,includedescriptorclasses` (confirmed from [Android Developers Blog, Nov 2025](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html)) ensures parameter and return types used in native method signatures are also kept. Without it, R8 might rename a parameter type class even though the native method signature references it by name.
+
+### proguard-android-optimize.txt vs proguard-android.txt
+
+**Breaking change noted (confirmed from research, Nov 2025):**
+- `proguard-android.txt` is being phased out starting AGP 8.x
+- AGP 9.0 drops support entirely
+- Current `app/build.gradle.kts` correctly uses `proguard-android-optimize.txt` (the non-deprecated version)
+- No change needed here for v1.1
+
+### Native Library (.so) — No R8 Rules Needed
+
+The `.so` files (libwhisper.so, libwhisper_v8fp16_va.so) are native binaries — R8 does not process them. They pass through the APK build unchanged. No ProGuard/R8 rules are needed for the native side.
+
+### V1.1 Callback Lambda Keep Rule
+
+If the `new_segment_callback` JNI upcall uses a Kotlin functional interface (SAM conversion), R8 may inline or rename the lambda class. Add a keep rule for it:
+
+```proguard
+# Keep the segment callback interface if using SAM/functional interface for JNI upcall
+# Add this after the interface is named in implementation
+-keep interface com.simonpena.transchat.SegmentCallback { *; }
+```
+
+If using a plain Kotlin lambda (not a named interface), R8 may optimize it — test in release build before shipping.
+
+### R8 Full Mode
+
+R8 in "full mode" (enabled by default in AGP 8+) is more aggressive than classic ProGuard. The key difference: it inlines and removes classes that have only one usage site. The existing `WhisperLib` companion + `external fun` declarations are safe because the `external` keyword signals to R8 that the method crosses the JNI boundary.
+
+**Confidence: HIGH** for JNI keep rules (confirmed from Android official docs + Android Developers Blog Nov 2025).
+**Confidence: HIGH** for `proguard-android-optimize.txt` requirement (confirmed from official source).
+**Confidence: MEDIUM** for `includedescriptorclasses` necessity in this specific app (the existing `native <methods>` rule likely works, but the descriptor flag is more correct and the official 2025 guidance recommends it).
+
+---
+
+## No New Gradle Dependencies for v1.1
+
+All three v1.1 features are implementable with existing dependencies:
+
+| Feature | Dependencies Added | Reason |
+|---------|-------------------|--------|
+| Progress callbacks | None | Pure C++ + Kotlin change in existing JNI bridge |
+| F-Droid metadata | None | Text files + YAML, not Gradle dependencies |
+| ProGuard/R8 rules | None | Configuration file changes only |
+
+The existing `libs.versions.toml` (AGP 8.7.3, Kotlin 2.0.21, core-ktx 1.13.1, material 1.12.0, coroutines 1.9.0, lifecycle 2.8.7, activity 1.9.3) remains unchanged.
+
+---
+
+## Version Codes for v1.1
+
+`app/build.gradle.kts` must increment for F-Droid and Play Store:
+
+```kotlin
+versionCode = 2        // was 1 in v1.0
+versionName = "1.1"    // was "1.0"
+```
+
+The fastlane changelog file must be named `2.txt` (matching `versionCode = 2`).
 
 ---
 
@@ -217,35 +404,30 @@ No additional repositories required (all deps on `google()` and `mavenCentral()`
 
 | Area | Confidence | Source | Notes |
 |------|------------|--------|-------|
-| whisper.cpp as runtime | HIGH | Official GitHub (ggml-org/whisper.cpp), v1.8.3 release notes, official Android example | Confirmed active maintenance; Android JNI example ships in repo |
-| Model sizes | HIGH | HuggingFace ggerganov/whisper.cpp repository, verified 2026-02-27 | Direct file listing from HF |
-| Native Opus decode (API 21+) | HIGH | Official Android docs (developer.android.com/guide/topics/media/media-formats) | Explicit API level table in official docs |
-| mediaProcessing FGS type | HIGH | Official Android docs (developer.android.com/develop/background-work/services/fgs/service-types) | Confirmed correct type for file processing |
-| whisper.cpp GPU on Android (rejection) | HIGH | GitHub issues #1070, #1140, #2413; community reports | Multiple independent reports of OpenCL producing incorrect results; no NNAPI/Vulkan in Android whisper.cpp as of v1.8.3 |
-| sherpa-onnx rejection | MEDIUM | Maven artifact from third-party wrapper; CER regression issue #2900 | Official k2-fsa does not publish an Android AAR to Maven; accuracy regression noted in issues |
-| Download-on-first-use strategy | MEDIUM | Play Store size docs; whisperIME app pattern (github.com/woheller69/whisperIME) | whisperIME uses identical pattern; Play Store limits confirm APK bundling not viable |
-| Inference speed (small model, Android) | LOW | GitHub issue #1070 (community report: ~30s for short audio on some devices) | No official Android benchmark; "release build" significantly faster than debug; real-world varies by device CPU tier |
+| whisper.cpp callback API | HIGH | whisper.h + whisper.cpp source in repo (verified directly) | Both callbacks confirmed present in v1.7.4 |
+| `progress_callback` integer range | HIGH | whisper.cpp src/whisper.cpp lines 5526-5530 (in repo) | Computed as `(100*(seek-start))/(end-start)` |
+| `new_segment_callback` firing frequency | MEDIUM | whisper.cpp src/whisper.cpp + knowledge of WHISPER_CHUNK_SIZE | Depends on audio length and model segmentation |
+| JNI upcall via AttachCurrentThread | HIGH | Android NDK JNI tips (developer.android.com/training/articles/perf-jni) | Standard documented pattern for callbacks from non-JVM threads |
+| F-Droid fastlane directory structure | HIGH | F-Droid official docs (f-droid.org/docs) via web search | Multiple sources confirm same structure |
+| F-Droid YAML format | MEDIUM | F-Droid Build Metadata Reference (official) | Specific NDK field name needs verification against current fdroiddata templates |
+| ProGuard JNI keep rules | HIGH | Android Developers Blog Nov 2025 + official Android keep-rule docs | includedescriptorclasses flag is 2025 recommended practice |
+| `proguard-android-optimize.txt` requirement | HIGH | Android Developers Blog Nov 2025 — confirms AGP 9.0 drops proguard-android.txt | Current build.gradle.kts already uses optimize version |
 
 ---
 
 ## Sources
 
-- [whisper.cpp official repository (ggml-org/whisper.cpp)](https://github.com/ggml-org/whisper.cpp)
-- [whisper.cpp v1.8.3 release (Jan 15, 2025)](https://github.com/ggml-org/whisper.cpp/releases/tag/v1.8.3)
-- [whisper.cpp Android inference slow issue #1070](https://github.com/ggml-org/whisper.cpp/issues/1070)
-- [whisper.cpp LiteRT/Android GPU request #2413](https://github.com/ggml-org/whisper.cpp/issues/2413)
-- [whisper.cpp OpenCL issue #1140](https://github.com/ggerganov/whisper.cpp/issues/1140)
-- [ggml model files on HuggingFace (ggerganov/whisper.cpp)](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
-- [Android supported media formats - Opus API level table](https://developer.android.com/media/media3/exoplayer/supported-formats)
-- [Android media formats guide](https://developer.android.com/guide/topics/media/media-formats)
-- [Android foreground service types (mediaProcessing)](https://developer.android.com/develop/background-work/services/fgs/service-types)
-- [Android share intent receive guide](https://developer.android.com/training/sharing/receive)
-- [sherpa-onnx repository (k2-fsa)](https://github.com/k2-fsa/sherpa-onnx)
-- [sherpa-onnx Whisper CER regression issue #2900](https://github.com/k2-fsa/sherpa-onnx/issues/2900)
-- [vilassn/whisper_android (TFLite, last updated 2023)](https://github.com/vilassn/whisper_android)
-- [WhisperKitAndroid (deprecated)](https://github.com/argmaxinc/WhisperKitAndroid)
-- [whisperIME Android app (download-on-first-use pattern)](https://github.com/woheller69/whisperIME)
-- [mikeesto/whispercpp-android (community Android whisper.cpp example)](https://github.com/mikeesto/whispercpp-android)
-- [Building LocalMind: whisper.cpp JNI on Android (Medium, Jan 2026)](https://medium.com/@mohammedrazachandwala/building-localmind-how-i-ported-openais-whisper-to-android-using-jni-and-kotlin-575dddd38fdc)
-- [Android sampling audio NDK guide](https://developer.android.com/ndk/guides/audio/sampling-audio)
-- [MediaExtractor to PCM guide](https://imnotyourson.com/enhance-poor-performance-of-decoding-audio-with-mediaextractor-and-mediacodec-to-pcm/)
+- [whisper.h — callback typedef definitions](app/src/main/cpp/whisper.cpp/include/whisper.h) — in repo, lines 449-456
+- [whisper.cpp src — progress_callback invocation](app/src/main/cpp/whisper.cpp/src/whisper.cpp) — in repo, lines 5526-5530
+- [whisper.cpp src — new_segment_callback invocation](app/src/main/cpp/whisper.cpp/src/whisper.cpp) — in repo, lines 6166-6227
+- [Android NDK JNI Tips — GetEnv / AttachCurrentThread](https://developer.android.com/training/articles/perf-jni)
+- [F-Droid All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)
+- [F-Droid Submitting Quick Start Guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/)
+- [F-Droid Build Metadata Reference](https://f-droid.org/docs/Build_Metadata_Reference/)
+- [F-Droid Reproducible Builds](https://f-droid.org/en/docs/Reproducible_Builds/)
+- [Android Developers Blog: Configure and Troubleshoot R8 Keep Rules (Nov 2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html)
+- [Android Developers Blog: Use R8 to shrink, optimize, and fast-track your app (Nov 2025)](https://android-developers.googleblog.com/2025/11/use-r8-to-shrink-optimize-and-fast.html)
+- [Keep rule use cases and examples — Android Developers](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples)
+- [About keep rules — Android Developers](https://developer.android.com/topic/performance/app-optimization/keep-rules-overview)
+- [whisper.cpp bindings/java — WhisperProgressCallback.java](app/src/main/cpp/whisper.cpp/bindings/java/src/main/java/io/github/ggerganov/whispercpp/callbacks/WhisperProgressCallback.java) — official Java binding showing callback signature
+- [F-Droid in 2025 — Reproducible builds at 21%](https://f-droid.org/en/2026/01/23/fdroid-in-2025-strengthening-our-foundations-in-a-changing-mobile-landscape.html)

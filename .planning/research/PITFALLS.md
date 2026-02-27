@@ -397,6 +397,334 @@ Also register a `WorkManager` periodic task to sweep stale files from `cacheDir`
 
 ---
 
+## v1.1 Pitfalls: Progress Callbacks, F-Droid, and R8
+
+The following pitfalls are specific to the v1.1 milestone features being added to the existing codebase. All four domains are integration pitfalls — failures that only surface when combining these features with the existing architecture.
+
+---
+
+## v1.1 Critical Pitfalls
+
+---
+
+### Pitfall 15: JNI Callback Fires on Native Thread — UI Update Crashes or Silently Drops
+
+**What goes wrong:** The whisper.cpp `new_segment_callback` (and `encoder_begin_callback`) fires on whichever C++ thread is running inference. In TransChat's architecture, that thread is the `newSingleThreadExecutor`'s Java thread — not the Android main thread. Any attempt to directly update a `MutableStateFlow`, post to a `Handler`, or call any UI method from inside the JNI callback (via a `CallVoidMethod` / `CallStaticVoidMethod` upcall) runs on the wrong thread.
+
+The specific failure modes are:
+
+- Calling a Kotlin method that internally does `_flow.value = x` from inside the JNI callback is actually safe if StateFlow's thread-safe `MutableStateFlow` is used, but only if the Kotlin object was passed to native code correctly. The silent failure mode is that the native callback's upcall crashes with a `java.lang.RuntimeException: Can't create handler inside thread that has not called Looper.prepare()` if any path inside the callback tries to post to a `Handler`.
+- Calling any view method (even indirectly) from the callback crashes with `CalledFromWrongThreadException`.
+
+**Why it happens:** `JNIEnv` is thread-local and cannot be passed across thread boundaries. The JNI callback receives a `JNIEnv*` valid only on the thread that entered native code. Because TransChat uses a `newSingleThreadExecutor`, inference runs on a dedicated background thread — the `JNIEnv*` available at callback time belongs to that background thread, not the main thread. Any Android API that requires the main thread (Looper, Handler, View) will throw.
+
+**The Executor thread distinction:** Critically, `newSingleThreadExecutor` starts a Java-managed thread, not a raw `pthread`. This thread is already attached to the JVM (the JVM manages it). You do NOT need to call `AttachCurrentThread` for it. You do need to cache the `JavaVM*` (not `JNIEnv*`) in `JNI_OnLoad` and retrieve a fresh `JNIEnv*` per callback invocation via `GetEnv` if needed from the same thread.
+
+**Consequences:** Progress bar never updates (callback fires, StateFlow update silently succeeds on background thread but UI collector not running), or app crashes with `CalledFromWrongThreadException` in release, or `IllegalStateException: Looper.prepare()` error in logcat.
+
+**Prevention:**
+
+The correct bridge pattern is:
+
+1. In `JNI_OnLoad`, cache `JavaVM*` globally.
+2. Pass a global reference to the Kotlin callback object to native code via `NewGlobalRef`. Store in a C++ global or the whisper `user_data` pointer.
+3. In the C++ `new_segment_callback`, call `vm->GetEnv(...)` to obtain the thread's `JNIEnv*` (the executor thread is already attached; this is a no-op retrieve).
+4. Call the Kotlin method via `CallVoidMethod`. The Kotlin method should do nothing but `_progressFlow.value = n` — StateFlow is thread-safe for this.
+5. Do NOT create any local JNI references that outlive the callback without promoting them to global references.
+6. The StateFlow collector on the UI side uses `repeatOnLifecycle` and `Dispatchers.Main` — the UI update happens there, not in the callback.
+
+```cpp
+// whisper_jni.cpp — callback implementation
+static jobject g_progressCallback = nullptr;  // global ref, set during init
+static jmethodID g_onSegmentMethod = nullptr;
+
+void on_new_segment(struct whisper_context* ctx, struct whisper_state*, int n_new, void* user_data) {
+    JNIEnv* env;
+    // Executor thread is already attached; GetEnv retrieves existing JNIEnv
+    if (g_jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return;
+    if (g_progressCallback == nullptr || g_onSegmentMethod == nullptr) return;
+    int total = whisper_full_n_segments(ctx);
+    env->CallVoidMethod(g_progressCallback, g_onSegmentMethod, total);
+    // No UI calls here — Kotlin side updates StateFlow only
+}
+```
+
+```kotlin
+// WhisperContext.kt — the Kotlin callback receives on background thread
+fun onSegmentCompleted(totalSegments: Int) {
+    _progressFlow.value = totalSegments  // StateFlow: thread-safe write
+}
+```
+
+**Warning signs:** Progress bar never advances despite inference running. `CalledFromWrongThreadException` in logcat. `IllegalStateException: Can't create handler inside thread` in release crash logs. Callback appears to fire (confirmed by log) but UI does not reflect it.
+
+**Phase to address:** v1.1 Phase 1 (progress callback implementation). Must be the first thing validated with an instrumented test before wiring the UI.
+
+**Confidence:** HIGH — verified against [Android NDK JNI Tips](https://developer.android.com/training/articles/perf-jni), [JNI threading NDK wiki](https://github.com/android/ndk/wiki/JNI).
+
+---
+
+### Pitfall 16: JNI Global Reference Leak Crashes App After Multiple Transcriptions
+
+**What goes wrong:** When wiring the progress callback, developers commonly pass the Kotlin listener object to native code. If the native code calls `NewGlobalRef` to hold a reference to the listener across the transcription and then never calls `DeleteGlobalRef` when transcription ends (or when the ViewModel is cleared), the JVM's global reference table grows by one entry per transcription. The hard limit is 51,200 global references on modern Android. With enough transcriptions, the app crashes with `JNI ERROR (app bug): local reference table overflow (max=512)` or a similar global ref exhaustion error.
+
+**Why it happens:** Developers familiar with Java assume the garbage collector handles native references. It does not. `NewGlobalRef` creates a pinning reference that prevents GC and is not freed until `DeleteGlobalRef` is explicitly called. Local references (created within a callback invocation) are freed at callback return, but anything promoted to global via `NewGlobalRef` lives forever unless deleted.
+
+**Consequences:** Slow memory leak that causes crash after many uses. Does not appear in development (small number of test runs). CheckJNI in debug mode will log warnings but the default limit is high enough that tests pass. Manifests in production from heavy users.
+
+**Prevention:**
+
+- Call `NewGlobalRef` once on the listener at transcription start and `DeleteGlobalRef` at transcription end (in a `finally` block on the Kotlin side via a cleanup JNI call).
+- Alternatively, pass the listener as a local reference on each call into native code rather than storing globally.
+- Enable CheckJNI during development: add `android:debuggable="true"` and set system property `debug.checkjni=1` to get early warnings.
+- In `WhisperContext.onCleared()` or equivalent teardown, call a JNI method that calls `DeleteGlobalRef` on all held references.
+
+```kotlin
+// WhisperContext.kt
+override fun onCleared() {
+    super.onCleared()
+    nativeReleaseCallback()  // JNI: calls DeleteGlobalRef on g_progressCallback
+}
+```
+
+**Warning signs:** `JNI ERROR: local reference table overflow` in logcat after many transcriptions. Native memory growing across transcription sessions. Works fine in development (few test transcriptions), crashes in production after 50+ uses by a single user.
+
+**Phase to address:** v1.1 Phase 1 (progress callback implementation). Must be paired with the callback setup — implement DeleteGlobalRef at the same time as NewGlobalRef, not as a follow-up.
+
+**Confidence:** HIGH — [JNI global reference leak in Google Filament](https://github.com/google/filament/issues/4957), [JGRE vulnerability analysis](https://ieeexplore.ieee.org/document/8023142/), [Android NDK JNI Tips](https://developer.android.com/training/articles/perf-jni).
+
+---
+
+### Pitfall 17: F-Droid Rejects App Because whisper.cpp Is Compiled from Source But Included as Prebuilt .so
+
+**What goes wrong:** F-Droid's inclusion policy requires that all binary blobs are built from source during the F-Droid build process, or come from a trusted repository (Maven Central, etc.). If the project ships whisper.cpp as a prebuilt `.so` file checked into the repository (common during development for faster builds), F-Droid reviewers will reject the submission. This is not a warning — it is a hard rejection.
+
+The exact rule: "Prebuilt executable files must not be included in the project's codebase, and shared libraries must be built from source, always."
+
+**Why it happens:** Checking in `.so` files or using `libs/arm64-v8a/libwhisper.so` instead of building from CMakeLists.txt is a common development shortcut. Many developers are unaware F-Droid's build server compiles the app from scratch and will detect prebuilt binaries.
+
+**Consequences:** F-Droid submission blocked. The reviewer will identify the prebuilt `.so` and require its removal before re-review. This adds weeks to the F-Droid inclusion timeline.
+
+**Prevention:**
+
+- Ensure the CMakeLists.txt builds whisper.cpp from source completely. The F-Droid build server must be able to run `./gradlew assembleRelease` and produce a complete APK with no prebuilt native binaries.
+- Remove any prebuilt `.so` files from the git repository before submission.
+- The whisper.cpp source files (`.cpp`, `.h`) must be in the repository or fetched during the build via the F-Droid `srclibs` mechanism.
+- Verify by doing a clean checkout and running the build with no local SDK/NDK cache.
+
+**Warning signs:** `.so` files committed to `app/src/main/jniLibs/`. CMakeLists.txt references a `prebuilt` or `imported` library target rather than compiling from source. Build succeeds only when `jniLibs/` is present.
+
+**Phase to address:** v1.1 Phase 2 (F-Droid preparation). Must be verified before F-Droid submission.
+
+**Confidence:** HIGH — [F-Droid Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/), [F-Droid Building Applications](https://f-droid.org/en/docs/Building_Applications/).
+
+---
+
+### Pitfall 18: F-Droid Build Produces Non-Deterministic APK Due to NDK Binary Differences Across Platforms
+
+**What goes wrong:** F-Droid's reproducible build system builds the APK on its own Ubuntu-based server using a specific NDK version. If the developer-signed APK (used for reproducible signing) was built on macOS with NDK 26.1, it will differ from what F-Droid builds on Ubuntu with NDK 26.1. The difference is in ELF metadata: linker version strings embedded in `.so` files, `.shstrtab` sections, and debug symbol layout vary by host OS even with identical NDK versions.
+
+Additionally, since NDK r26d, there is a known behavior where the `.shstrtab` section in ELF binaries differs between builds even on the same host, caused by AGP stripping behavior.
+
+**Why it happens:** NDK's linker (`lld`) embeds host-platform metadata into the output ELF. The same source code, same NDK version, same flags, produce different binaries on macOS vs Ubuntu. Reproducible builds require bit-for-bit identical output.
+
+**Consequences:** F-Droid's reproducible build verification fails. The app cannot participate in F-Droid's verified builds (where F-Droid signs a matching APK). The app can still be included in F-Droid, but without the reproducibility badge, F-Droid must sign the APK itself (not the developer), which requires submitting to fdroiddata rather than a simpler self-hosted path.
+
+**Mitigation (not full prevention):**
+
+- Accept that full reproducibility with native code is very hard. Non-reproducible apps are still accepted by F-Droid — they just use F-Droid's key rather than the developer's key.
+- If reproducibility is required: build the developer-signed APK on Linux (not macOS) to match F-Droid's build environment. Use a Docker container with the same Ubuntu version as F-Droid's build server.
+- Pin the exact NDK version in `build.gradle`: `ndkVersion "26.1.10909125"`. F-Droid's build metadata must specify the same version.
+- Do not use R8 full mode for the reproducible build — it increases non-determinism due to CPU-count-dependent DEX generation (fixed in R8 8.6.33+).
+
+**Warning signs:** F-Droid build verification reports APK mismatch. `apksigner verify` passes on both APKs but `diff` of unzipped contents shows differences in `.so` files. macOS-built developer APK that does not match F-Droid's server-built APK.
+
+**Phase to address:** v1.1 Phase 2 (F-Droid preparation). Evaluate reproducibility early, set expectations appropriately — do not block submission on full reproducibility if non-reproducible inclusion is acceptable.
+
+**Confidence:** MEDIUM — [F-Droid Reproducible Builds docs](https://f-droid.org/docs/Reproducible_Builds/), community reports on NDK non-determinism, [reproducible-builds.org 2025 report](https://reproducible-builds.org/reports/2025-05/).
+
+---
+
+### Pitfall 19: R8 Strips JNI Upcall Methods That Are Called Only From Native Code
+
+**What goes wrong:** When R8 is enabled in release builds, it performs static dead-code analysis. Methods that are only called from native C++ code (via `CallVoidMethod` / `CallStaticVoidMethod`) have no visible Java/Kotlin callers in the bytecode. R8 concludes they are unreachable and removes them. The result is `NoSuchMethodError` at runtime — in release builds only — when the native callback attempts to invoke the now-removed method.
+
+The default `proguard-android-optimize.txt` protects `native <methods>` (methods with the `native` keyword — i.e., downcalls: Kotlin methods that dispatch to C++). It does NOT protect upcall methods (plain Kotlin methods called FROM C++). These are indistinguishable from unused code from R8's perspective.
+
+**Why it happens:** R8 is a static analyzer. JNI upcalls are dynamic — the native code holds a `jmethodID` at runtime. R8 cannot see this relationship. The official Android docs confirm: "When your app uses JNI to make upcalls from native code to Java or Kotlin, R8 can't see which methods are called from your native code and incorrectly assumes they are unused."
+
+**Specific risk for TransChat:** The progress callback Kotlin method (e.g., `WhisperContext.onSegmentCompleted(Int)`) will be called via `CallVoidMethod` from native. It has no Kotlin caller. Without an explicit keep rule, R8 removes it.
+
+**Prevention:**
+
+```
+# proguard-rules.pro
+
+# Protect JNI downcalls (whisper.cpp native methods — already covered by default rules,
+# but explicit is safer with 6 dollar-sign-encoded exported functions)
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
+
+# Protect JNI upcall methods called from whisper_jni.cpp
+# These are NOT native methods — they are Kotlin methods invoked via CallVoidMethod
+-keepclassmembers class com.example.transchat.whisper.WhisperContext {
+    void onSegmentCompleted(int);
+}
+
+# If using a separate callback interface
+-keep interface com.example.transchat.whisper.WhisperProgressCallback {
+    *;
+}
+```
+
+The rules must be as narrow as possible — keeping the entire package would defeat R8's size reduction. Keep only the specific upcall method signatures.
+
+**AGP 9.0 companion object caveat:** If the upcall target is in a Kotlin companion object, keep rules on the interface no longer automatically extend to companion methods as of AGP 9.0. Explicitly keep the companion method.
+
+**Warning signs:** `NoSuchMethodError` with the upcall method name in release logcat. Progress callback works in debug (`minifyEnabled false`) but not release. R8's mapping file (build output) shows the method was removed. Crash only in release, only when a transcription with progress tracking begins.
+
+**Phase to address:** v1.1 Phase 1 (progress callback) AND v1.1 Phase 3 (R8 configuration). Add the upcall keep rule at the same time the upcall method is written. Validate in a release build before merging.
+
+**Confidence:** HIGH — [Android Developers: Keep rule use cases](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples), [Android Developers Blog: Configure and troubleshoot R8 Keep Rules (2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html), [SDL JNI @Keep issue #3563](https://github.com/libsdl-org/SDL/issues/3563).
+
+---
+
+## v1.1 Moderate Pitfalls
+
+---
+
+### Pitfall 20: Progress Callback Invoked Too Frequently Degrades Inference Speed
+
+**What goes wrong:** Whisper processes audio in segments. The `new_segment_callback` fires once per decoded segment — typically 10-20 times for a 60-second clip. This is low-frequency and has negligible overhead.
+
+The problem arises if developers add a more granular progress hook — such as polling `whisper_full_n_segments` inside a loop, using the `encoder_begin_callback` for per-frame progress, or calling into Kotlin on every ggml computation. The JNI boundary crossing itself is cheap, but calling back into Kotlin on every tensor operation (which can be thousands of times per second) adds measurable latency.
+
+For TransChat's 12-15s inference baseline, even 5% overhead adds ~0.7s per clip. On slower devices, it can add 2-3 seconds.
+
+**Why it happens:** Developers want smooth progress bars and attempt to emit progress more frequently than the natural segment cadence. The `encoder_begin_callback` fires once per encoder invocation (~30 times for a 30-second audio clip) which is still acceptable, but any finer granularity risks inference slowdown.
+
+**Prevention:**
+
+- Use only `new_segment_callback` for progress. It fires at the natural segment boundary and requires zero additional polling.
+- Do not add polling loops in C++ that call back into Kotlin.
+- Map segment count to progress percent in Kotlin, not in C++.
+- Benchmark inference time with and without the callback on the target device before shipping.
+- The callback's Kotlin method must do nothing except `_flow.value = n`. Any allocation, string formatting, or additional computation inside the callback path adds to inference time.
+
+**Warning signs:** Inference time increases after adding the progress callback. Logcat shows callback firing hundreds of times per second. CPU profiler shows JNI overhead during inference.
+
+**Phase to address:** v1.1 Phase 1 (progress callback). Benchmark before and after adding the callback.
+
+**Confidence:** MEDIUM — inferred from JNI overhead characteristics and whisper.cpp callback documentation; specific benchmark numbers are LOW confidence without device-specific measurement.
+
+---
+
+### Pitfall 21: F-Droid fastlane Metadata File Naming Causes Silent Linter Failure
+
+**What goes wrong:** F-Droid's metadata scanner accepts fastlane-style metadata in the source repository at `fastlane/metadata/android/en-US/`. The file naming convention differs from standard fastlane:
+
+- F-Droid expects `short_description.txt` → actually `summary.txt` (F-Droid's name)
+- F-Droid expects `full_description.txt` → actually `description.txt` (F-Droid's name)
+
+Using the standard fastlane names causes the linter to silently skip these files, resulting in the F-Droid listing showing no description. The app is listed but appears to have no description text, reducing user trust and install rate.
+
+**Why it happens:** F-Droid's convention diverges from fastlane's convention at these two specific file names. Developers who follow fastlane documentation (very common) use the wrong names.
+
+**Prevention:**
+
+Use exactly this structure:
+```
+fastlane/metadata/android/
+  en-US/
+    title.txt           (max 30 characters)
+    summary.txt         (max 80 characters — NOT short_description.txt)
+    description.txt     (max 4000 characters — NOT full_description.txt)
+    changelogs/
+      3.txt             (versionCode 3 changelog)
+  images/
+    icon.png            (512x512)
+    featureGraphic.png  (1024x500)
+    phoneScreenshots/
+      01.png
+```
+
+**Warning signs:** F-Droid listing shows the app name but empty description. Linter passes (no error) but metadata is not rendered. Other apps with similar fastlane structures have descriptions, yours does not.
+
+**Phase to address:** v1.1 Phase 2 (F-Droid metadata). A one-time naming fix, low effort, but easy to miss.
+
+**Confidence:** HIGH — [F-Droid: All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/).
+
+---
+
+### Pitfall 22: R8 Full Mode Strips Runtime Annotations — Breaks Kotlin Reflection Paths
+
+**What goes wrong:** R8 full mode (enabled by default with AGP 8+ and `android.enableR8.fullMode=true` in `gradle.properties`) is more aggressive than compatibility mode. It can strip runtime-retained annotations and remove class signature information needed for generic type resolution. For TransChat, the specific risk is that any Kotlin data classes used for ViewModel state (e.g., a `TranscriptionState` sealed class or data class) may have their generic type parameters erased by R8 if the class is only referenced through a generic StateFlow type.
+
+**Why it happens:** R8 full mode removes the `Signature` attribute from classes that it determines are only used in dead code paths. If `StateFlow<TranscriptionState>` is only referenced through a generic parameter in a way R8 cannot trace statically, it may strip the `TranscriptionState` class's generic signature.
+
+**Consequences:** Runtime crash (`ClassCastException` or `IllegalArgumentException`) when collecting from the StateFlow in the UI. Works in debug, crashes in release.
+
+**Prevention:**
+
+Add to `proguard-rules.pro`:
+```
+# Preserve generic type signatures for StateFlow-wrapped state classes
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# Keep ViewModel state sealed classes
+-keep class com.example.transchat.ui.state.** { *; }
+```
+
+Additionally, verify that `proguard-android-optimize.txt` (the default base) is used, not a stripped-down custom base file. The default base already includes `Signature` preservation for common cases.
+
+**Warning signs:** `ClassCastException` when collecting StateFlow in UI. Only occurs in release. R8's `missing_rules.txt` output (in `build/outputs/mapping/release/`) lists state classes as candidates for removal.
+
+**Phase to address:** v1.1 Phase 3 (R8 configuration). Test release builds with a real device after enabling minification.
+
+**Confidence:** MEDIUM — [R8 full mode documentation](https://developer.android.com/topic/performance/app-optimization/full-mode), [kotlinx.serialization R8 full mode issue #2501](https://github.com/Kotlin/kotlinx.serialization/issues/2501).
+
+---
+
+### Pitfall 23: Branch Rename master → main Breaks CI and Any Hardcoded References
+
+**What goes wrong:** Renaming the default branch from `master` to `main` is operationally simple (three git commands) but breaks anything that hardcodes the branch name. Common breakage points for a solo Android project:
+
+1. GitHub Actions workflows with `on: push: branches: [master]` trigger condition
+2. Any badge URLs in README pointing to `master`
+3. Dependabot config referencing `master` as the target branch
+4. F-Droid metadata in fdroiddata referencing the `master` branch for source checkout
+
+**Why it happens:** The rename is a git operation but the branch name is also a string embedded in many configuration files. Developers rename the branch and verify it works but forget to search for all string occurrences of "master" across config files.
+
+**Consequences:** CI stops running on pushes to `main` (the most severe — no automation). F-Droid's build server cannot checkout the source (if it hardcodes the branch). README badges show "unknown" status.
+
+**Prevention:**
+
+Before renaming:
+1. Search the entire repository for the string "master": `grep -r "master" .github/ .fdroid.yml fastlane/ README*`
+2. Update all found references in the same commit as the rename
+3. After rename: verify GitHub Actions workflows triggered on the first push to `main`
+4. Set GitHub default branch to `main` in repository Settings immediately after rename — this is what determines what F-Droid and GitHub Dependabot target
+
+The three-command rename:
+```bash
+git branch -m master main
+git push origin -u main
+git push origin --delete master
+```
+
+Then in GitHub Settings: change default branch from `master` to `main`.
+
+**Warning signs:** GitHub Actions tab shows no recent runs after the rename. CI last run was before the rename. Badge shows "unknown" or old state. F-Droid build log shows "branch not found".
+
+**Phase to address:** v1.1 Phase 4 (branch rename). This is a discrete, low-risk, low-effort task. Do it in isolation with a complete pre-rename audit.
+
+**Confidence:** HIGH — standard git/GitHub operational guidance; [GitHub renaming guidance](https://github.com/github/renaming).
+
+---
+
 ## Phase-Specific Warnings Summary
 
 | Phase Topic | Likely Pitfall | Mitigation |
@@ -415,11 +743,21 @@ Also register a `WorkManager` periodic task to sweep stale files from `cacheDir`
 | Transcription quality | Wrong language detection (Pitfall 8) | Language pin option in UI, best_of=3 |
 | Resource management | Temp file accumulation (Pitfall 14) | Delete in finally block |
 | UX | Model cold-load hang (Pitfall 13) | Singleton session, loading indicator |
+| **v1.1** Progress callback | Wrong thread for UI update (Pitfall 15) | StateFlow-only updates in callback; no Handler/View calls |
+| **v1.1** Progress callback | JNI global reference leak (Pitfall 16) | DeleteGlobalRef paired with NewGlobalRef; cleanup in onCleared() |
+| **v1.1** Progress callback | R8 strips upcall method (Pitfall 19) | Explicit -keepclassmembers for each upcall method signature |
+| **v1.1** Progress callback | Callback overhead degrades inference (Pitfall 20) | Use new_segment_callback only; benchmark before/after |
+| **v1.1** F-Droid prep | Prebuilt .so rejection (Pitfall 17) | Build whisper.cpp from source via CMakeLists.txt only |
+| **v1.1** F-Droid prep | NDK non-deterministic binary (Pitfall 18) | Accept non-reproducible or build on Linux; pin exact NDK version |
+| **v1.1** F-Droid prep | Wrong fastlane file names (Pitfall 21) | summary.txt not short_description.txt; description.txt not full_description.txt |
+| **v1.1** R8 config | Full mode strips state class signatures (Pitfall 22) | -keepattributes Signature; keep state sealed classes |
+| **v1.1** Branch rename | CI stops running after rename (Pitfall 23) | Audit all "master" string occurrences before renaming |
 
 ---
 
 ## Sources
 
+### v1.0 Sources
 - [ONNX Runtime Android OOM Issue #19514](https://github.com/microsoft/onnxruntime/issues/19514) — confirmed byte array vs file path OOM root cause
 - [whisper.cpp Android slow inference Issue #1022](https://github.com/ggml-org/whisper.cpp/issues/1022) — R8 minification as performance bottleneck
 - [whisper.cpp Android inference slow Issue #1070](https://github.com/ggml-org/whisper.cpp/issues/1070) — debug vs release performance gap community confirmation
@@ -436,3 +774,21 @@ Also register a `WorkManager` periodic task to sweep stale files from `cacheDir`
 - [Android sample rate conversion](https://source.android.com/docs/core/audio/src) — resampling documentation
 - [Kotlin Coroutines Dispatchers](https://www.droidcon.com/2024/11/21/exploring-the-secrets-of-dispatchers-default-and-io-in-kotlin-coroutines/) — Default vs IO for CPU-bound work
 - [Investigation of Whisper ASR Hallucinations](https://www.researchgate.net/publication/388232036_Investigation_of_Whisper_ASR_Hallucinations_Induced_by_Non-Speech_Audio) — academic study on non-speech hallucination
+
+### v1.1 Sources
+- [Android NDK JNI Tips — Threading](https://developer.android.com/training/articles/perf-jni) — JNIEnv thread-locality, AttachCurrentThread, global vs local references
+- [Android NDK JNI Wiki](https://github.com/android/ndk/wiki/JNI) — authoritative threading rules
+- [JNI Global Reference Leak — Google Filament Issue #4957](https://github.com/google/filament/issues/4957) — real-world global ref leak pattern
+- [JGRE: JNI Global Reference Exhaustion Vulnerabilities in Android](https://ieeexplore.ieee.org/document/8023142/) — confirmed crash mechanism
+- [F-Droid Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/) — prebuilt .so rejection policy
+- [F-Droid Building Applications](https://f-droid.org/en/docs/Building_Applications/) — source-only build requirement
+- [F-Droid Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds/) — NDK non-determinism across platforms
+- [Reproducible Builds May 2025 Report](https://reproducible-builds.org/reports/2025-05/) — current reproducibility status
+- [F-Droid: All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/) — fastlane file naming
+- [Android Developers: Keep Rule Use Cases and Examples](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples) — upcall protection
+- [Android Developers Blog: Configure and troubleshoot R8 Keep Rules (2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html) — current R8 guidance
+- [SDL JNI @Keep issue #3563](https://github.com/libsdl-org/SDL/issues/3563) — real-world JNI upcall stripping example
+- [R8 Full Mode documentation](https://developer.android.com/topic/performance/app-optimization/full-mode) — full mode vs compatibility mode behavior
+- [kotlinx.serialization R8 full mode issue #2501](https://github.com/Kotlin/kotlinx.serialization/issues/2501) — Signature attribute stripping pattern
+- [GitHub renaming repository guidance](https://github.com/github/renaming) — branch rename steps and CI impact
+- [whisper-jni JNI wrapper](https://github.com/GiviMAD/whisper-jni) — reference JNI wrapper for whisper.cpp callbacks

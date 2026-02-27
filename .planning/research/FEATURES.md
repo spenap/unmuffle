@@ -1,162 +1,530 @@
-# Feature Landscape: Android Audio Transcription (Share Target)
+# Feature Landscape: TransChat v1.1
 
-**Domain:** On-device audio transcription utility — share target for messaging app voice messages
+**Domain:** On-device voice transcription Android app (share target, Whisper via JNI)
+**Milestone:** v1.1 Polish and Distribution
 **Researched:** 2026-02-27
-**Overall confidence:** HIGH (primary sources: WhatsApp official blog, Play Store competitors, Whisper Notes, VoiceScriber, direct product research)
+**Overall confidence:** HIGH — all four feature areas verified against authoritative sources
+  (local whisper.h header at v1.7.4, live codebase inspection, F-Droid official docs, Android official docs)
 
 ---
 
-## Context: What We're Building
+## Context: What Already Exists
 
-TransChat is a **single-purpose share-target utility**. A user in WhatsApp or Telegram long-presses a voice message, taps Share, selects TransChat, and gets the transcript on their clipboard 10-60 seconds later. There is no persistent UI, no account, no network. This scope is a deliberate constraint — not a limitation.
+v1.0 shipped 2,635 LOC. The relevant existing pieces for v1.1 are:
 
-Understanding this scope is the prerequisite to every feature decision below.
+- `WhisperLib.kt` — JNI bridge; `WhisperLib$Companion` exposes `external fun fullTranscribe(contextPtr, numThreads, audioData)`
+- `whisper_jni.cpp` — C++ side; calls `whisper_full(ctx, params, ...)` with **no callbacks set** (blank `progress_callback` and `new_segment_callback` fields)
+- `WhisperContext.kt` — Wraps native pointer, single-thread executor; `transcribeData()` returns `String`
+- `WhisperEngine.kt` — Public API; `suspend fun transcribe(audioData: FloatArray): String`
+- `TranscriptionViewModel.kt` — `UiState.Processing` (indeterminate spinner), `UiState.Success`, `UiState.Error`
+- `proguard-rules.pro` — Exists but is over-broad: `-keep class com.simonpena.transchat.** { *; }` blocks all shrinking
+- `build.gradle.kts` — `isMinifyEnabled = true` for release; NDK version `26.1.10909125`
 
----
-
-## Table Stakes
-
-Features users expect from any transcription tool that shares this category. Missing any of these means users leave or leave 1-star reviews.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Accurate transcription output** | The entire reason for the app's existence. If accuracy is poor, nothing else matters. | High (model quality, not code) | Whisper small multilingual achieves ~7-9% WER on mixed benchmarks — acceptable for voice messages. Accuracy complaints are the #1 user issue in every comparable app. |
-| **Works offline / no network required** | Users sharing confidential voice messages (medical, legal, personal) won't accept a network dependency. Also required in low-connectivity environments. | Low (architectural) | This is already baked into the design. Must be communicated clearly to users — competitors (WAVO, Letterly) send audio to cloud servers. This is a genuine differentiator but also a baseline expectation for privacy apps. |
-| **Share intent integration** | The entire interaction model. If WhatsApp → Share → TransChat doesn't work, the app cannot function. | Medium | Must handle `audio/*` and `application/octet-stream` MIME types. WhatsApp uses `audio/ogg`, Telegram uses `audio/ogg`. Both wrap Opus codec. |
-| **Clipboard output** | Expected output destination for a "transcribe and use" workflow. Users immediately paste into chat, notes, email. | Low | Android 13+ shows a system clipboard preview popup automatically. No custom UI needed. |
-| **User-visible progress feedback** | Transcription takes 10-60 seconds. With no feedback, users will assume the app crashed and dismiss it. | Low | Progress dialog or indeterminate spinner is mandatory. A "Transcribing..." message is the minimum. |
-| **Completion notification** | User needs to know when the transcript is ready. A Toast ("Copied to clipboard") is the standard pattern for this interaction model. | Low | Toast is fine for MVP. Post-Android 13, clipboard write also triggers a system-level confirmation overlay. |
-| **Multilingual support** | Voice messages are inherently multilingual — a user may receive messages in languages they do not speak, which is a primary reason to transcribe. Whisper small supports 99 languages. | Low (model handles it) | Auto-detection via Whisper's language detection is the correct default. Explicit language selection is a differentiator, not table stakes. |
-| **Graceful error handling** | Decode failures, unsupported formats, empty audio, and OOM are all real failure modes. Silently doing nothing after a share is unacceptable. | Low-Medium | At minimum: show a toast with the error category ("Could not decode audio" vs "Audio too long"). |
-| **Fast enough to be useful** | Users will abandon the workflow if waiting feels unreasonable. Empirically: under 30 seconds for a typical 30-second voice message is acceptable; over 60 seconds for the same is a dealbreaker. | High (hardware-dependent) | Whisper small on mid-range hardware: ~15-30 seconds for 30-second audio. On low-end: 30-90 seconds. Need to set user expectations. |
+v1.1 adds three feature areas plus one housekeeping task.
 
 ---
 
-## Differentiators
+## Feature Area 1: Transcription Progress Bar via whisper.cpp Callbacks
 
-Features that set TransChat apart from cloud-based competitors like WAVO, Letterly, and WhatsApp's own native transcription. These create competitive advantage and justify installation of a separate tool.
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Existing Code Hook |
+|---------|--------------|------------|-------------------|
+| Determinate progress bar (0-100%) during inference | 12-15s inference with only a spinner is perceived as a freeze; UX research shows 3x longer wait tolerance with determinate bars | Medium | `UiState.Processing` needs a `progress: Int` field |
+| Progress updates sourced from real callback, not a timer | Fake/timer-based progress stalls or over-runs unpredictably; erodes trust | Medium | `progress_callback` in `whisper_full_params` — already in whisper.h, just not wired |
+
+### Differentiators
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Verified on-device processing (no server)** | Biometric trust: voice is a biometric identifier that cannot be changed after exposure. "Your audio cannot leave your device — not as a setting but as a technical constraint." Users in legal, medical, and personal domains have strong demand for this. | Low (architectural) | Frame this as "zero network required" and consider including a network-off indicator in the UI. WhatsApp's own transcription is on-device but limited to specific languages; TransChat extends this to 99 languages. |
-| **No account required** | Eliminates onboarding friction and identity tracking. Competing tools (WAVO, Letterly, Otter.ai) require sign-up. | None | Already implicit in the design. Explicitly communicate it: "No sign-in. No account. Open and transcribe." |
-| **No subscription / no usage caps** | WAVO's free tier gives 5 minutes/month (users called it "costs more than Netflix"). Letterly is cloud-billed per minute. A flat-payment or open-source model removes this friction entirely. | None (pricing, not code) | WAVO's #1 complaint in user reviews is the subscription paywall after 5 free minutes. This is a clear gap TransChat can own. |
-| **Telegram support** | Most WhatsApp-branded transcription tools work only with WhatsApp's share flow. Telegram voice notes use the same OGG/Opus format and the same Android share intent — supporting both is effectively free. | Low | Frame as "works with WhatsApp, Telegram, and any app that shares audio." |
-| **Any-audio share target** | Because TransChat registers for `audio/*`, it can receive audio from any app: Signal, voice recorders, file managers, email attachments. Users discover this as a bonus. | None (already implicit) | Don't over-advertise initially — keep messaging focused on the primary use case. |
-| **Language auto-detection** | Whisper's language detection identifies the spoken language without user configuration. Users with multilingual contacts (family, international colleagues) don't need to change settings per message. | Low (model handles it) | Most competing apps require manual language selection, which is friction. Auto-detect should be the default; manual override is a plus-one. |
-| **Manual language selection** | Expert users who know the expected language can get faster, more accurate results by bypassing the auto-detection step. Also fixes edge cases where accent or background noise confuses the detector. | Low | Settings screen: pick from Whisper's 99 supported languages. Persist the selection. |
-| **Processing speed indicator** | Show elapsed time or an audio-length-proportional progress bar during transcription. Users tolerate waits much better when they have a sense of progress. | Low-Medium | Whisper.cpp's segment-by-segment callback API can drive a real progress indicator. Each segment emitted = a percentage of audio processed. |
+| Partial segment text appearing during inference | Words appear as Whisper produces them; strong confidence signal to user that it's working | High | Requires `new_segment_callback` + JNI upcall from inference thread to Kotlin; architecturally correct but adds threading complexity — defer to v1.2 |
+| Estimated time remaining ("~8s left") | Reduces perceived wait length | Low | Computable from `elapsedMs / (progress / 100.0)` — only worth adding once real progress is wired |
 
----
-
-## Anti-Features
-
-Features to deliberately NOT build. Each one is a trap that has broken comparable tools, adds maintenance burden disproportionate to value, or violates the core design contract.
+### Anti-Features
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| **Transcript history / saved transcripts** | Storing every voice message a user transcribes creates a database of sensitive communications on-device. If the phone is lost, shared with family, or the app is uninstalled, this data is a liability. The design principle of "your audio never leaves your device" should extend to stored transcripts. Additionally, clipboard is ephemeral by design — users who want persistence will paste to their notes app. | Let the user paste to wherever they want to keep it. Clipboard is the right ephemeral handoff. |
-| **Built-in text editor / note-taking** | Letterly, Otter.ai, and Wave all have transcript editing, formatting, and note organization. These are full products, not features. Building editing UI duplicates what Notes, Keep, and Obsidian already do — and does it worse. | Transcribe and get out. The user chose their notes app already. |
-| **AI summary / action items / rewrite** | Letterly and VoiceAI offer AI post-processing (turn transcript into email, extract action items). This requires either a cloud API (violating the no-network contract) or a second large model on-device (doubling memory requirements). Neither is acceptable for TransChat's scope. | The Whisper transcript is the output. Let users copy it to their AI tool of choice (ChatGPT, Claude, etc.) if they want post-processing. |
-| **Translation output** | Whisper can translate to English, but it requires a separate inference pass and the model's translation quality for non-English→English paths is inconsistent. More importantly, offering translation invites scope expansion into a language tool, not a transcription tool. | Transcribe in the source language. Let the user paste to Google Translate or DeepL. |
-| **Background/batch transcription** | Processing multiple voice messages in the background without user initiation requires foreground service notifications, `FOREGROUND_SERVICE` permission, and a queue management UI. This is a fundamentally different product (a voice message inbox manager). | One transcription per share intent. Sequential sharing works fine for most users. |
-| **Real-time / live microphone transcription** | This is Google Live Transcribe's domain and requires an entirely different architecture (streaming ASR, not batch file transcription). It would also require microphone permission (a privacy red flag for a privacy-focused app) and conflicts with the share-intent interaction model. | Stay in the file-transcription lane. |
-| **Cloud upload option / fallback** | "Optional" cloud processing as a fallback for slow devices sounds helpful but destroys the trust model. Users who chose TransChat for privacy won't trust an "optional" network path. | Accept that slow devices have slow transcription. Communicate this at first launch: "Processing is done on your device. Speed depends on your hardware." |
-| **Speaker identification / diarization** | Whisper small does not support diarization. Adding it requires either WhisperX (Python, not available on Android), a separate speaker model (another 50-200 MB), or an entirely different ASR pipeline. | Out of scope for MVP and likely for the foreseeable future. |
-| **Persistent notification / system tray integration** | A foreground service with a permanent notification is appropriate for music players and sync tools. For a fire-and-forget transcription tool, a persistent notification is noise that trains users to dismiss all your notifications. | Use Activity lifecycle scope (already decided in ARCHITECTURE.md). Toast on completion. Done. |
-| **Settings screen with 20+ options** | Transcription apps that expose every Whisper parameter (beam size, temperature, VAD threshold, etc.) have steep learning curves and confuse average users. | One setting: language selection (auto-detect vs manual). Possibly a quality/speed tradeoff toggle (small vs tiny model) in a later phase. |
+| Indeterminate spinner with text (current state) | Industry threshold for determinate progress is >3s; at 12-15s this is a UX failure | Determinate progress bar using real `progress_callback` |
+| Fake/timed progress simulation | Progress will stall at any fixed percentage if inference finishes early or runs late; users notice | Use actual `progress_callback` |
+| Cancel button wired only to coroutine cancellation | `whisper_full()` is a blocking native call; coroutine cancellation marks the job cancelled but native execution continues. A cancel button that does not stop the 12-15s wait is misleading | Either omit cancel button for v1.1 or implement `abort_callback` — document the limitation |
 
----
+### Callback API (HIGH confidence — verified from local `whisper.h`)
 
-## Feature Dependencies
+The `whisper_full_params` struct in `whisper.cpp/include/whisper.h` (v1.7.4, in this repo) exposes:
 
-```
-Audio format support (OGG/Opus via MediaCodec)
-  └── Share intent reception (must decode whatever WhatsApp sends)
-       └── Clipboard output (requires successful transcription)
-            └── Toast confirmation (requires clipboard write)
+```c
+// Called on each progress update — progress is an integer 0 to 100
+typedef void (*whisper_progress_callback)(
+    struct whisper_context * ctx,
+    struct whisper_state   * state,
+    int                      progress,
+    void                   * user_data
+);
+whisper_progress_callback progress_callback;
+void *                    progress_callback_user_data;
 
-Language auto-detection (Whisper built-in)
-  └── Manual language selection (user override of auto-detect)
-
-Progress indicator
-  └── Whisper.cpp segment callback (requires whisper_full with callback params)
-
-Model size in APK (244MB)
-  └── First-launch model extraction (aaptOptions noCompress)
-       └── WhisperEngine lazy singleton (don't re-extract on every transcription)
-
-Error handling states
-  └── All pipeline stages (decode error, inference error, OOM)
-       └── User-visible error toast (requires distinguishing error types)
+// Called on every newly generated text segment (n_new = segments added this call)
+typedef void (*whisper_new_segment_callback)(
+    struct whisper_context * ctx,
+    struct whisper_state   * state,
+    int                      n_new,
+    void                   * user_data
+);
+whisper_new_segment_callback new_segment_callback;
+void *                       new_segment_callback_user_data;
 ```
 
+Both fields default to `nullptr` (confirmed: current `whisper_jni.cpp` never sets them).
+
+### Implementation Path — progress_callback (recommended for v1.1)
+
+**Minimum scope:** wire `progress_callback` only. Skip `new_segment_callback` for v1.1.
+
+**C++ changes in `whisper_jni.cpp`:**
+
+```cpp
+// Struct passed through user_data to the callback
+struct ProgressCallbackData {
+    JavaVM *  jvm;
+    jobject   callbackObj;   // global ref to Kotlin ProgressCallback object
+    jmethodID onProgressId;
+};
+
+static void progress_callback_impl(
+        whisper_context *, whisper_state *, int progress, void * user_data) {
+    auto * data = static_cast<ProgressCallbackData *>(user_data);
+    JNIEnv * env = nullptr;
+    bool attached = false;
+    if (data->jvm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
+        data->jvm->AttachCurrentThread(&env, nullptr);
+        attached = true;
+    }
+    env->CallVoidMethod(data->callbackObj, data->onProgressId, (jint)progress);
+    if (attached) data->jvm->DetachCurrentThread();
+}
+```
+
+In `fullTranscribe`, add a `jobject progressCallback` JNI parameter. When non-null, populate the struct and assign:
+
+```cpp
+params.progress_callback           = progress_callback_impl;
+params.progress_callback_user_data = &callbackData;
+// callbackData is stack-allocated — safe because whisper_full() is synchronous
+```
+
+**Kotlin `WhisperLib.kt` signature change:**
+
+```kotlin
+// New functional interface — callable from C via CallVoidMethod by name "onProgress"
+fun interface ProgressCallback {
+    fun onProgress(progress: Int)
+}
+
+// Updated external fun — add nullable callback param
+external fun fullTranscribe(
+    contextPtr: Long,
+    numThreads: Int,
+    audioData: FloatArray,
+    progressCallback: ProgressCallback?
+)
+```
+
+**`WhisperContext.transcribeData()` signature change:**
+
+```kotlin
+suspend fun transcribeData(
+    data: FloatArray,
+    onProgress: ((Int) -> Unit)? = null
+): String = withContext(scope.coroutineContext) {
+    WhisperLib.fullTranscribe(
+        ptr,
+        WhisperCpuConfig.preferredThreadCount,
+        data,
+        onProgress?.let { cb -> WhisperLib.ProgressCallback { p -> cb(p) } }
+    )
+    val segmentCount = WhisperLib.getTextSegmentCount(ptr)
+    buildString {
+        for (i in 0 until segmentCount) append(WhisperLib.getTextSegment(ptr, i))
+    }.trim()
+}
+```
+
+**`UiState.Processing` change in `TranscriptionViewModel.kt`:**
+
+```kotlin
+// Before: object Processing : UiState()
+// After:
+data class Processing(val progress: Int = 0) : UiState()
+```
+
+Pass the lambda from `startTranscription()`:
+
+```kotlin
+val raw = engine.transcribe(pcm) { progress ->
+    _uiState.value = UiState.Processing(progress)
+}
+```
+
+**Complexity:** Medium. The JNI upcall pattern is well-established. Key risk: the callback fires on whisper's inference thread, not the JNI caller's thread, so `AttachCurrentThread`/`DetachCurrentThread` is required. The existing single-thread executor in `WhisperContext` means `whisper_full` always runs on a predictable non-main thread, simplifying the threading story. The `ProgressCallback` functional interface must survive R8 (see Feature Area 3).
+
+### Feature Dependencies
+
+```
+whisper_jni.cpp: fullTranscribe gains a jobject progressCallback param
+  └── WhisperLib.kt: external fun fullTranscribe gains ProgressCallback? param
+      └── WhisperContext.transcribeData gains onProgress lambda param
+          └── WhisperEngine.transcribe gains onProgress lambda param
+              └── TranscriptionViewModel: UiState.Processing(progress: Int)
+                  └── TranscriptionActivity: renders LinearProgressIndicator
+```
+
+This is a sequential chain. Any break means a regression. The UiState change is a **breaking sealed class change** — `TranscriptionActivity`'s `when` expression must be updated to match.
+
 ---
 
-## Competitor Feature Matrix
+## Feature Area 2: F-Droid Distribution
 
-| Feature | TransChat (target) | WhatsApp Native | WAVO | Letterly | Google Recorder |
-|---------|-------------------|-----------------|------|----------|-----------------|
-| On-device (no network) | YES | YES | NO (cloud) | NO (cloud) | YES (Pixel only) |
-| Share intent target | YES | NO (built-in) | YES | YES | NO |
-| No account required | YES | YES | NO | NO | YES |
-| No usage cap | YES | YES | 5 min/month free | Paid per minute | YES |
-| Multilingual auto-detect | YES (99 langs) | Limited (6 langs) | YES | YES | Limited |
-| Telegram support | YES | NO | Limited | Limited | NO |
-| Transcript history | NO (by design) | NO | YES | YES | YES |
-| AI post-processing | NO (by design) | NO | NO | YES | NO |
-| Cost | Free/open | Free | Subscription | Subscription | Free (Pixel only) |
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| FOSS LICENSE file in repo root | F-Droid hard requirement; no license = automatic rejection | Trivial | Choose MIT or Apache 2.0 — both are FOSS and compatible |
+| Public source repository (already met) | F-Droid hard requirement | None | GitHub repo already public |
+| All runtime dependencies must be FOSS | Firebase, GMS, Play Services would disqualify the app | Low | Audit `libs.versions.toml` — app already has zero network permissions, likely already compliant |
+| fastlane metadata directory in repo | F-Droid reads this to populate the store listing automatically; without it, listing is sparse | Low | Directory structure defined below |
+| fdroiddata YAML build recipe or `.fdroid.yml` | Tells F-Droid's build server the NDK version, subdir, gradle variant | Medium | NDK version must exactly match `build.gradle.kts` |
+
+**Confidence:** HIGH — from F-Droid official documentation (f-droid.org/en/docs/)
+
+### F-Droid Eligibility Check for TransChat
+
+| Criterion | Status | Action Required |
+|-----------|--------|----------------|
+| FOSS source repo | PASS | Already public on GitHub |
+| No GMS/Firebase | PASS | Zero network permissions; no Play Services |
+| FOSS build tools (Gradle, NDK, CMake) | PASS | All FOSS toolchain |
+| FOSS license file | UNKNOWN | Must add `LICENSE` file before submission |
+| No embedded pre-built `.so` binaries | PASS | whisper.cpp compiled from source via CMake |
+| Model weights not in APK | PASS | Downloaded separately to `filesDir` |
+| NDK version documented in recipe | PENDING | Must specify `26.1.10909125` in YAML |
+
+### fastlane Metadata Directory Structure
+
+Create this directory tree in the repository root. F-Droid automatically reads it when building the store entry.
+
+```
+fastlane/
+  metadata/
+    android/
+      en-US/
+        short_description.txt   # Required. Max 80 chars. No trailing period.
+        full_description.txt    # Required. Max 4000 chars.
+        title.txt               # Optional. Max 50 chars.
+        images/
+          icon.png              # Optional. 512x512 PNG
+          featureGraphic.png    # Optional. 1024x500 PNG
+          phoneScreenshots/
+            01_transcribing.png # Optional. Numbered sequentially.
+            02_result.png
+```
+
+**`short_description.txt` draft (60 chars — well under 80 limit):**
+```
+Transcribe voice messages on-device. Private. Offline.
+```
+
+**`full_description.txt` key points:**
+- Share a voice message from WhatsApp or Telegram
+- Whisper AI model runs entirely on your device — no cloud, no server, no internet
+- Supports Spanish and 98 other languages with automatic language detection
+- Zero network permissions — your audio never leaves your phone
+- Copy or share the transcript
+
+### fdroiddata Build Recipe
+
+F-Droid requires either:
+1. A `metadata/com.simonpena.transchat.yml` file submitted as a merge request to the fdroiddata GitLab repo (standard path)
+2. A `.fdroid.yml` in the app source repo root (alternative, faster for smaller projects)
+
+**Critical fields for an NDK app (from F-Droid Build Metadata Reference):**
+
+```yaml
+Categories:
+  - Multimedia
+
+License: MIT   # or Apache-2.0 — must match LICENSE file
+
+Build:
+  - versionName: '1.1'
+    versionCode: 2
+    commit: v1.1
+    subdir: app
+    gradle:
+      - release
+    ndk: 26.1.10909125   # Must match ndkVersion in build.gradle.kts EXACTLY
+```
+
+**Why exact NDK version is critical:** F-Droid's documentation states NDK builds are "much more sensitive" to reproducibility than pure Java code. Even the same NDK version across host platforms (macOS vs Ubuntu) can produce binary differences in `.so` files. Specifying the numeric form (`26.1.10909125`) rather than the shorthand (`r26`) is more precise.
+
+### Reproducible Builds
+
+Reproducible builds are **not a hard requirement** for initial F-Droid inclusion. However:
+- F-Droid's build server will attempt to build from source and compare
+- NDK-compiled `.so` files commonly embed timestamps — this creates reproducibility failures
+- For v1.1: target inclusion without full reproducibility; flag reproducible builds as a v1.2 goal
+- If reproducibility is needed later: `doNotStrip '**/*.so'` in `packagingOptions` and `-Wl,--build-id=none` in CMake link flags
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| IzzyOnDroid pre-listing | An F-Droid-compatible repo with faster review; good stepping stone before official F-Droid | Low | Submit fastlane metadata, point IzzyOnDroid at GitHub repo — no YAML recipe needed |
+| Reproducible builds (APK signature match) | F-Droid can verify developer's APK equals build server output — maximum trust signal | High | NDK reproducibility is genuinely hard; defer to post-1.1 |
+
+### Anti-Features (F-Droid perspective)
+
+| Anti-Feature | Why Avoid | Notes |
+|--------------|-----------|-------|
+| Bundling pre-built `.so` binaries | F-Droid builds from source; pre-built native libs are an automatic review flag | whisper.cpp is compiled from source via CMake — already correct |
+| Any Play Store API at runtime | F-Droid users have no Play Services; Play API calls crash | App has none — verify with dependency audit |
+| Non-FOSS license for model weights | Whisper model weights are MIT licensed — this is fine | Already compliant |
+
+### Feature Dependencies
+
+```
+F-Droid submission
+  ├── LICENSE file (new, hard gate — required before ANY submission)
+  ├── fastlane/metadata/android/en-US/ directory (new)
+  └── .fdroid.yml or fdroiddata MR (new, NDK version must be exact)
+```
+
+All three are independent of each other and independent of Feature Areas 1 and 3.
 
 ---
 
-## MVP Recommendation
+## Feature Area 3: R8/ProGuard Configuration
 
-Build in this order, stopping when you have a working product:
+### Current State Assessment
 
-**Phase 1 (Mandatory core):**
-1. Share intent reception for `audio/*` — the entry point
-2. OGG/Opus decode via MediaCodec — the format reality of WhatsApp/Telegram
-3. Whisper small inference via JNI — the core value
-4. Clipboard output + completion toast — the exit point
-5. Progress indication during transcription — the non-negotiable UX requirement
-6. Error states with user-visible messages — the difference between "broken" and "informative"
+The existing `proguard-rules.pro` (15 lines) is functional but over-broad:
 
-**Phase 2 (Differentiation, after Phase 1 ships):**
-7. Language auto-detection (already in Whisper — just expose it properly)
-8. Manual language selection setting — helps multilingual-household users
-9. Processing progress bar driven by Whisper segment callbacks — improves perceived performance
+```proguard
+# Blocks ALL R8 shrinking, renaming, optimization for the entire app package
+-keep class com.simonpena.transchat.** { *; }
+```
 
-**Defer indefinitely (anti-features):**
-- Transcript history
-- Text editor
-- AI post-processing
-- Translation
-- Background/batch processing
-- Real-time microphone transcription
+This single line prevents R8 from removing dead code, renaming classes for obfuscation, or inlining anything in the app. The `build.gradle.kts` already has `isMinifyEnabled = true` for release, but the over-broad keep negates most of its benefit.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Existing Rule |
+|---------|--------------|------------|--------------|
+| Keep JNI downcall methods (declared `native` in Kotlin) | If R8 renames these, JNI lookup fails: `UnsatisfiedLinkError` at runtime | Low | Present but can be tightened |
+| Keep `WhisperLib$Companion` class name exact | JNI mangled name `Java_com_simonpena_transchat_WhisperLib_00024Companion_*` is hardcoded in compiled C++ | Low | Present but over-broad |
+| Keep `UiState` sealed class hierarchy | StateFlow type checks on sealed subclasses fail if R8 renames them | Low | Currently kept by over-broad rule |
+| Keep ViewModel classes | ViewModels are instantiated by reflection via `ViewModelProvider.Factory` | Low | Currently kept by over-broad rule |
+
+**Confidence:** HIGH — verified against `whisper_jni.cpp` JNI naming pattern and Android official R8 documentation (Nov 2025 blog post)
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Strip `Log.d`/`Log.i` calls from release builds | Removes debug log strings from release APK — privacy improvement + slight size reduction | Low | Add after confirming core rules work |
+| R8 full mode (`android.enableR8.fullMode=true` in `gradle.properties`) | Stronger cross-class optimization | Medium | Can cause issues with Kotlin reflection patterns; test carefully on release build |
+
+### Anti-Features
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| `-keep class com.simonpena.transchat.** { *; }` (current) | Defeats all R8 shrinking for the entire app package | Replace with surgical rules below |
+| `-dontobfuscate` | Disables name mangling, makes reverse-engineering trivial | Remove if present (it is not — just don't add it) |
+| `-dontshrink` | Disables dead code removal entirely | Never add |
+| Keeping every class in the JNI layer | Only `WhisperLib$Companion` native methods and upcall targets need keeping | Use `keepclassmembers` not `keep class` |
+
+### Recommended proguard-rules.pro (full replacement)
+
+Replace the existing 15-line file with this surgical version:
+
+```proguard
+# ─── JNI Downcalls ────────────────────────────────────────────────────────────
+# proguard-android-optimize.txt already includes:
+#   -keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }
+# That handles WhisperLib$Companion's external funs. Explicit rule for safety:
+-keepclassmembers,includedescriptorclasses class com.simonpena.transchat.WhisperLib$Companion {
+    native <methods>;
+}
+
+# ─── JNI Upcalls: ProgressCallback (added in v1.1) ───────────────────────────
+# C++ calls onProgress(int) by method name via CallVoidMethod — R8 must not rename it.
+# Without this rule, first callback fires but method is renamed → NoSuchMethodError.
+-keepclassmembers interface com.simonpena.transchat.WhisperLib$ProgressCallback {
+    public abstract void onProgress(int);
+}
+
+# ─── Kotlin Sealed Class UiState ─────────────────────────────────────────────
+# StateFlow type checks on sealed subclasses require original names
+-keep class com.simonpena.transchat.UiState { *; }
+-keep class com.simonpena.transchat.UiState$* { *; }
+
+# ─── ViewModels (instantiated by reflection via ViewModelProvider) ─────────────
+-keep class com.simonpena.transchat.TranscriptionViewModel { *; }
+-keep class com.simonpena.transchat.DownloadViewModel { *; }
+
+# ─── Stack trace readability (optional but recommended) ───────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+```
+
+**What changes vs. current config:**
+
+| Scope | Current (over-broad) | Recommended (surgical) |
+|-------|---------------------|----------------------|
+| App package shrinking | None (blocked by blanket keep) | All non-JNI, non-ViewModel, non-UiState classes eligible for R8 |
+| Dead code removal | Blocked | Enabled for eligible classes |
+| Class name obfuscation | Blocked | Enabled for eligible classes |
+| JNI surface | All kept | Only native methods and upcall methods kept |
+| APK size impact | ~0 reduction | Moderate (small app; savings likely 20-100KB of Kotlin bytecode) |
+| Risk of runtime crash | Low (everything kept) | Low (all JNI surface covered by targeted rules) |
+
+### Critical Rule: ProgressCallback Upcall
+
+This rule is the v1.1 addition. The C++ `progress_callback_impl` function calls `env->CallVoidMethod(callbackObj, onProgressId, progress)` where `onProgressId` was looked up by name at JNI attach time. If R8 renames `onProgress`, the method ID lookup succeeds at attach but the renamed method does not match at invocation — resulting in a `NoSuchMethodError` on the first progress update. The `keepclassmembers interface` rule prevents this.
+
+### Feature Dependencies
+
+```
+R8 surgical rewrite
+  ├── Must be done AFTER WhisperLib.ProgressCallback interface is finalized (name must match keep rule)
+  ├── Must be tested with a release build before shipping (debug builds skip R8)
+  └── Log stripping (optional differentiator) should be added last, after all functional tests pass
+```
 
 ---
 
-## Notes on Whisper Small Quality for Voice Messages
+## Feature Area 4: UX Patterns for Transcription Progress Display
 
-Whisper small (244 MB, ~245M parameters) achieves roughly 7-9% WER on diverse multilingual benchmarks as of 2025. For voice messages specifically:
+### What Users Experience Today
 
-- **Favorable conditions:** Single speaker, near-microphone recording, conversational register — typical of voice notes. Whisper performs well here.
-- **Challenging conditions:** Background noise, multiple speakers, strong accents, domain jargon. Accuracy drops but remains useful.
-- **Known failure mode:** Hallucination on silent or near-silent audio. Whisper can generate plausible-sounding text from background noise. Mitigation: check audio duration and amplitude before inference; show a warning if input appears to be silence.
-- **Language support:** 99 languages. Quality varies significantly — English, Spanish, French, German, Portuguese, and Chinese have the most training data. Smaller-language results should be treated as "best effort."
+`UiState.Processing` renders an indeterminate spinner. For a 12-15 second operation this causes:
+- Perceived freeze ("Did the app crash?")
+- Back button taps during inference — Activity recreation → second transcription job launched
+- User uncertainty about whether the share worked at all
+
+### Table Stakes (from UX research and Material Design 3 guidelines)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Determinate `LinearProgressIndicator` (0-100%) | Material Design 3 spec: use determinate indicator when duration is known; at 12-15s, users need visible progress | Low | Single Compose component swap from current indeterminate |
+| Progress percentage text label | Reinforces determinate nature; anchors expectation at "64% — almost there" | Low | One `Text()` composable below the bar |
+| Back press handling during inference | Tapping Back currently cancels the coroutine but native call continues; at minimum, show a dialog warning ("Transcription in progress") | Low | `onBackPressedDispatcher` override |
+
+**Research basis:** Material Design 3 Progress Indicators; UX study finding 3x longer wait tolerance with determinate bars vs. spinners (University of Nebraska-Lincoln, cited in multiple UX analysis sources).
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Phase label that changes with pipeline stage | "Loading model..." → "Transcribing (45%)..." → "Done" anchors user in the 5-step pipeline | Low | Map progress value to label strings |
+| Partial segment text preview during inference | Live words appearing as Whisper produces them — strong signal that it's working | High | Requires `new_segment_callback` + additional JNI upcall + `StateFlow` update from inference thread; deferred to v1.2 |
+
+### Anti-Features (UX)
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Fake/timer-based determinism | Users notice the stall at 90%; erodes trust immediately | Use real `progress_callback` values |
+| Full-screen blocking overlay that prevents Back | Users sharing while busy need to be able to leave and return; the ViewModel survives Activity recreation | Small progress bar within the existing result screen layout |
+| Showing raw Whisper segment timestamps | Confusing to non-technical users (`[00:00:01 --> 00:00:06]`) | Already stripped by `HallucinationFilter` — keep it that way |
+| Cancel button that does not actually interrupt inference | Current `cancelInference()` cancels the coroutine but native `whisper_full()` runs to completion | Either add `abort_callback` support (out of scope v1.1) or omit the cancel button entirely |
+
+### Progress Rendering Logic
+
+```
+progress value (0-100) from progress_callback → UI state
+
+0        → Indeterminate spinner (model loading, not yet in encoder)
+1-10     → Determinate bar, label: "Transcribing..."
+11-89    → Determinate bar + percentage text, label: "Transcribing..."
+90-99    → Determinate bar, label: "Finishing..."
+100      → Immediate transition to UiState.Success / NoSpeech / Error
+          (callback fires before whisper_full() returns; Success follows)
+```
+
+**Why not show partial text in v1.1:** `new_segment_callback` fires on whisper's inference thread. The `user_data` upcall to Kotlin requires `AttachCurrentThread`. Each segment triggers a `MutableStateFlow` update from a background thread — which is thread-safe with `MutableStateFlow` but adds architectural complexity (a second JNI callback type, a second global ref, a second upcall path). The progress percentage is the right v1.1 scope. Segment preview is the right v1.2 differentiator once the callback infrastructure is proven.
+
+---
+
+## Feature Area 5: Branch Rename (master to main)
+
+### Classification
+
+Housekeeping. Not a feature. Complexity: Trivial.
+
+### Dependencies
+
+```
+Branch rename
+  ├── Check GitHub Actions workflow files for hardcoded 'master' references
+  ├── Update local git remote tracking: git branch -m master main + git push origin --delete master
+  └── No code changes required
+```
+
+---
+
+## Full v1.1 Feature Dependency Graph
+
+```
+[1] whisper_jni.cpp: progress_callback_impl + ProgressCallbackData struct
+    └── [2] WhisperLib.kt: ProgressCallback functional interface
+        └── [3] WhisperLib.kt: fullTranscribe gains ProgressCallback? param
+            └── [4] WhisperContext.transcribeData gains onProgress lambda param
+                └── [5] WhisperEngine.transcribe gains onProgress lambda param
+                    └── [6] TranscriptionViewModel: UiState.Processing(progress: Int)
+                        └── [7] TranscriptionActivity: LinearProgressIndicator
+
+[8]  LICENSE file (new) ────────────────────────── F-Droid hard gate
+[9]  fastlane/metadata/ directory (new) ─────────── F-Droid store listing
+[10] .fdroid.yml or fdroiddata MR (new) ─────────── F-Droid build recipe
+
+[11] proguard-rules.pro surgical rewrite
+     └── ProgressCallback keep rule must come AFTER [2] is finalized
+
+[12] git branch rename (independent)
+```
+
+Items [8], [9], [10], [11], [12] are independent of the callback chain [1]-[7] and of each other.
+Items [1]-[7] are a sequential chain — break any link = crash or regression.
+
+---
+
+## Build Order Recommendation
+
+1. **R8 rules rewrite** ([11]) — no new code, lowest risk; proves the release build compiles cleanly before adding JNI complexity
+2. **progress_callback C++ + Kotlin wiring** ([1]-[5]) — highest user-visible value; medium complexity
+3. **UiState.Processing(progress) + UI LinearProgressIndicator** ([6]-[7]) — completes the progress feature
+4. **LICENSE file** ([8]) — add before any F-Droid submission; 5-minute task
+5. **fastlane/metadata/** ([9]) — populate with text and screenshots
+6. **fdroiddata YAML or `.fdroid.yml`** ([10]) — submit after v1.1 is tagged and pushed
+7. **Branch rename** ([12]) — do last, after all PRs are merged
+
+**Defer to v1.2:**
+- `new_segment_callback` for partial segment text preview — high complexity, not needed for the progress win
+- Reproducible builds — NDK reproducibility is hard; acceptable to skip for initial F-Droid inclusion
+- `abort_callback` for real cancellation — out of scope for v1.1
 
 ---
 
 ## Sources
 
-- [WhatsApp Blog: Introducing Voice Message Transcripts](https://blog.whatsapp.com/introducing-voice-message-transcripts) — On-device processing, language support, privacy model (HIGH confidence)
-- [WhatsApp Help Center: Voice Message Transcripts](https://faq.whatsapp.com/241617298315321/?cms_platform=web) — Enable/disable, language selection UX (HIGH confidence)
-- [VoiceScriber: Best Offline Transcription Apps 2026](https://voicescriber.com/best-offline-transcription-apps) — Feature matrix for privacy-focused offline transcription tools (MEDIUM confidence)
-- [Whisper Notes: Stop Uploading Your Voice](https://whispernotes.app/whisper-app) — Privacy trust model, on-device architecture positioning (MEDIUM confidence)
-- [WAVO: Transcriber for WhatsApp — AppBrain](https://www.appbrain.com/app/wavo-transcriber-for-whatsapp/speechtotext.transcriber.forwhatsapp.voice.messages.to.text) — User complaints: 5 min/month free tier, subscription pricing vs Netflix comparison (MEDIUM confidence, user review source)
-- [Letterly: WhatsApp Audio to Text](https://letterly.app/blog/how-to-turn-whatsapp-messages-into-text/) — AI post-processing features, scope of competing tools (MEDIUM confidence)
-- [Riverside: Best Audio & Video Transcription Apps 2026](https://riverside.com/blog/best-audio-video-transcription-apps) — Market landscape, feature expectations across category (MEDIUM confidence)
-- [DIY AI: Can Whisper Still Win? Transcription Benchmarks 2025](https://diyai.io/ai-tools/speech-to-text/can-whisper-still-win-transcription-benchmarks/) — WER benchmarks, multilingual quality (MEDIUM confidence)
-- [Northflank: Best Open Source STT Models 2026](https://northflank.com/blog/best-open-source-speech-to-text-stt-model-in-2026-benchmarks) — Whisper accuracy vs alternatives (MEDIUM confidence)
-- [VideoSDK: Speech to Text Software for Android 2025](https://www.videosdk.live/developer-hub/stt/speech-to-text-software-for-android) — Android-specific patterns, on-device vs cloud tradeoffs (MEDIUM confidence)
-- [Whisper Notes: Offline Transcription](https://whispernotes.app/offline-transcribe) — User trust language for privacy-focused positioning (MEDIUM confidence)
+- Callback API: local file `/workspace/transchat-app/app/src/main/cpp/whisper.cpp/include/whisper.h` lines 449-564 — HIGH confidence (read directly)
+- Current JNI implementation: `/workspace/transchat-app/app/src/main/cpp/whisper_jni.cpp` — HIGH confidence (read directly)
+- Current Kotlin JNI bridge: `/workspace/transchat-app/app/src/main/java/com/simonpena/transchat/WhisperLib.kt` — HIGH confidence (read directly)
+- Current R8 config: `/workspace/transchat-app/app/proguard-rules.pro` and `app/build.gradle.kts` — HIGH confidence (read directly)
+- F-Droid Inclusion Policy: [F-Droid Inclusion How-To](https://f-droid.org/en/docs/Inclusion_How-To/) — HIGH confidence
+- F-Droid Fastlane Metadata: [All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/) — HIGH confidence
+- F-Droid Reproducible Builds: [Reproducible Builds](https://f-droid.org/en/docs/Reproducible_Builds/) — HIGH confidence (NDK sensitivity warning verified here)
+- F-Droid Build Metadata Reference: [Build Metadata Reference](https://f-droid.org/docs/Build_Metadata_Reference/) — HIGH confidence (NDK YAML field syntax)
+- R8 Keep Rules (Nov 2025 blog): [Configure and troubleshoot R8 Keep Rules](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html) — HIGH confidence
+- R8 Keep Rule Examples: [Keep rule use cases and examples](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples) — HIGH confidence
+- Progress UX: [Material Design 3 Progress Indicators](https://m3.material.io/components/progress-indicators) — HIGH confidence
+- JNI Callback threading: [JNI tips — Android NDK](https://developer.android.com/training/articles/perf-jni) — HIGH confidence
