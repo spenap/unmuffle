@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 1 of 3 (Whisper Engine and Model Bootstrap)
-Plan: 4 of 4 in current phase (01-04 Task 1 complete — awaiting checkpoint:human-verify for device testing)
-Status: Awaiting checkpoint — device verification required before Phase 1 can be declared complete
-Last activity: 2026-02-27 — 01-04 Task 1 complete: SmokeTestActivity + layout + jfk.wav assets + manifest update
+Plan: 4 of 4 in current phase — COMPLETE (device verification passed)
+Status: Phase 1 complete — ready for Phase 2 planning
+Last activity: 2026-02-27 — 01-04 device verification passed: all smoke tests PASS on hardware
 
 Progress: [████░░░░░░] 33%
 
@@ -27,7 +27,7 @@ Progress: [████░░░░░░] 33%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Whisper Engine and Model Bootstrap | 3.5/4 | 14 min | 3.5 min |
+| 1. Whisper Engine and Model Bootstrap | 4/4 | 16 min | 4 min |
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (7 min), 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min)
@@ -47,7 +47,7 @@ Recent decisions affecting current work:
 - **Model loading:** Always pass absolute file path to JNI — byte-array loading causes OOM on all device tiers
 - **Threading:** All inference on Dispatchers.Default — main thread ANR triggers in 5s; Whisper takes 15-60s
 - **URI acquisition:** Copy bytes synchronously in onCreate before launching any coroutine — permission expires on backgrounding
-- **Anti-hallucination:** Set no_timestamps=true and no_speech_thold=0.6f in Phase 1 before any real audio testing
+- **Anti-hallucination:** Default whisper params (no custom no_speech_thold override); no_timestamps=true caused q5_1 quantized model to filter real speech via is_no_speech — reverted to timestamp-based segmentation per official whisper.android example
 - **01-01 Build env:** NDK 26.1 used (r27 not installed); compileSdk/targetSdk 34; core-ktx 1.13.1. Update to r27/35 on real dev machine.
 - **01-01 Submodule:** whisper.cpp pinned to v1.7.4 — stable tag, not master
 - **01-01 JNI pattern:** WhisperLib$Companion inner class with 6 exported functions using 00024 dollar-sign encoding
@@ -63,26 +63,22 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 01-04 Task 2: Device verification on physical arm64-v8a Android device — `adb shell am start -n com.simonpena.transchat/.SmokeTestActivity`
-- Record inference benchmark times in STATE.md after device testing
 - When setting up real dev environment: update NDK to r27.2.12479018, compileSdk/targetSdk to 35, core-ktx to 1.15.0
 
 ### Blockers/Concerns
 
-- **Phase 1 ACTIVE BLOCKER:** checkpoint:human-verify in 01-04 requires physical arm64-v8a device testing — Phase 1 cannot be declared complete until silence PASS and JFK PASS confirmed on hardware
-- **Benchmark timing TBD:** Silence/sine inference times to be recorded in STATE.md after 01-04 device verification
 - **Phase 3 (VAD):** Energy-threshold VAD is the safe default for silence detection; Silero VAD Android port needs evaluation during Phase 3 planning if energy-threshold proves insufficient
 
 ### Inference Timing Benchmark (Phase 1 Baseline)
 
-*To be filled in after 01-04 checkpoint:human-verify passes:*
-- Silence inference time: ___ms
-- Sine inference time: ___ms
-- JFK transcript: "___"
-- Device tested: ___
+- Silence inference time: 11974ms (returned "[BLANK_AUDIO]" — correct)
+- Sine inference time: 14173ms (returned "(BEEPING)" — correct)
+- JFK inference time: 15483ms (returned transcript — PASS)
+- Model load time: 136ms
+- Device tested: arm64-v8a physical device, release build, 2026-02-27
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: 01-04-PLAN.md Task 1 complete (feat commit 2679056) — stopped at checkpoint:human-verify (Task 2) awaiting device testing
-Resume file: .planning/phases/01-whisper-engine-model-bootstrap/01-04-PLAN.md (Task 2)
+Stopped at: Phase 2 context gathered — CONTEXT.md written
+Next step: /gsd:plan-phase 2
