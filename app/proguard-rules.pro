@@ -1,14 +1,42 @@
-# Keep all JNI-facing native methods — R8 must not rename or strip these
--keepclassmembers class * {
-    native <methods>;
-}
--keepclasseswithmembernames class * {
-    native <methods>;
-}
+# ============================================================================
+# TransChat ProGuard/R8 Rules
+# ============================================================================
+# R8 mode: code shrinking ON, obfuscation OFF, resource shrinking ON
+# Readable class names for crash reports (open-source F-Droid app)
+# ============================================================================
 
-# Keep the entire transchat package to preserve JNI name mangling
--keep class com.simonpena.transchat.** { *; }
+# --- Global flags -----------------------------------------------------------
+-dontobfuscate
 
-# Keep WhisperLib companion object specifically
+# --- JNI bridge -------------------------------------------------------------
+# WhisperLib: C++ resolves methods by fully-qualified JNI name
+# (Java_com_simonpena_transchat_WhisperLib_00024Companion_*)
+# Both the class and Companion must survive with original names and members
 -keep class com.simonpena.transchat.WhisperLib { *; }
 -keep class com.simonpena.transchat.WhisperLib$Companion { *; }
+
+# --- Sealed class hierarchies -----------------------------------------------
+# R8 can trace these via when() expressions, but we keep them defensively.
+# Cost: negligible. Risk without: potential ClassNotFoundException at runtime.
+
+# DownloadViewModel.State and subclasses
+-keep class com.simonpena.transchat.DownloadViewModel$State { *; }
+-keep class com.simonpena.transchat.DownloadViewModel$State$* { *; }
+
+# UiState and subclasses (top-level sealed class in TranscriptionViewModel.kt)
+-keep class com.simonpena.transchat.UiState { *; }
+-keep class com.simonpena.transchat.UiState$* { *; }
+
+# AudioCopier.CopyResult and subclasses
+-keep class com.simonpena.transchat.AudioCopier$CopyResult { *; }
+-keep class com.simonpena.transchat.AudioCopier$CopyResult$* { *; }
+
+# --- Phase 5: Progress callback (uncomment when interface is added) ----------
+# -keep class com.simonpena.transchat.ProgressCallback { *; }
+
+# --- Notes -------------------------------------------------------------------
+# ViewModels: Kept automatically by lifecycle-viewmodel library consumer rules
+#   (-keep class * extends AndroidViewModel { <init>(Application); })
+# Activities: Kept automatically by R8 via AndroidManifest.xml entry points
+# Native methods: Kept by proguard-android-optimize.txt default rules
+#   (-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; })
