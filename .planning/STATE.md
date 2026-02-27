@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 1 of 3 (Whisper Engine and Model Bootstrap)
-Plan: 1 of 4 in current phase (01-01 complete)
+Plan: 2 of 4 in current phase (01-02 complete)
 Status: Executing
-Last activity: 2026-02-27 — 01-01 complete: Android scaffold + whisper.cpp NDK build + JNI bridge
+Last activity: 2026-02-27 — 01-02 complete: WhisperLib JNI bridge + WhisperEngine Kotlin API
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 7 min
-- Total execution time: 0.12 hours
+- Total plans completed: 2
+- Average duration: 4.5 min
+- Total execution time: 0.15 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Whisper Engine and Model Bootstrap | 1/4 | 7 min | 7 min |
+| 1. Whisper Engine and Model Bootstrap | 2/4 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7 min)
-- Trend: baseline established
+- Last 5 plans: 01-01 (7 min), 01-02 (2 min)
+- Trend: fast (simple Kotlin file creation, no build changes)
 
 *Updated after each plan completion*
 
@@ -51,10 +51,14 @@ Recent decisions affecting current work:
 - **01-01 Build env:** NDK 26.1 used (r27 not installed); compileSdk/targetSdk 34; core-ktx 1.13.1. Update to r27/35 on real dev machine.
 - **01-01 Submodule:** whisper.cpp pinned to v1.7.4 — stable tag, not master
 - **01-01 JNI pattern:** WhisperLib$Companion inner class with 6 exported functions using 00024 dollar-sign encoding
+- **01-02 API surface:** WhisperEngine is the sole public API (WhisperLib/WhisperContext are internal); callers never import raw JNI types
+- **01-02 Thread safety:** WhisperContext uses newSingleThreadExecutor (not Dispatchers.IO) to guarantee sequential whisper.cpp access
+- **01-02 Error contract:** loadModel returns false on failure; transcribe throws IllegalStateException if not loaded
 
 ### Pending Todos
 
-- Plans 01-02 and 01-03 are parallel (Wave 2) — both can execute independently
+- Plan 01-03 (Wave 2, parallel with 01-02 — now complete): model download flow
+- Plan 01-04 (Wave 3): SmokeTestActivity end-to-end smoke test + benchmark
 - When setting up real dev environment: update NDK to r27.2.12479018, compileSdk/targetSdk to 35, core-ktx to 1.15.0
 
 ### Blockers/Concerns
@@ -65,5 +69,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 01-01-PLAN.md — Android scaffold + whisper.cpp NDK build succeeded
-Resume file: .planning/phases/01-whisper-engine-model-bootstrap/01-02-PLAN.md
+Stopped at: Completed 01-02-PLAN.md — WhisperLib JNI bridge + WhisperEngine Kotlin API compiled in release build
+Resume file: .planning/phases/01-whisper-engine-model-bootstrap/01-03-PLAN.md
