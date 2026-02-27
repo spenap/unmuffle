@@ -17,6 +17,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
 /**
@@ -47,6 +48,8 @@ class TranscriptionActivity : AppCompatActivity() {
         val resultGroup = findViewById<LinearLayout>(R.id.result_group)
         val noSpeechGroup = findViewById<LinearLayout>(R.id.no_speech_group)
         val errorGroup = findViewById<LinearLayout>(R.id.error_group)
+        val progressSpinner = findViewById<CircularProgressIndicator>(R.id.progress_spinner)
+        val tvStatus = findViewById<TextView>(R.id.tv_status)
         val tvTranscript = findViewById<TextView>(R.id.tv_transcript)
         val tvError = findViewById<TextView>(R.id.tv_error)
         val btnCopy = findViewById<MaterialButton>(R.id.btn_copy)
@@ -74,6 +77,17 @@ class TranscriptionActivity : AppCompatActivity() {
                             resultGroup.visibility = View.GONE
                             noSpeechGroup.visibility = View.GONE
                             errorGroup.visibility = View.GONE
+
+                            if (state.progress < 0) {
+                                // Pre-inference: indeterminate spinner
+                                progressSpinner.isIndeterminate = true
+                                tvStatus.text = "Transcribing..."
+                            } else {
+                                // During inference: determinate progress
+                                progressSpinner.isIndeterminate = false
+                                progressSpinner.setProgressCompat(state.progress, true)
+                                tvStatus.text = "Transcribing... ${state.progress}%"
+                            }
                         }
                         is UiState.Success -> {
                             progressGroup.visibility = View.GONE

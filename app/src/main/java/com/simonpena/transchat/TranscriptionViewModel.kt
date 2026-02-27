@@ -21,7 +21,7 @@ private const val TAG = "TranscriptionVM"
  * Observed by [TranscriptionActivity] via [TranscriptionViewModel.uiState].
  */
 sealed class UiState {
-    object Processing : UiState()
+    data class Processing(val progress: Int = -1) : UiState()
     data class Success(val transcript: String) : UiState()
     data class NoSpeech(val message: String) : UiState()
     data class Error(val message: String) : UiState()
@@ -41,7 +41,7 @@ sealed class UiState {
  */
 class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val _uiState = MutableStateFlow<UiState>(UiState.Processing)
+    private val _uiState = MutableStateFlow<UiState>(UiState.Processing())
     val uiState: StateFlow<UiState> = _uiState
 
     private val engine = WhisperEngine()
@@ -90,7 +90,9 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
 
                 // Step 4: Transcribe via WhisperEngine
-                val raw = engine.transcribe(pcm)
+                val raw = engine.transcribe(pcm) { progress ->
+                    _uiState.value = UiState.Processing(progress)
+                }
                 Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
                 // Step 5: Filter hallucinations and non-speech markers
