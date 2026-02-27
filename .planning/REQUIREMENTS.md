@@ -21,8 +21,8 @@ Requirements for v1.1 Polish & Distribution release. Each maps to roadmap phases
 
 ### Release Quality
 
-- [ ] **REL-01**: ProGuard/R8 rules replaced with targeted keeps (JNI native methods, sealed classes)
-- [ ] **REL-02**: Release APK verified with R8 shrinking on physical device
+- [x] **REL-01**: ProGuard/R8 rules replaced with targeted keeps (JNI native methods, sealed classes)
+- [x] **REL-02**: Release APK verified with R8 shrinking on physical device
 
 ### Repository
 
@@ -68,8 +68,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DIST-02 | Phase 6 | Pending |
 | DIST-03 | Phase 6 | Pending |
 | DIST-04 | Phase 6 | Pending |
-| REL-01 | Phase 4 | Pending |
-| REL-02 | Phase 4 | Pending |
+| REL-01 | Phase 4 | Complete |
+| REL-02 | Phase 4 | Complete |
 | REPO-01 | Phase 7 | Pending |
 
 **Coverage:**

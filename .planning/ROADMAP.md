@@ -20,7 +20,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
 
 ### v1.1 Polish & Distribution
 
-- [ ] **Phase 4: R8 Release Configuration** - Replace blanket ProGuard keep with surgical R8 rules and verify release build
+- [x] **Phase 4: R8 Release Configuration** - Replace blanket ProGuard keep with surgical R8 rules and verify release build
 - [ ] **Phase 5: Transcription Progress Bar** - Wire whisper.cpp progress callback through JNI to a determinate progress indicator
 - [ ] **Phase 6: F-Droid Distribution Prep** - Add license, fastlane metadata, build recipe, and version bump for F-Droid submission
 - [ ] **Phase 7: Branch Rename** - Rename default branch from master to main with reference audit
@@ -38,7 +38,7 @@ Full details: `milestones/v1.0-ROADMAP.md`
   4. A placeholder keep rule for the future `ProgressCallback` interface is present (commented) so Phase 5 can uncomment it
 **Plans:** 1 plan
 Plans:
-- [ ] 04-01-PLAN.md — Replace blanket keep with surgical R8 rules, enable resource shrinking, verify on device
+- [x] 04-01-PLAN.md — Replace blanket keep with surgical R8 rules, enable resource shrinking, verify on device
 
 ### Phase 5: Transcription Progress Bar
 **Goal**: Users see a real 0-100% progress bar during Whisper inference instead of an indeterminate spinner
@@ -78,7 +78,7 @@ Plans:
 | 1. Whisper Engine and Model Bootstrap | v1.0 | 4/4 | Complete | 2026-02-27 |
 | 2. Share Intent and Audio Decoding | v1.0 | 2/2 | Complete | 2026-02-27 |
 | 3. End-to-End Pipeline and Output | v1.0 | 2/2 | Complete | 2026-02-27 |
-| 4. R8 Release Configuration | v1.1 | 0/1 | Not started | - |
+| 4. R8 Release Configuration | v1.1 | 1/1 | Complete | 2026-02-27 |
 | 5. Transcription Progress Bar | v1.1 | 0/? | Not started | - |
 | 6. F-Droid Distribution Prep | v1.1 | 0/? | Not started | - |
 | 7. Branch Rename | v1.1 | 0/? | Not started | - |
