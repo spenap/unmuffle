@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Whisper Engine and Model Bootstrap** - whisper.cpp compiles via NDK, model downloads on first launch, JNI transcribes test PCM
 - [x] **Phase 2: Share Intent and Audio Decoding** - App appears in share sheet, audio bytes acquired from URI, OGG/Opus decoded to 16kHz mono PCM
-- [ ] **Phase 3: End-to-End Pipeline and Output** - All components wired through ViewModel, transcript copied to clipboard, toast shown, real voice messages work
+- [x] **Phase 3: End-to-End Pipeline and Output** - All components wired through ViewModel, transcript copied to clipboard, toast shown, real voice messages work
 
 ## Phase Details
 
@@ -63,7 +63,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — HallucinationFilter + TranscriptionViewModel + TranscriptionActivity + layout + ShareReceiverActivity wiring (Wave 1)
-- [ ] 03-02-PLAN.md — Release APK build + end-to-end device verification checkpoint (Wave 2)
+- [x] 03-02-PLAN.md — Release APK build + end-to-end device verification checkpoint (Wave 2)
 
 ## Progress
 
@@ -74,4 +74,4 @@ Phases execute in strict numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | Complete | 2026-02-27 |
 | 2. Share Intent and Audio Decoding | 2/2 | Complete | 2026-02-27 |
-| 3. End-to-End Pipeline and Output | 1/2 | In Progress | - |
+| 3. End-to-End Pipeline and Output | 2/2 | Complete | 2026-02-27 |
