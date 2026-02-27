@@ -21,7 +21,20 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 
 ### Active
 
-(None — start next milestone to define v1.1 requirements)
+- [ ] Transcription progress bar with segment callbacks (replaces spinner)
+- [ ] F-Droid compatible build configuration and metadata
+- [ ] ProGuard/R8 shrinking rules for release builds
+- [ ] Repository default branch renamed from master to main
+
+## Current Milestone: v1.1 Polish & Distribution
+
+**Goal:** Add transcription progress feedback and prepare for F-Droid distribution
+
+**Target features:**
+- Segment-callback progress bar during Whisper inference
+- F-Droid metadata (fastlane structure, reproducible builds)
+- ProGuard/R8 release configuration
+- Branch rename (master → main)
 
 ### Out of Scope
 
@@ -62,5 +75,7 @@ Inference takes 12-15s on arm64-v8a test device (release build).
 | newSingleThreadExecutor for whisper.cpp | Guarantees sequential access to non-thread-safe native code | Good — no race conditions |
 | Linear interpolation resampler | Handles any input rate (48kHz, 44.1kHz) with single code path | Good — simple and universal |
 
+| F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | — Pending |
+
 ---
-*Last updated: 2026-02-27 after v1.0 milestone*
+*Last updated: 2026-02-27 after v1.1 milestone start*

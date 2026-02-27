@@ -5,15 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** v1.0 MVP shipped — planning next milestone
+**Current focus:** v1.1 Polish & Distribution — defining requirements
 
 ## Current Position
 
-Milestone: v1.0 MVP — SHIPPED
-Status: All phases complete, milestone archived
-Last activity: 2026-02-27 — v1.0 milestone completion and archival
+Milestone: v1.1 Polish & Distribution
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-27 — Milestone v1.1 started
 
-Progress: [##########] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -57,5 +59,5 @@ None — v1.0 shipped successfully.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: v1.0 milestone archived
-Next step: /gsd:new-milestone (when ready for v1.1)
+Stopped at: v1.1 milestone started — defining requirements
+Next step: Define requirements → create roadmap → /gsd:plan-phase 4
