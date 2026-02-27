@@ -60,10 +60,11 @@ class WhisperEngine {
     /**
      * Transcribe [audioData] (16kHz mono float32 PCM) and return the transcript string.
      *
+     * @param onProgress Called with 0-100 progress values during inference. Default no-op.
      * @throws IllegalStateException if [loadModel] has not been called successfully
      * @return Transcript text, or empty string if no speech detected (no_speech_thold applied)
      */
-    suspend fun transcribe(audioData: FloatArray): String {
+    suspend fun transcribe(audioData: FloatArray, onProgress: (Int) -> Unit = {}): String {
         val ctx = whisperContext
             ?: throw IllegalStateException("Model not loaded — call loadModel() first")
 
@@ -71,7 +72,7 @@ class WhisperEngine {
         Log.i(TAG, "Starting transcription of ${audioData.size} samples (${audioData.size / 16000.0f}s)")
 
         return withContext(Dispatchers.Default) {
-            val result = ctx.transcribeData(audioData)
+            val result = ctx.transcribeData(audioData, onProgress)
             val durationMs = System.currentTimeMillis() - startMs
             Log.i(TAG, "Transcription complete in ${durationMs}ms, result: '${result.take(80)}'")
             result

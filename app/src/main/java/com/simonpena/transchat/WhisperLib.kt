@@ -1,7 +1,11 @@
 package com.simonpena.transchat
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
@@ -48,6 +52,7 @@ internal class WhisperLib {
         external fun getTextSegment(contextPtr: Long, index: Int): String
         external fun freeContext(contextPtr: Long)
         external fun getSystemInfo(): String
+        external fun getProgress(): Int
     }
 }
 
@@ -66,9 +71,28 @@ internal class WhisperContext private constructor(private var ptr: Long) {
     /**
      * Transcribes [data] (16kHz mono float32 PCM) and returns concatenated segment text.
      * This function suspends on the single-thread executor — it does NOT run on the caller's thread.
+     *
+     * @param onProgress Called with 0-100 progress values during inference. Invoked on
+     *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
      */
-    suspend fun transcribeData(data: FloatArray): String = withContext(scope.coroutineContext) {
-        WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data)
+    suspend fun transcribeData(
+        data: FloatArray,
+        onProgress: (Int) -> Unit = {}
+    ): String = withContext(scope.coroutineContext) {
+        // Poller runs on Default, NOT the single-thread executor (which is blocked by fullTranscribe)
+        val pollerJob = launch(Dispatchers.Default) {
+            while (isActive) {
+                val p = WhisperLib.getProgress()
+                onProgress(p)
+                delay(200)
+            }
+        }
+        try {
+            WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data)
+        } finally {
+            pollerJob.cancel()
+        }
+        onProgress(100) // Ensure 100% is reported before collecting segments
         val segmentCount = WhisperLib.getTextSegmentCount(ptr)
         buildString {
             for (i in 0 until segmentCount) {
