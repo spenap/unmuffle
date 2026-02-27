@@ -29,10 +29,15 @@ object ModelManager {
 
     const val MODEL_SIZE_BYTES = 199_819_264L  // ~190 MB
 
-    /** Absolute path to the model file in private storage. */
+    /**
+     * Absolute path to the model file in app-private external storage.
+     * Uses getExternalFilesDir so DownloadManager (a separate system process)
+     * can write to it. Still app-private and deleted on uninstall.
+     */
     fun modelFile(context: Context): File {
-        val modelsDir = File(context.filesDir, "models")
-        modelsDir.mkdirs()  // creates directory if it does not exist; filesDir always exists
+        val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+        val modelsDir = File(baseDir, "models")
+        modelsDir.mkdirs()
         return File(modelsDir, MODEL_FILENAME)
     }
 

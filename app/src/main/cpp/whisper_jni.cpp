@@ -36,21 +36,22 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
 
     struct whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.n_threads        = numThreads;
+    params.print_realtime   = false;
     params.print_progress   = false;
     params.print_timestamps = false;
+    params.print_special    = false;
+    params.translate        = false;
     params.no_context       = true;          // each clip is independent
-    params.no_timestamps    = true;          // prevents hallucination amplification (Issue #1724)
-    params.no_speech_thold  = 0.6f;         // discard near-silent segments
-    params.max_tokens       = 224;           // cap repetition loops
-    params.language         = nullptr;       // auto-detect (multilingual)
-    params.detect_language  = true;
-    params.temperature      = 0.0f;         // greedy decoding
-    params.temperature_inc  = 0.2f;         // fallback increment
+    params.single_segment   = false;         // let whisper segment naturally via timestamps
+    params.language         = "auto";        // auto-detect (multilingual model)
 
     LOGI("Starting transcription with %d threads on %d samples", numThreads, (int)audioDataLength);
-    whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
+    int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
     env->ReleaseFloatArrayElements(audioData, audioDataArr, JNI_ABORT);
-    LOGI("Transcription complete, segments: %d", whisper_full_n_segments(ctx));
+    if (ret != 0) {
+        LOGE("whisper_full failed with code %d", ret);
+    }
+    LOGI("Transcription complete, ret=%d segments=%d", ret, whisper_full_n_segments(ctx));
 }
 
 JNIEXPORT jint JNICALL

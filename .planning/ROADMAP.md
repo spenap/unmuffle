@@ -12,7 +12,7 @@ TransChat is a headless Android share target that transcribes voice messages on-
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Whisper Engine and Model Bootstrap** - whisper.cpp compiles via NDK, model downloads on first launch, JNI transcribes test PCM
+- [x] **Phase 1: Whisper Engine and Model Bootstrap** - whisper.cpp compiles via NDK, model downloads on first launch, JNI transcribes test PCM
 - [ ] **Phase 2: Share Intent and Audio Decoding** - App appears in share sheet, audio bytes acquired from URI, OGG/Opus decoded to 16kHz mono PCM
 - [ ] **Phase 3: End-to-End Pipeline and Output** - All components wired through ViewModel, transcript copied to clipboard, toast shown, real voice messages work
 
@@ -33,7 +33,7 @@ Plans:
 - [x] 01-01-PLAN.md — Android project scaffold + whisper.cpp submodule + CMake native build + JNI C++ bridge (Wave 1)
 - [x] 01-02-PLAN.md — WhisperEngine Kotlin API + WhisperLib JNI declarations + WhisperCpuConfig (Wave 2, parallel with 01-03)
 - [x] 01-03-PLAN.md — Model download flow: DownloadActivity, ViewModel, ModelManager, ReadyActivity (Wave 2, parallel with 01-02)
-- [~] 01-04-PLAN.md — SmokeTestActivity: end-to-end validation + release build benchmark (Wave 3) [Task 1 done, Task 2 awaiting device checkpoint]
+- [x] 01-04-PLAN.md — SmokeTestActivity: end-to-end validation + release build benchmark (Wave 3)
 
 ### Phase 2: Share Intent and Audio Decoding
 **Goal**: Users can share a WhatsApp or Telegram voice message to TransChat; the app acquires the audio bytes before URI permission expires and decodes them to PCM ready for Whisper
@@ -64,6 +64,6 @@ Phases execute in strict numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Whisper Engine and Model Bootstrap | 3.5/4 | Awaiting checkpoint (01-04 device verify) | - |
+| 1. Whisper Engine and Model Bootstrap | 4/4 | Complete | 2026-02-27 |
 | 2. Share Intent and Audio Decoding | 0/? | Not started | - |
 | 3. End-to-End Pipeline and Output | 0/? | Not started | - |

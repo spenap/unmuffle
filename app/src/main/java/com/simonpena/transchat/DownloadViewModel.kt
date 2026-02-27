@@ -67,7 +67,7 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         val request = DownloadManager.Request(Uri.parse(ModelManager.MODEL_URL))
             .setTitle("TransChat — Whisper Model")
             .setDescription("Downloading transcription model (190 MB)...")
-            .setDestinationUri(Uri.fromFile(destFile))
+            .setDestinationInExternalFilesDir(context, null, "models/${ModelManager.MODEL_FILENAME}")
             .setAllowedNetworkTypes(networkTypes)
             .setNotificationVisibility(
                 DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
