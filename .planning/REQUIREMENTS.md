@@ -15,7 +15,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Transcription
 
-- [ ] **TRANS-01**: Audio decoded from OGG/Opus to 16kHz mono PCM using platform MediaCodec
+- [x] **TRANS-01**: Audio decoded from OGG/Opus to 16kHz mono PCM using platform MediaCodec
 - [x] **TRANS-02**: Whisper small multilingual model transcribes audio on-device via whisper.cpp JNI
 - [x] **TRANS-03**: Transcription runs off main thread (no ANR)
 - [x] **TRANS-04**: Anti-hallucination params set (no_timestamps=true, no_speech_thold=0.6)
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SHARE-01 | Phase 2 | Complete (02-01) |
 | SHARE-02 | Phase 2 | Complete (02-01) |
 | SHARE-03 | Phase 2 | Complete (02-01) |
-| TRANS-01 | Phase 2 | Pending |
+| TRANS-01 | Phase 2 | Complete (02-02) |
 | TRANS-02 | Phase 3 | Complete (03-01) |
 | TRANS-03 | Phase 3 | Complete (03-01) |
 | TRANS-04 | Phase 3 | Complete (03-01) |
