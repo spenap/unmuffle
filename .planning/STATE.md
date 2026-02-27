@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 1 of 3 (Whisper Engine and Model Bootstrap)
-Plan: 2 of 4 in current phase (01-02 complete)
+Plan: 3 of 4 in current phase (01-03 complete)
 Status: Executing
-Last activity: 2026-02-27 — 01-02 complete: WhisperLib JNI bridge + WhisperEngine Kotlin API
+Last activity: 2026-02-27 — 01-03 complete: Model download flow — ModelManager, DownloadViewModel, DownloadActivity, MainActivity, ReadyActivity
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 4.5 min
-- Total execution time: 0.15 hours
+- Total plans completed: 3
+- Average duration: 4 min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Whisper Engine and Model Bootstrap | 2/4 | 9 min | 4.5 min |
+| 1. Whisper Engine and Model Bootstrap | 3/4 | 12 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7 min), 01-02 (2 min)
-- Trend: fast (simple Kotlin file creation, no build changes)
+- Last 5 plans: 01-01 (7 min), 01-02 (2 min), 01-03 (3 min)
+- Trend: fast (Kotlin Activity/ViewModel/layout files, no native build changes)
 
 *Updated after each plan completion*
 
@@ -54,10 +54,12 @@ Recent decisions affecting current work:
 - **01-02 API surface:** WhisperEngine is the sole public API (WhisperLib/WhisperContext are internal); callers never import raw JNI types
 - **01-02 Thread safety:** WhisperContext uses newSingleThreadExecutor (not Dispatchers.IO) to guarantee sequential whisper.cpp access
 - **01-02 Error contract:** loadModel returns false on failure; transcribe throws IllegalStateException if not loaded
+- **01-03 Launch routing:** isModelPresentFast (file.exists() && size > 0) used in MainActivity — avoids 2-3s SHA256 on every launch; full SHA256 only after download
+- **01-03 DownloadManager pattern:** DownloadManager.enqueue() + 500ms coroutine polling loop — no BroadcastReceiver needed
+- **01-03 Network gating:** WiFi-only by default; cellular requires user AlertDialog confirmation (allowCellular flag)
 
 ### Pending Todos
 
-- Plan 01-03 (Wave 2, parallel with 01-02 — now complete): model download flow
 - Plan 01-04 (Wave 3): SmokeTestActivity end-to-end smoke test + benchmark
 - When setting up real dev environment: update NDK to r27.2.12479018, compileSdk/targetSdk to 35, core-ktx to 1.15.0
 
@@ -69,5 +71,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 01-02-PLAN.md — WhisperLib JNI bridge + WhisperEngine Kotlin API compiled in release build
-Resume file: .planning/phases/01-whisper-engine-model-bootstrap/01-03-PLAN.md
+Stopped at: Completed 01-03-PLAN.md — Model download flow: ModelManager + DownloadViewModel + Activities + layouts + manifest
+Resume file: .planning/phases/01-whisper-engine-model-bootstrap/01-04-PLAN.md

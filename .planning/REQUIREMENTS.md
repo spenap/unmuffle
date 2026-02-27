@@ -28,8 +28,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Model Management
 
 - [x] **MODEL-01**: Whisper small model (ggml-small-q5_1.bin, ~190MB) downloaded on first launch
-- [ ] **MODEL-02**: Download progress shown to user
-- [ ] **MODEL-03**: Model stored in app private storage (filesDir)
+- [x] **MODEL-02**: Download progress shown to user
+- [x] **MODEL-03**: Model stored in app private storage (filesDir)
 
 ## v2 Requirements
 
@@ -76,8 +76,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | MODEL-01 | Phase 1 | Complete (01-01) |
-| MODEL-02 | Phase 1 | Pending |
-| MODEL-03 | Phase 1 | Pending |
+| MODEL-02 | Phase 1 | Complete (01-03) |
+| MODEL-03 | Phase 1 | Complete (01-03) |
 | SHARE-01 | Phase 2 | Pending |
 | SHARE-02 | Phase 2 | Pending |
 | SHARE-03 | Phase 2 | Pending |
@@ -95,4 +95,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after 01-01 completion — MODEL-01 marked complete*
+*Last updated: 2026-02-27 after 01-03 completion — MODEL-02, MODEL-03 marked complete*
