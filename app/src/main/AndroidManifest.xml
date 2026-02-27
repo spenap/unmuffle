@@ -31,6 +31,12 @@
             android:name=".ReadyActivity"
             android:exported="false" />
 
+        <!-- Phase 1 smoke test — developer tool, accessed via adb or temporary launcher swap -->
+        <activity
+            android:name=".SmokeTestActivity"
+            android:exported="true"
+            android:label="TransChat Smoke Test" />
+
     </application>
 
 </manifest>
