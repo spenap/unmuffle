@@ -27,7 +27,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. After download, `WhisperEngine.transcribe(FloatArray)` returns a non-empty Spanish transcript when given known-good test PCM data
   3. Model loads from file path (not byte array) — verified by no OOM crash on a 4GB RAM device
   4. A release-build benchmark exists: inference time on target hardware is measured and recorded
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Android project scaffold + whisper.cpp submodule + CMake native build + JNI C++ bridge (Wave 1)
+- [ ] 01-02-PLAN.md — WhisperEngine Kotlin API + WhisperLib JNI declarations + WhisperCpuConfig (Wave 2, parallel with 01-03)
+- [ ] 01-03-PLAN.md — Model download flow: DownloadActivity, ViewModel, ModelManager, ReadyActivity (Wave 2, parallel with 01-02)
+- [ ] 01-04-PLAN.md — SmokeTestActivity: end-to-end validation + release build benchmark (Wave 3)
 
 ### Phase 2: Share Intent and Audio Decoding
 **Goal**: Users can share a WhatsApp or Telegram voice message to TransChat; the app acquires the audio bytes before URI permission expires and decodes them to PCM ready for Whisper
@@ -58,6 +64,6 @@ Phases execute in strict numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Whisper Engine and Model Bootstrap | 0/? | Not started | - |
+| 1. Whisper Engine and Model Bootstrap | 0/4 | Ready to execute | - |
 | 2. Share Intent and Audio Decoding | 0/? | Not started | - |
 | 3. End-to-End Pipeline and Output | 0/? | Not started | - |
