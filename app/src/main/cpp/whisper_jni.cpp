@@ -1,11 +1,31 @@
 #include <jni.h>
 #include <string>
+#include <atomic>
 #include <android/log.h>
 #include "whisper.cpp/include/whisper.h"
 
 #define LOG_TAG "WhisperJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+struct ProgressState {
+    std::atomic<int> progress{0};
+};
+
+// File-scoped — safe because WhisperContext serializes all access
+// through its single-thread executor. If multiple contexts are ever
+// needed, allocate per-context and pass via user_data.
+static ProgressState g_progress_state;
+
+static void whisper_progress_cb(
+    struct whisper_context* /*ctx*/,
+    struct whisper_state*   /*state*/,
+    int progress,
+    void* user_data)
+{
+    auto* ps = static_cast<ProgressState*>(user_data);
+    ps->progress.store(progress, std::memory_order_relaxed);
+}
 
 extern "C" {
 
@@ -45,6 +65,11 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
     params.single_segment   = false;         // let whisper segment naturally via timestamps
     params.language         = "auto";        // auto-detect (multilingual model)
 
+    // Reset and register progress callback
+    g_progress_state.progress.store(0, std::memory_order_relaxed);
+    params.progress_callback           = whisper_progress_cb;
+    params.progress_callback_user_data = &g_progress_state;
+
     LOGI("Starting transcription with %d threads on %d samples", numThreads, (int)audioDataLength);
     int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
     env->ReleaseFloatArrayElements(audioData, audioDataArr, JNI_ABORT);
@@ -81,6 +106,12 @@ JNIEXPORT jstring JNICALL
 Java_com_simonpena_transchat_WhisperLib_00024Companion_getSystemInfo(
         JNIEnv *env, jobject /* thiz */) {
     return env->NewStringUTF(whisper_print_system_info());
+}
+
+JNIEXPORT jint JNICALL
+Java_com_simonpena_transchat_WhisperLib_00024Companion_getProgress(
+        JNIEnv* /*env*/, jobject /*thiz*/) {
+    return g_progress_state.progress.load(std::memory_order_relaxed);
 }
 
 } // extern "C"
