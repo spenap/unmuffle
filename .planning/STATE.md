@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** Phase 1 — Whisper Engine and Model Bootstrap
+**Current focus:** Phase 2 — Share Intent and Audio Decoding
 
 ## Current Position
 
-Phase: 1 of 3 (Whisper Engine and Model Bootstrap)
-Plan: 4 of 4 in current phase — COMPLETE (device verification passed)
-Status: Phase 1 complete — ready for Phase 2 planning
-Last activity: 2026-02-27 — 01-04 device verification passed: all smoke tests PASS on hardware
+Phase: 2 of 3 (Share Intent and Audio Decoding)
+Plan: 1 of 2 in current phase — COMPLETE
+Status: 02-01 complete — ShareReceiverActivity + AudioCopier + manifest intent-filters
+Last activity: 2026-02-27 — 02-01 share target and audio copier implemented
 
-Progress: [████░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 4 min
-- Total execution time: 0.2 hours
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | 16 min | 4 min |
+| 2. Share Intent and Audio Decoding | 1/2 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7 min), 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min)
-- Trend: fast (Kotlin Activity/layout files, no native build changes)
+- Last 5 plans: 01-01 (7 min), 01-02 (2 min), 01-03 (3 min), 01-04 Task 1 (2 min), 02-01 (3 min)
+- Trend: fast (Kotlin Activity + manifest, no native build changes)
 
 *Updated after each plan completion*
 
@@ -60,6 +61,8 @@ Recent decisions affecting current work:
 - **01-04 Smoke test exported:** SmokeTestActivity exported=true for adb launch without launcher swap — developer tool hidden from end users
 - **01-04 jfk.wav in assets:** 344KB WAV bundled in assets (not runtime download) — eliminates network dependency for smoke test; JFK test uses try/catch SKIP fallback for robustness
 - **01-04 Inference benchmark:** Record silence/sine inference times from SmokeTestActivity in STATE.md before Phase 2 begins — establishes UX copy baseline for speed claims
+- **02-01 KDoc comment pitfall:** Avoid literal `audio/*` in KDoc block comments — Kotlin lexer treats `/*` as nested comment opener, causing unclosed comment error
+- **02-01 Sealed result pattern:** AudioCopier.CopyResult with Success/TooLarge/NoContent/CopyFailed — exhaustive when-match in ShareReceiverActivity
 
 ### Pending Todos
 
@@ -80,5 +83,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Phase 2 context gathered — CONTEXT.md written
-Next step: /gsd:plan-phase 2
+Stopped at: Completed 02-01-PLAN.md
+Next step: Execute 02-02-PLAN.md (AudioDecoder + PcmResampler + WavWriter)

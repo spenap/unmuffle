@@ -47,7 +47,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — ShareReceiverActivity + AudioCopier + manifest intent-filters (Wave 1)
+- [x] 02-01-PLAN.md — ShareReceiverActivity + AudioCopier + manifest intent-filters (Wave 1)
 - [ ] 02-02-PLAN.md — AudioDecoder + PcmResampler + WavWriter + device verification (Wave 2)
 
 ### Phase 3: End-to-End Pipeline and Output
@@ -69,5 +69,5 @@ Phases execute in strict numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Whisper Engine and Model Bootstrap | 4/4 | Complete | 2026-02-27 |
-| 2. Share Intent and Audio Decoding | 0/2 | In progress | - |
+| 2. Share Intent and Audio Decoding | 1/2 | In progress | - |
 | 3. End-to-End Pipeline and Output | 0/? | Not started | - |

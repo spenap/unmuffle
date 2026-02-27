@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Share Intent
 
-- [ ] **SHARE-01**: App appears in Android share sheet when user shares audio from WhatsApp/Telegram
-- [ ] **SHARE-02**: App accepts `audio/*` and `application/octet-stream` MIME types
-- [ ] **SHARE-03**: Audio bytes copied from content URI to private storage before processing
+- [x] **SHARE-01**: App appears in Android share sheet when user shares audio from WhatsApp/Telegram
+- [x] **SHARE-02**: App accepts `audio/*` and `application/octet-stream` MIME types
+- [x] **SHARE-03**: Audio bytes copied from content URI to private storage before processing
 
 ### Transcription
 
@@ -78,9 +78,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MODEL-01 | Phase 1 | Complete (01-01) |
 | MODEL-02 | Phase 1 | Complete (01-03) |
 | MODEL-03 | Phase 1 | Complete (01-03) |
-| SHARE-01 | Phase 2 | Pending |
-| SHARE-02 | Phase 2 | Pending |
-| SHARE-03 | Phase 2 | Pending |
+| SHARE-01 | Phase 2 | Complete (02-01) |
+| SHARE-02 | Phase 2 | Complete (02-01) |
+| SHARE-03 | Phase 2 | Complete (02-01) |
 | TRANS-01 | Phase 2 | Pending |
 | TRANS-02 | Phase 3 | Pending |
 | TRANS-03 | Phase 3 | Pending |
@@ -95,4 +95,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after 01-03 completion — MODEL-02, MODEL-03 marked complete*
+*Last updated: 2026-02-27 after 02-01 completion — SHARE-01, SHARE-02, SHARE-03 marked complete*
