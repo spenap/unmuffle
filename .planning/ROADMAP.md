@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Android project scaffold + whisper.cpp submodule + CMake native build + JNI C++ bridge (Wave 1)
+- [x] 01-01-PLAN.md — Android project scaffold + whisper.cpp submodule + CMake native build + JNI C++ bridge (Wave 1)
 - [ ] 01-02-PLAN.md — WhisperEngine Kotlin API + WhisperLib JNI declarations + WhisperCpuConfig (Wave 2, parallel with 01-03)
 - [ ] 01-03-PLAN.md — Model download flow: DownloadActivity, ViewModel, ModelManager, ReadyActivity (Wave 2, parallel with 01-02)
 - [ ] 01-04-PLAN.md — SmokeTestActivity: end-to-end validation + release build benchmark (Wave 3)
@@ -64,6 +64,6 @@ Phases execute in strict numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Whisper Engine and Model Bootstrap | 0/4 | Ready to execute | - |
+| 1. Whisper Engine and Model Bootstrap | 1/4 | Executing | - |
 | 2. Share Intent and Audio Decoding | 0/? | Not started | - |
 | 3. End-to-End Pipeline and Output | 0/? | Not started | - |
