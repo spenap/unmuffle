@@ -32,6 +32,28 @@
             android:name=".ReadyActivity"
             android:exported="false" />
 
+        <!-- Share target: transparent, no UI, receives audio shares -->
+        <activity
+            android:name=".ShareReceiverActivity"
+            android:exported="true"
+            android:label="TransChat"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+
+            <!-- Intent filter 1: standard audio MIME types (WhatsApp, most apps) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+            <!-- Intent filter 2: octet-stream (Telegram voice messages) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+
         <!-- Phase 1 smoke test — developer tool, accessed via adb or temporary launcher swap -->
         <activity
             android:name=".SmokeTestActivity"
