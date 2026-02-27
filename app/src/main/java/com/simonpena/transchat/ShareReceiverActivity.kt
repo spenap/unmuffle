@@ -3,14 +3,8 @@ package com.simonpena.transchat
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Transparent share target that receives audio files from other apps.
@@ -22,10 +16,12 @@ import java.io.File
  * All byte acquisition happens synchronously in onCreate before any coroutine
  * launch, because the content URI permission expires when the sending app is
  * backgrounded.
+ *
+ * After copying the audio to cache, this activity launches [TranscriptionActivity]
+ * with the cached file path and finishes immediately. The [TranscriptionViewModel]
+ * owns the cached file and cleans it up in onCleared().
  */
 class ShareReceiverActivity : AppCompatActivity() {
-
-    private var cachedAudioFile: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,80 +73,17 @@ class ShareReceiverActivity : AppCompatActivity() {
                 return
             }
             is AudioCopier.CopyResult.Success -> {
-                cachedAudioFile = result.file
+                // Launch TranscriptionActivity with cached file path
+                val transcriptionIntent = Intent(this, TranscriptionActivity::class.java)
+                transcriptionIntent.putExtra(
+                    TranscriptionActivity.EXTRA_AUDIO_PATH,
+                    result.file.absolutePath
+                )
+                startActivity(transcriptionIntent)
+                finish()
+                return
             }
         }
-
-        Log.i(TAG, "Audio cached: ${cachedAudioFile!!.absolutePath} (${cachedAudioFile!!.length()} bytes)")
-
-        // Launch decode coroutine on background thread
-        lifecycleScope.launch {
-            val result = withContext(Dispatchers.Default) {
-                decodeToWhisperPcm(cachedAudioFile!!)
-            }
-            if (result == null) {
-                Toast.makeText(this@ShareReceiverActivity, "Could not process this file.", Toast.LENGTH_SHORT).show()
-            } else {
-                val durationSec = result.size / 16000f
-                Log.i(TAG, "Decode complete: ${result.size} samples (${durationSec}s) at 16kHz mono float32")
-                // Phase 3 will pass 'result' to WhisperEngine.transcribe() here
-                Toast.makeText(
-                    this@ShareReceiverActivity,
-                    "Audio decoded (${String.format("%.1f", durationSec)}s)",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            finish()
-        }
-    }
-
-    /**
-     * Decode compressed audio to 16kHz mono float32 PCM for Whisper.
-     *
-     * Pipeline: MediaCodec decode -> verification WAV at native rate ->
-     * resample to 16kHz mono float32 -> verification WAV at 16kHz.
-     *
-     * @return FloatArray ready for WhisperEngine.transcribe(), or null on failure.
-     */
-    private fun decodeToWhisperPcm(audioFile: File): FloatArray? {
-        // Step 1: Decode compressed audio to raw PCM
-        val decoded = AudioDecoder.decode(audioFile.absolutePath)
-        if (decoded == null) {
-            Log.e(TAG, "AudioDecoder.decode failed for ${audioFile.name}")
-            return null
-        }
-        Log.i(TAG, "Decoded: ${decoded.samples.size} samples, ${decoded.sampleRate}Hz, ${decoded.channels}ch")
-
-        // Step 2: Write verification WAV BEFORE resampling (original decoded rate)
-        // This WAV can be adb-pulled and played on a computer to verify decode quality
-        val wavFile = File(cacheDir, "audio/verify_${System.currentTimeMillis()}.wav")
-        WavWriter.write(wavFile, decoded.samples, decoded.sampleRate, decoded.channels)
-        Log.i(TAG, "Verification WAV written: ${wavFile.absolutePath} (${wavFile.length() / 1024}KB)")
-
-        // Step 3: Resample to 16kHz mono float32 (Whisper input format)
-        val pcm = PcmResampler.toWhisperFormat(decoded)
-        if (pcm == null) {
-            Log.e(TAG, "PcmResampler.toWhisperFormat returned null")
-            return null
-        }
-
-        // Step 4: Write a second verification WAV at 16kHz for Whisper-ready verification
-        val resampled16 = ShortArray(pcm.size) { (pcm[it] * 32768f).toInt().coerceIn(-32768, 32767).toShort() }
-        val wavFile16 = File(cacheDir, "audio/verify_16khz_${System.currentTimeMillis()}.wav")
-        WavWriter.write(wavFile16, resampled16, 16000, 1)
-        Log.i(TAG, "16kHz verification WAV: ${wavFile16.absolutePath} (${wavFile16.length() / 1024}KB)")
-
-        return pcm
-    }
-
-    override fun onDestroy() {
-        cachedAudioFile?.let { file ->
-            if (file.exists()) {
-                val deleted = file.delete()
-                Log.i(TAG, "Cached audio file deleted: $deleted (${file.absolutePath})")
-            }
-        }
-        super.onDestroy()
     }
 
     companion object {

@@ -15,7 +15,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@style/Theme.TransChat.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,7 +37,7 @@
             android:name=".ShareReceiverActivity"
             android:exported="true"
             android:label="TransChat"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@style/Theme.TransChat.Transparent">
 
             <!-- Intent filter 1: standard audio MIME types (WhatsApp, most apps) -->
             <intent-filter>
@@ -53,6 +53,12 @@
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
+
+        <!-- Transcription progress and result screen -->
+        <activity
+            android:name=".TranscriptionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TransChat" />
 
         <!-- Phase 1 smoke test — developer tool, accessed via adb or temporary launcher swap -->
         <activity
