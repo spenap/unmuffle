@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Polish & Distribution
-status: completed
-last_updated: "2026-02-28T16:30:00.000Z"
+milestone: v1.2
+milestone_name: GitHub Readiness
+status: active
+last_updated: "2026-02-28T00:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,15 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** Planning next milestone (v1.2)
+**Current focus:** v1.2 GitHub Readiness — defining requirements
 
 ## Current Position
 
-Milestone: v1.1 Polish & Distribution — COMPLETE
-All phases resolved: 4+5 executed, 7 manual, 6 deferred
-Last activity: 2026-02-28 — Milestone v1.1 closed
-
-Progress: [##########] 100% (v1.1 complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-28 — Milestone v1.2 started
 
 ## Performance Metrics
 

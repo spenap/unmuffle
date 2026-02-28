@@ -25,9 +25,11 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 ### Active
 
 - [ ] MIT LICENSE file at repository root
-- [ ] README with project description, build instructions, screenshots
-- [ ] CI pipeline (GitHub Actions for build verification)
-- [ ] F-Droid compatible build configuration and metadata
+- [ ] README.md with project description, build instructions, 5 screenshots
+- [ ] GitHub Actions CI (debug + release build, lint, APK artifacts)
+- [ ] CI-only release signing via GitHub Actions secrets
+- [ ] whisper.cpp submodule upgrade v1.7.4 → v1.8.3
+- [ ] Dependency upgrades (compileSdk/targetSdk 35, NDK r27.2, core-ktx 1.15.0)
 
 ### Out of Scope
 
@@ -38,6 +40,17 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 - Speaker diarization — not supported by Whisper small
 - iOS version — Android only
 - AI post-processing (summary, action items) — requires cloud API or second large model
+
+## Current Milestone: v1.2 GitHub Readiness
+
+**Goal:** Make the repo open-source ready (LICENSE, README, CI) and prepare for distribution with proper signing and updated dependencies.
+
+**Target features:**
+- MIT LICENSE + README with build instructions and 5 screenshots
+- GitHub Actions CI (debug + release build, lint, APK upload)
+- CI-only release signing (GitHub Actions secrets)
+- whisper.cpp v1.7.4 → v1.8.3
+- compileSdk/targetSdk 34 → 35, NDK r26 → r27.2, core-ktx 1.13.1 → 1.15.0
 
 ## Context
 
@@ -73,4 +86,4 @@ User feedback: "Better than the built-in WhatsApp transcript feature."
 | F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | Pending — deferred to after GitHub readiness |
 
 ---
-*Last updated: 2026-02-28 after v1.1 milestone completion*
+*Last updated: 2026-02-28 after v1.2 milestone start*
