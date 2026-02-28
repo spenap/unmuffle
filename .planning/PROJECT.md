@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone.
+An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see a real-time progress bar during inference, read the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone.
 
 ## Core Value
 
@@ -18,23 +18,16 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 - Display transcript on result screen with Copy and Share buttons — v1.0
 - No network permissions — fully offline operation — v1.0
 - Anti-hallucination post-processing for silent/noise audio — v1.0
+- Surgical R8 rules for release builds (8.7% APK size reduction) — v1.1
+- Determinate 0-100% progress bar driven by whisper.cpp callbacks — v1.1
+- Default branch renamed master→main — v1.1
 
 ### Active
 
-- [ ] Transcription progress bar with segment callbacks (replaces spinner)
+- [ ] MIT LICENSE file at repository root
+- [ ] README with project description, build instructions, screenshots
+- [ ] CI pipeline (GitHub Actions for build verification)
 - [ ] F-Droid compatible build configuration and metadata
-- [ ] ProGuard/R8 shrinking rules for release builds
-- [ ] Repository default branch renamed from master to main
-
-## Current Milestone: v1.1 Polish & Distribution
-
-**Goal:** Add transcription progress feedback and prepare for F-Droid distribution
-
-**Target features:**
-- Segment-callback progress bar during Whisper inference
-- F-Droid metadata (fastlane structure, reproducible builds)
-- ProGuard/R8 release configuration
-- Branch rename (master → main)
 
 ### Out of Scope
 
@@ -48,10 +41,11 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 
 ## Context
 
-Shipped v1.0 MVP with 2,635 LOC Kotlin + whisper.cpp native layer.
+Shipped v1.1 with 2,676 LOC Kotlin + whisper.cpp native layer.
 Tech stack: Kotlin, whisper.cpp (v1.7.4) via JNI, NDK 26.1, MediaCodec, Jetpack ViewModel + StateFlow.
+APK size: 5.4 MB (release, arm64-v8a, after R8 shrinking).
+Inference: 12-15s on arm64-v8a test device.
 User feedback: "Better than the built-in WhatsApp transcript feature."
-Inference takes 12-15s on arm64-v8a test device (release build).
 
 ## Constraints
 
@@ -74,8 +68,9 @@ Inference takes 12-15s on arm64-v8a test device (release build).
 | Explicit Copy/Share buttons (no auto-clipboard) | Clipboard readable by other apps on older Android | Good — privacy improvement |
 | newSingleThreadExecutor for whisper.cpp | Guarantees sequential access to non-thread-safe native code | Good — no race conditions |
 | Linear interpolation resampler | Handles any input rate (48kHz, 44.1kHz) with single code path | Good — simple and universal |
-
-| F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | — Pending |
+| Surgical R8 over blanket keep | Enables real shrinking while protecting JNI + sealed classes | Good — 8.7% APK reduction |
+| AtomicInteger polling for progress | Avoids JNI upcall threading complexity | Good — clean, 200ms polling |
+| F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | Pending — deferred to after GitHub readiness |
 
 ---
-*Last updated: 2026-02-27 after v1.1 milestone start*
+*Last updated: 2026-02-28 after v1.1 milestone completion*
