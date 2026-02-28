@@ -37,8 +37,8 @@ TransChat has zero network permissions — not even INTERNET is declared in the 
 ### Prerequisites
 
 - Android Studio Ladybug (2024.2) or later
-- Android SDK with compileSdk 34
-- Android NDK 26.1.10909125 (install via SDK Manager)
+- Android SDK with compileSdk 35
+- Android NDK 27.2.12479018 (install via SDK Manager)
 - CMake 3.22.1 (install via SDK Manager)
 - Git (for submodule checkout)
 
@@ -69,12 +69,12 @@ The debug APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 
 | Component | Version |
 |-----------|---------|
-| whisper.cpp | v1.7.4 |
+| whisper.cpp | v1.8.3 |
 | Whisper model | small multilingual q5_1 (~190 MB) |
 | Kotlin | 2.0.21 |
 | Gradle / AGP | 8.9 / 8.7.3 |
-| NDK | 26.1 (r26) |
-| compileSdk / targetSdk | 34 |
+| NDK | 27.2 (r27c) |
+| compileSdk / targetSdk | 35 |
 | minSdk | 26 (Android 8.0) |
 
 ## License
