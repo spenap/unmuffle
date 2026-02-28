@@ -86,6 +86,50 @@
 
 ---
 
+## Milestone: v1.2 — GitHub Readiness
+
+**Shipped:** 2026-02-28
+**Phases:** 3 | **Plans:** 6 | **Tasks:** 14
+
+### What Was Built
+- MIT LICENSE and comprehensive README with build instructions, privacy model, tech stack
+- 5 real device screenshots documenting the complete user flow
+- Split GitHub Actions CI: fast lint+debug on push/PR, full signed release pipeline on tag push (v*)
+- CI release signing via four GitHub Actions secrets (keystore, password, key alias, key password)
+- whisper.cpp upgraded v1.7.4 → v1.8.3 with WHISPER_VERSION compile definition fix
+- SDK 35, NDK r27c, core-ktx 1.15.0 — all dependencies at current stable
+
+### What Worked
+- Phase ordering (OSS → CI → deps) was exactly right — each phase validated the previous
+- Split CI strategy avoided exposing signing secrets on regular push/PR
+- Dependency upgrade phase correctly sequenced after CI — CI validates the upgrade builds
+- WHISPER_VERSION fix was auto-detected and resolved during execution — no manual intervention
+- All 14 requirements mapped cleanly to 3 phases with no gaps
+
+### What Was Inefficient
+- Phase 9 took 61 min (30.5 min/plan) — CI secret configuration and live verification is inherently slow
+- NDK had to be installed via sdkmanager during execution — should have been a prerequisite check
+- Some decisions were recorded with duplication in STATE.md (same decision under different labels)
+
+### Patterns Established
+- README sections: title, features, privacy, screenshots, how-it-works, build, tech stack, license
+- Split CI strategy pattern: fast path (push/PR) vs full pipeline (tag push)
+- SIGNING_KEYSTORE_PATH env var as presence check for CI vs local signing
+- Version references sync: build.gradle.kts as single source of truth, CI and README reference it
+
+### Key Lessons
+1. CI verification requires real GitHub Actions runs — cannot be fully tested locally, plan for longer execution time
+2. whisper.cpp version upgrades may introduce new compile definitions — always check for build system changes in upstream
+3. Single workflow file with `if:` conditions is cleaner than multiple workflow files for CI split strategy
+4. lintDebug over lintRelease — avoids needing release signing config just to run lint
+
+### Cost Observations
+- Model mix: 100% sonnet (balanced profile — executors and verifiers)
+- Sessions: 2 (phase 8-9 execution, phase 10 + milestone completion)
+- Notable: Phases 8 and 10 were fast (7 min, 22 min); Phase 9 dominated due to CI secret setup
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -94,9 +138,11 @@
 |-----------|----------|--------|------------|
 | v1.0 | 4 | 3 | Established wave-based parallel execution, device verification checkpoints |
 | v1.1 | 3 | 4 | Learned to scope distribution work after GitHub readiness; manual path for trivial phases |
+| v1.2 | 2 | 3 | CI verification is inherently slow (live runs); sonnet executors perform well for infrastructure tasks |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Device verification checkpoints catch integration issues that compilation alone misses
 2. discuss-phase context gathering produces better designs than jumping straight to planning
-3. Scope distribution/publishing work AFTER repo readiness (license, README, CI) — not before
+3. Scope distribution/publishing work AFTER repo readiness (license, README, CI) — not before (validated: v1.1 deferred F-Droid, v1.2 delivered GitHub readiness first)
+4. Phase ordering matters — each phase should validate the work of the previous (v1.0: engine→share→pipeline, v1.2: OSS→CI→deps)
