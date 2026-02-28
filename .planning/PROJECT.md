@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see a real-time progress bar during inference, read the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone.
+An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see a real-time progress bar during inference, read the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone. Open-source (MIT) with GitHub Actions CI for automated builds and releases.
 
 ## Core Value
 
@@ -21,15 +21,16 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 - Surgical R8 rules for release builds (8.7% APK size reduction) — v1.1
 - Determinate 0-100% progress bar driven by whisper.cpp callbacks — v1.1
 - Default branch renamed master→main — v1.1
+- ✓ MIT LICENSE file at repository root — v1.2
+- ✓ README.md with project description, build instructions, 5 screenshots — v1.2
+- ✓ GitHub Actions CI (debug + release build, lint, APK artifacts) — v1.2
+- ✓ CI-only release signing via GitHub Actions secrets — v1.2
+- ✓ whisper.cpp submodule upgrade v1.7.4 → v1.8.3 — v1.2
+- ✓ Dependency upgrades (compileSdk/targetSdk 35, NDK r27.2, core-ktx 1.15.0) — v1.2
 
 ### Active
 
-- [ ] MIT LICENSE file at repository root
-- [ ] README.md with project description, build instructions, 5 screenshots
-- [ ] GitHub Actions CI (debug + release build, lint, APK artifacts)
-- [ ] CI-only release signing via GitHub Actions secrets
-- [ ] whisper.cpp submodule upgrade v1.7.4 → v1.8.3
-- [ ] Dependency upgrades (compileSdk/targetSdk 35, NDK r27.2, core-ktx 1.15.0)
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -41,23 +42,13 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 - iOS version — Android only
 - AI post-processing (summary, action items) — requires cloud API or second large model
 
-## Current Milestone: v1.2 GitHub Readiness
-
-**Goal:** Make the repo open-source ready (LICENSE, README, CI) and prepare for distribution with proper signing and updated dependencies.
-
-**Target features:**
-- MIT LICENSE + README with build instructions and 5 screenshots
-- GitHub Actions CI (debug + release build, lint, APK upload)
-- CI-only release signing (GitHub Actions secrets)
-- whisper.cpp v1.7.4 → v1.8.3
-- compileSdk/targetSdk 34 → 35, NDK r26 → r27.2, core-ktx 1.13.1 → 1.15.0
-
 ## Context
 
-Shipped v1.1 with 2,676 LOC Kotlin + whisper.cpp native layer.
-Tech stack: Kotlin, whisper.cpp (v1.7.4) via JNI, NDK 26.1, MediaCodec, Jetpack ViewModel + StateFlow.
+Shipped v1.2 with 2,676 LOC Kotlin + whisper.cpp native layer.
+Tech stack: Kotlin, whisper.cpp (v1.8.3) via JNI, NDK r27c (27.2), MediaCodec, Jetpack ViewModel + StateFlow.
 APK size: 5.4 MB (release, arm64-v8a, after R8 shrinking).
 Inference: 12-15s on arm64-v8a test device.
+GitHub Actions CI: split strategy (fast lint+debug on push, full signed release on tag).
 User feedback: "Better than the built-in WhatsApp transcript feature."
 
 ## Constraints
@@ -84,6 +75,8 @@ User feedback: "Better than the built-in WhatsApp transcript feature."
 | Surgical R8 over blanket keep | Enables real shrinking while protecting JNI + sealed classes | Good — 8.7% APK reduction |
 | AtomicInteger polling for progress | Avoids JNI upcall threading complexity | Good — clean, 200ms polling |
 | F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | Pending — deferred to after GitHub readiness |
+| Split CI strategy | Fast feedback on push/PR, full pipeline only on tag | Good — efficient, signing secrets only exposed on tag push |
+| WHISPER_VERSION compile definition | v1.8.3 needs it but we bypass upstream CMakeLists.txt | Good — clean fix for direct compilation |
 
 ---
-*Last updated: 2026-02-28 after v1.2 milestone start*
+*Last updated: 2026-02-28 after v1.2 milestone*

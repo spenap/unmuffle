@@ -1,5 +1,24 @@
 # Milestones: TransChat
 
+## v1.2 GitHub Readiness — Shipped 2026-02-28
+
+**Phases:** 3 | **Plans:** 6 | **Tasks:** 14 | **Commits:** 23
+
+Made the repo open-source ready with MIT license, comprehensive README with 5 device screenshots, split GitHub Actions CI (fast debug on push/PR, full signed release on tag), and all dependencies upgraded to current stable versions.
+
+**Key Accomplishments:**
+1. MIT License + README with build instructions, privacy model, tech stack, and 5 real device screenshots
+2. Split CI strategy — lint+debug on push/PR for fast feedback, full signed release pipeline on tag push (v*)
+3. CI release signing via four GitHub Actions secrets — both CI paths verified on live runs
+4. whisper.cpp upgraded v1.7.4 → v1.8.3 with WHISPER_VERSION compile definition fix
+5. SDK 35, NDK r27c, core-ktx 1.15.0 — all dependencies at current stable
+6. CI workflow and README kept in sync with build configuration as single source of truth
+
+**Requirements:** 14/14 complete
+**Archive:** `milestones/v1.2-ROADMAP.md`, `milestones/v1.2-REQUIREMENTS.md`
+
+---
+
 ## v1.1 Polish & Distribution — Shipped 2026-02-28
 
 **Phases:** 4 (2 executed via GSD, 1 manual, 1 deferred) | **Plans:** 3 | **Kotlin LOC:** 2,676
