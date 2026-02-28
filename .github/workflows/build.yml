@@ -1,0 +1,93 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout with submodules (whisper.cpp is a git submodule)
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 2. Set up JDK 17 (required by AGP 8.7.3)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Set up Android SDK, NDK, and CMake
+      #    Use the official Android setup action
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+
+      # 4. Cache Gradle dependencies
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            gradle-
+
+      # 5. Make gradlew executable
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # 6. Run Android lint (ALWAYS — every push, PR, and tag)
+      - name: Run lint
+        run: ./gradlew lintDebug
+
+      # 7. Build debug APK (ALWAYS — every push, PR, and tag)
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      # === TAG-ONLY STEPS BELOW (v* tags trigger full pipeline) ===
+
+      # 8. Decode keystore and configure signing environment (TAG ONLY)
+      - name: Configure release signing
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/release.keystore"
+          echo "SIGNING_KEYSTORE_PATH=$GITHUB_WORKSPACE/release.keystore" >> "$GITHUB_ENV"
+          echo "SIGNING_STORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      # 9. Build release APK (TAG ONLY)
+      - name: Build release APK
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew assembleRelease
+
+      # 10. Upload debug APK artifact (TAG ONLY)
+      - name: Upload debug APK
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      # 11. Upload release APK artifact (TAG ONLY)
+      - name: Upload release APK
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/app-release*.apk
