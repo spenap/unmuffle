@@ -36,7 +36,7 @@ Full details: `milestones/v1.1-ROADMAP.md`
 **Milestone Goal:** Make the repo open-source ready with LICENSE, README, GitHub Actions CI, and updated dependencies.
 
 - [x] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project — completed 2026-02-28
-- [ ] **Phase 9: GitHub Actions CI** - Split CI: lint + debug on push/PR, full pipeline with release signing on tag push (v*)
+- [x] **Phase 9: GitHub Actions CI** - Split CI: lint + debug on push/PR, full pipeline with release signing on tag push (v*) (completed 2026-02-28)
 - [ ] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps
 
 ## Phase Details
@@ -65,8 +65,8 @@ Full details: `milestones/v1.1-ROADMAP.md`
   3. The workflow runs Android lint and the job fails if lint errors are present
   4. On tag push, both debug and release APKs are available as downloadable artifacts on the completed workflow run
 **Plans**: 2 plans
-- [ ] 09-01-PLAN.md — CI signing config + GitHub Actions workflow (build, lint, artifact upload)
-- [ ] 09-02-PLAN.md — Configure GitHub secrets + verify CI pipeline end-to-end (checkpoint)
+- [x] 09-01-PLAN.md — CI signing config + GitHub Actions workflow (build, lint, artifact upload) — completed 2026-02-28
+- [x] 09-02-PLAN.md — Configure GitHub secrets + verify CI pipeline end-to-end (checkpoint) — completed 2026-02-28
 
 ### Phase 10: Dependency Upgrades
 **Goal**: The codebase builds successfully against current dependency versions with no regressions
@@ -91,5 +91,5 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
 | 8. Open Source Foundation | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
-| 9. GitHub Actions CI | 1/2 | In Progress|  | - |
+| 9. GitHub Actions CI | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |

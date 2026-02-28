@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: GitHub Readiness
 status: unknown
-last_updated: "2026-02-28T19:28:49Z"
+last_updated: "2026-02-28T20:21:13.949Z"
 progress:
-  total_phases: 3
+  total_phases: 2
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** Phase 9 — GitHub Actions CI (v1.2)
+**Current focus:** Phase 10 — Dependency Upgrades (v1.2)
 
 ## Current Position
 
-Phase: 9 of 10 (GitHub Actions CI)
-Plan: 1 of 1 complete (09-01)
+Phase: 9 of 10 (GitHub Actions CI) — COMPLETE
+Plan: 2 of 2 complete (09-01, 09-02)
 Status: Active
-Last activity: 2026-02-28 — 09-01 complete (CI workflow + signing config)
+Last activity: 2026-02-28 — 09-02 complete (CI secrets configuration and end-to-end verification)
 
-Progress: [####░░░░░░] 40%
+Progress: [#####░░░░░] 50%
 
 ## Performance Metrics
 
@@ -46,12 +46,13 @@ Progress: [####░░░░░░] 40%
 | 4. R8 Release Configuration | 1/1 | 8 min | 8 min |
 | 5. Transcription Progress Bar | 2/2 | 4 min | 2 min |
 | 8. Open Source Foundation | 2/2 | 7 min | 3.5 min |
-| 9. GitHub Actions CI | 1/1 | 1 min | 1 min |
+| 9. GitHub Actions CI | 2/2 | 61 min | 30.5 min |
 
 *Updated after each plan completion*
 | Phase 08-open-source-foundation P01 | 2 | 2 tasks | 2 files |
 | Phase 08-open-source-foundation P02 | 5 | 3 tasks | 6 files |
 | Phase 09-github-actions-ci P01 | 1 | 2 tasks | 2 files |
+| Phase 09-github-actions-ci P02 | 60 | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ v1.2 decisions:
 - [09-01]: Tag-conditioned signing uses tag presence as condition, not secrets presence check
 - [09-01]: SIGNING_KEYSTORE_PATH env var is the presence check in build.gradle.kts to toggle CI vs local dev signing
 - [09-01]: lintDebug chosen over lintRelease — works without release signing, catches all lint issues
+- [Phase 09-02]: Secrets configured directly in GitHub UI — the only supported approach for repository secrets; both CI paths verified with real pushes/tags
 
 ### Pending Todos
 
@@ -87,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 09-01-PLAN.md (CI workflow + signing config)
+Stopped at: Completed 09-02-PLAN.md (CI secrets configuration and end-to-end verification)
 Next step: Execute Phase 10 (dependency upgrades)
