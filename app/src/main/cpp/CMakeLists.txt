@@ -16,6 +16,9 @@ include(FetchContent)
 function(build_library target_name)
     add_library(${target_name} SHARED ${SOURCE_FILES})
     target_compile_definitions(${target_name} PUBLIC GGML_USE_CPU)
+    # whisper.cpp v1.8.3 defines WHISPER_VERSION via its own CMakeLists.txt; since we
+    # compile src/whisper.cpp directly we must supply it as a compile definition.
+    target_compile_definitions(${target_name} PRIVATE WHISPER_VERSION="1.8.3")
 
     if (${target_name} STREQUAL "whisper_v8fp16_va")
         target_compile_options(${target_name} PRIVATE -march=armv8.2-a+fp16)
