@@ -25,10 +25,10 @@ Requirements for GitHub Readiness milestone. Each maps to roadmap phases.
 
 ### Dependencies
 
-- [ ] **DEP-01**: whisper.cpp submodule upgraded from v1.7.4 to v1.8.3
-- [ ] **DEP-02**: compileSdk and targetSdk upgraded from 34 to 35
-- [ ] **DEP-03**: NDK upgraded from r26.1 to r27.2
-- [ ] **DEP-04**: core-ktx upgraded from 1.13.1 to 1.15.0
+- [x] **DEP-01**: whisper.cpp submodule upgraded from v1.7.4 to v1.8.3
+- [x] **DEP-02**: compileSdk and targetSdk upgraded from 34 to 35
+- [x] **DEP-03**: NDK upgraded from r26.1 to r27.2
+- [x] **DEP-04**: core-ktx upgraded from 1.13.1 to 1.15.0
 
 ## Future Requirements
 
@@ -65,10 +65,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CI-03 | Phase 9 | Complete |
 | CI-04 | Phase 9 | Complete |
 | CI-05 | Phase 9 | Complete |
-| DEP-01 | Phase 10 | Pending |
-| DEP-02 | Phase 10 | Pending |
-| DEP-03 | Phase 10 | Pending |
-| DEP-04 | Phase 10 | Pending |
+| DEP-01 | Phase 10 | Complete |
+| DEP-02 | Phase 10 | Complete |
+| DEP-03 | Phase 10 | Complete |
+| DEP-04 | Phase 10 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 14 total

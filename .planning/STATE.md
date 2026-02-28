@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: GitHub Readiness
 status: unknown
-last_updated: "2026-02-28T20:28:17.537Z"
+last_updated: "2026-02-28T20:50:20.124Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -22,19 +22,19 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 9 of 10 (GitHub Actions CI) — COMPLETE
-Plan: 2 of 2 complete (09-01, 09-02)
+Phase: 10 of 10 (Dependency Upgrades) — COMPLETE
+Plan: 1 of 1 complete (10-01)
 Status: Active
-Last activity: 2026-02-28 — 09-02 complete (CI secrets configuration and end-to-end verification)
+Last activity: 2026-02-28 — 10-01 complete (whisper.cpp v1.8.3, SDK 35, NDK r27c, core-ktx 1.15.0)
 
-Progress: [#####░░░░░] 50%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 3.5 min
-- Total execution time: ~0.7 hours
+- Total plans completed: 13
+- Average duration: 4 min
+- Total execution time: ~0.9 hours
 
 **By Phase:**
 
@@ -47,12 +47,14 @@ Progress: [#####░░░░░] 50%
 | 5. Transcription Progress Bar | 2/2 | 4 min | 2 min |
 | 8. Open Source Foundation | 2/2 | 7 min | 3.5 min |
 | 9. GitHub Actions CI | 2/2 | 61 min | 30.5 min |
+| 10. Dependency Upgrades | 1/1 | 20 min | 20 min |
 
 *Updated after each plan completion*
 | Phase 08-open-source-foundation P01 | 2 | 2 tasks | 2 files |
 | Phase 08-open-source-foundation P02 | 5 | 3 tasks | 6 files |
 | Phase 09-github-actions-ci P01 | 1 | 2 tasks | 2 files |
 | Phase 09-github-actions-ci P02 | 60 | 2 tasks | 0 files |
+| Phase 10-dependency-upgrades P01 | 20 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -77,6 +79,8 @@ v1.2 decisions:
 - [09-01]: SIGNING_KEYSTORE_PATH env var is the presence check in build.gradle.kts to toggle CI vs local dev signing
 - [09-01]: lintDebug chosen over lintRelease — works without release signing, catches all lint issues
 - [Phase 09-02]: Secrets configured directly in GitHub UI — the only supported approach for repository secrets; both CI paths verified with real pushes/tags
+- [Phase 10-01]: WHISPER_VERSION define added to CMakeLists.txt — v1.8.3 references this in whisper_print_system_info(); upstream sets it via CMakeLists.txt target_compile_definitions which we bypass by compiling directly
+- [Phase 10-01]: NDK r27.2 installed via sdkmanager before execution — only r26 was present initially; r27c needed for 16KB page size support
 
 ### Pending Todos
 
@@ -89,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 09-02-PLAN.md (CI secrets configuration and end-to-end verification)
-Next step: Execute Phase 10 (dependency upgrades)
+Stopped at: Completed 10-01-PLAN.md (dependency upgrades: whisper.cpp v1.8.3, SDK 35, NDK r27c, core-ktx 1.15.0)
+Next step: v1.2 milestone (GitHub Readiness) is complete — all phases done
