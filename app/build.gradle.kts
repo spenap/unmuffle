@@ -5,13 +5,13 @@ plugins {
 
 android {
     namespace = "com.simonpena.transchat"
-    compileSdk = 34
-    ndkVersion = "26.1.10909125"  // NDK r26 — installed in this environment (r27 preferred for 16KB page)
+    compileSdk = 35
+    ndkVersion = "27.2.12479018"  // NDK r27c — 16KB page size support
 
     defaultConfig {
         applicationId = "com.simonpena.transchat"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
