@@ -55,26 +55,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OSS-01 | — | Pending |
-| OSS-02 | — | Pending |
-| OSS-03 | — | Pending |
-| OSS-04 | — | Pending |
-| OSS-05 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
-| CI-03 | — | Pending |
-| CI-04 | — | Pending |
-| CI-05 | — | Pending |
-| DEP-01 | — | Pending |
-| DEP-02 | — | Pending |
-| DEP-03 | — | Pending |
-| DEP-04 | — | Pending |
+| OSS-01 | Phase 8 | Pending |
+| OSS-02 | Phase 8 | Pending |
+| OSS-03 | Phase 8 | Pending |
+| OSS-04 | Phase 8 | Pending |
+| OSS-05 | Phase 8 | Pending |
+| CI-01 | Phase 9 | Pending |
+| CI-02 | Phase 9 | Pending |
+| CI-03 | Phase 9 | Pending |
+| CI-04 | Phase 9 | Pending |
+| CI-05 | Phase 9 | Pending |
+| DEP-01 | Phase 10 | Pending |
+| DEP-02 | Phase 10 | Pending |
+| DEP-03 | Phase 10 | Pending |
+| DEP-04 | Phase 10 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after initial definition*
+*Last updated: 2026-02-28 after roadmap creation*

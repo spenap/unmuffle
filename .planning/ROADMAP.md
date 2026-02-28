@@ -4,6 +4,7 @@
 
 - **v1.0 MVP** — Phases 1-3 (shipped 2026-02-27)
 - **v1.1 Polish & Distribution** — Phases 4-7 (shipped 2026-02-28)
+- **v1.2 GitHub Readiness** — Phases 8-10 (in progress)
 
 ## Phases
 
@@ -30,6 +31,50 @@ Full details: `milestones/v1.1-ROADMAP.md`
 
 </details>
 
+### v1.2 GitHub Readiness (In Progress)
+
+**Milestone Goal:** Make the repo open-source ready with LICENSE, README, GitHub Actions CI, and updated dependencies.
+
+- [ ] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project
+- [ ] **Phase 9: GitHub Actions CI** - Automated build, lint, and artifact pipeline with CI-only release signing
+- [ ] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps
+
+## Phase Details
+
+### Phase 8: Open Source Foundation
+**Goal**: The repository is legally and documentarily ready for public open-source release
+**Depends on**: Nothing (first phase of milestone)
+**Requirements**: OSS-01, OSS-02, OSS-03, OSS-04, OSS-05
+**Success Criteria** (what must be TRUE):
+  1. MIT LICENSE file exists at the repository root with correct copyright text
+  2. README.md opens with a clear project description, feature list, and privacy highlights
+  3. README.md contains step-by-step build instructions a developer can follow from a fresh clone
+  4. README.md includes 5 screenshots covering model download, ready state, share target, progress bar, and result screens
+  5. README.md states the whisper.cpp version in use
+**Plans**: TBD
+
+### Phase 9: GitHub Actions CI
+**Goal**: Every push and PR automatically builds, lints, and uploads APK artifacts; release builds are signed via secrets only
+**Depends on**: Phase 8
+**Requirements**: CI-01, CI-02, CI-03, CI-04, CI-05
+**Success Criteria** (what must be TRUE):
+  1. A push to main triggers a workflow that produces a debug APK without manual intervention
+  2. The same workflow produces a release APK signed with a keystore stored only in GitHub Actions secrets (no local keystore file committed)
+  3. The workflow runs Android lint and the job fails if lint errors are present
+  4. Both the debug and release APKs are available as downloadable artifacts on the completed workflow run
+**Plans**: TBD
+
+### Phase 10: Dependency Upgrades
+**Goal**: The codebase builds successfully against current dependency versions with no regressions
+**Depends on**: Phase 9
+**Requirements**: DEP-01, DEP-02, DEP-03, DEP-04
+**Success Criteria** (what must be TRUE):
+  1. The whisper.cpp git submodule points to v1.8.3 and the JNI bridge compiles cleanly against it
+  2. The app compiles and passes lint with compileSdk and targetSdk set to 35
+  3. The NDK version in the build configuration is r27.2 and the native layer builds without warnings promoted to errors
+  4. core-ktx 1.15.0 is declared in the dependency block and the app assembles without version conflict errors
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -41,3 +86,6 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 5. Transcription Progress Bar | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
+| 8. Open Source Foundation | v1.2 | 0/TBD | Not started | - |
+| 9. GitHub Actions CI | v1.2 | 0/TBD | Not started | - |
+| 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |
