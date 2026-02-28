@@ -36,7 +36,7 @@ Full details: `milestones/v1.1-ROADMAP.md`
 **Milestone Goal:** Make the repo open-source ready with LICENSE, README, GitHub Actions CI, and updated dependencies.
 
 - [x] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project — completed 2026-02-28
-- [ ] **Phase 9: GitHub Actions CI** - Automated build, lint, and artifact pipeline with CI-only release signing
+- [ ] **Phase 9: GitHub Actions CI** - Split CI: lint + debug on push/PR, full pipeline with release signing on tag push (v*)
 - [ ] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps
 
 ## Phase Details
@@ -56,14 +56,14 @@ Full details: `milestones/v1.1-ROADMAP.md`
 - [x] 08-02-PLAN.md — Add 5 device screenshots to README (user-provided captures) — completed 2026-02-28
 
 ### Phase 9: GitHub Actions CI
-**Goal**: Every push and PR automatically builds, lints, and uploads APK artifacts; release builds are signed via secrets only
+**Goal**: Split CI strategy — every push/PR runs lint + debug APK (fast feedback); tag push (v*) runs full pipeline with release signing and artifact upload
 **Depends on**: Phase 8
 **Requirements**: CI-01, CI-02, CI-03, CI-04, CI-05
 **Success Criteria** (what must be TRUE):
-  1. A push to main triggers a workflow that produces a debug APK without manual intervention
-  2. The same workflow produces a release APK signed with a keystore stored only in GitHub Actions secrets (no local keystore file committed)
+  1. A push/PR to main triggers a workflow that runs lint and builds a debug APK (fast feedback, no release build or artifacts)
+  2. A tag push (v*) triggers the full pipeline: lint, debug APK, release APK signed with a keystore from GitHub Actions secrets, and artifact upload
   3. The workflow runs Android lint and the job fails if lint errors are present
-  4. Both the debug and release APKs are available as downloadable artifacts on the completed workflow run
+  4. On tag push, both debug and release APKs are available as downloadable artifacts on the completed workflow run
 **Plans**: 2 plans
 - [ ] 09-01-PLAN.md — CI signing config + GitHub Actions workflow (build, lint, artifact upload)
 - [ ] 09-02-PLAN.md — Configure GitHub secrets + verify CI pipeline end-to-end (checkpoint)
@@ -91,5 +91,5 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
 | 8. Open Source Foundation | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
-| 9. GitHub Actions CI | v1.2 | 0/2 | Not started | - |
+| 9. GitHub Actions CI | 1/2 | In Progress|  | - |
 | 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |

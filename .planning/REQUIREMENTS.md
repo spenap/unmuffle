@@ -17,11 +17,11 @@ Requirements for GitHub Readiness milestone. Each maps to roadmap phases.
 
 ### CI / Signing
 
-- [ ] **CI-01**: GitHub Actions workflow builds debug APK on push/PR
-- [ ] **CI-02**: GitHub Actions workflow builds release APK on push/PR
-- [ ] **CI-03**: GitHub Actions workflow runs lint
-- [ ] **CI-04**: GitHub Actions uploads debug and release APKs as artifacts
-- [ ] **CI-05**: Release builds use signing config from GitHub Actions secrets (not debug keystore)
+- [x] **CI-01**: GitHub Actions workflow builds debug APK on push/PR to main
+- [x] **CI-02**: GitHub Actions workflow builds release APK on tag push (v*)
+- [x] **CI-03**: GitHub Actions workflow runs lint on push/PR to main and tag push
+- [x] **CI-04**: GitHub Actions uploads debug and release APKs as artifacts on tag push (v*)
+- [x] **CI-05**: Release builds use signing config from GitHub Actions secrets on tag push (v*)
 
 ### Dependencies
 
@@ -60,11 +60,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OSS-03 | Phase 8 | Complete |
 | OSS-04 | Phase 8 | Complete |
 | OSS-05 | Phase 8 | Complete |
-| CI-01 | Phase 9 | Pending |
-| CI-02 | Phase 9 | Pending |
-| CI-03 | Phase 9 | Pending |
-| CI-04 | Phase 9 | Pending |
-| CI-05 | Phase 9 | Pending |
+| CI-01 | Phase 9 | Complete |
+| CI-02 | Phase 9 | Complete |
+| CI-03 | Phase 9 | Complete |
+| CI-04 | Phase 9 | Complete |
+| CI-05 | Phase 9 | Complete |
 | DEP-01 | Phase 10 | Pending |
 | DEP-02 | Phase 10 | Pending |
 | DEP-03 | Phase 10 | Pending |
