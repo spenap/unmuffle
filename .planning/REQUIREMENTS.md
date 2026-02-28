@@ -9,11 +9,11 @@ Requirements for GitHub Readiness milestone. Each maps to roadmap phases.
 
 ### Open Source
 
-- [ ] **OSS-01**: Repository has MIT LICENSE file at root
-- [ ] **OSS-02**: README.md with project description, features, and privacy highlights
-- [ ] **OSS-03**: README.md includes build instructions (prerequisites, clone, build steps)
+- [x] **OSS-01**: Repository has MIT LICENSE file at root
+- [x] **OSS-02**: README.md with project description, features, and privacy highlights
+- [x] **OSS-03**: README.md includes build instructions (prerequisites, clone, build steps)
 - [ ] **OSS-04**: README.md includes 5 screenshots (model download, ready state, share target, progress bar, result)
-- [ ] **OSS-05**: README.md documents whisper.cpp version used
+- [x] **OSS-05**: README.md documents whisper.cpp version used
 
 ### CI / Signing
 
@@ -55,11 +55,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OSS-01 | Phase 8 | Pending |
-| OSS-02 | Phase 8 | Pending |
-| OSS-03 | Phase 8 | Pending |
+| OSS-01 | Phase 8 | Complete |
+| OSS-02 | Phase 8 | Complete |
+| OSS-03 | Phase 8 | Complete |
 | OSS-04 | Phase 8 | Pending |
-| OSS-05 | Phase 8 | Pending |
+| OSS-05 | Phase 8 | Complete |
 | CI-01 | Phase 9 | Pending |
 | CI-02 | Phase 9 | Pending |
 | CI-03 | Phase 9 | Pending |
