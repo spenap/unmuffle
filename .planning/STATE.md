@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: GitHub Readiness
 status: unknown
-last_updated: "2026-02-28T20:50:20.124Z"
+last_updated: "2026-02-28T20:53:29.235Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 10 of 10 (Dependency Upgrades) — COMPLETE
-Plan: 1 of 1 complete (10-01)
-Status: Active
-Last activity: 2026-02-28 — 10-01 complete (whisper.cpp v1.8.3, SDK 35, NDK r27c, core-ktx 1.15.0)
+Plan: 2 of 2 complete (10-01, 10-02)
+Status: Complete
+Last activity: 2026-02-28 — 10-02 complete (CI NDK sync, README version documentation)
 
 Progress: [##########] 100%
 
@@ -47,7 +47,7 @@ Progress: [##########] 100%
 | 5. Transcription Progress Bar | 2/2 | 4 min | 2 min |
 | 8. Open Source Foundation | 2/2 | 7 min | 3.5 min |
 | 9. GitHub Actions CI | 2/2 | 61 min | 30.5 min |
-| 10. Dependency Upgrades | 1/1 | 20 min | 20 min |
+| 10. Dependency Upgrades | 2/2 | 22 min | 11 min |
 
 *Updated after each plan completion*
 | Phase 08-open-source-foundation P01 | 2 | 2 tasks | 2 files |
@@ -55,6 +55,7 @@ Progress: [##########] 100%
 | Phase 09-github-actions-ci P01 | 1 | 2 tasks | 2 files |
 | Phase 09-github-actions-ci P02 | 60 | 2 tasks | 0 files |
 | Phase 10-dependency-upgrades P01 | 20 | 3 tasks | 4 files |
+| Phase 10-dependency-upgrades P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,7 @@ v1.2 decisions:
 - [Phase 09-02]: Secrets configured directly in GitHub UI — the only supported approach for repository secrets; both CI paths verified with real pushes/tags
 - [Phase 10-01]: WHISPER_VERSION define added to CMakeLists.txt — v1.8.3 references this in whisper_print_system_info(); upstream sets it via CMakeLists.txt target_compile_definitions which we bypass by compiling directly
 - [Phase 10-01]: NDK r27.2 installed via sdkmanager before execution — only r26 was present initially; r27c needed for 16KB page size support
+- [Phase 10-02]: All version references (CI workflow, README tech stack, README prerequisites) kept in sync with build.gradle.kts — single source of truth is the build config
 
 ### Pending Todos
 
@@ -93,5 +95,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 10-01-PLAN.md (dependency upgrades: whisper.cpp v1.8.3, SDK 35, NDK r27c, core-ktx 1.15.0)
-Next step: v1.2 milestone (GitHub Readiness) is complete — all phases done
+Stopped at: Completed 10-02-PLAN.md (CI NDK version sync, README documentation updates)
+Next step: v1.2 milestone (GitHub Readiness) is fully complete — all phases and plans done

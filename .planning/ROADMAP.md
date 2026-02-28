@@ -37,7 +37,7 @@ Full details: `milestones/v1.1-ROADMAP.md`
 
 - [x] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project — completed 2026-02-28
 - [x] **Phase 9: GitHub Actions CI** - Split CI: lint + debug on push/PR, full pipeline with release signing on tag push (v*) (completed 2026-02-28)
-- [ ] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps
+- [x] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps (completed 2026-02-28)
 
 ## Phase Details
 
@@ -92,4 +92,4 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
 | 8. Open Source Foundation | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
-| 10. Dependency Upgrades | 1/2 | In Progress|  | - |
+| 10. Dependency Upgrades | 2/2 | Complete   | 2026-02-28 | - |
