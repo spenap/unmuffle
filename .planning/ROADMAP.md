@@ -51,7 +51,9 @@ Full details: `milestones/v1.1-ROADMAP.md`
   3. README.md contains step-by-step build instructions a developer can follow from a fresh clone
   4. README.md includes 5 screenshots covering model download, ready state, share target, progress bar, and result screens
   5. README.md states the whisper.cpp version in use
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 08-01-PLAN.md — MIT LICENSE + comprehensive README (description, features, privacy, build instructions, tech stack)
+- [ ] 08-02-PLAN.md — Add 5 device screenshots to README (user-provided captures)
 
 ### Phase 9: GitHub Actions CI
 **Goal**: Every push and PR automatically builds, lints, and uploads APK artifacts; release builds are signed via secrets only
@@ -86,6 +88,6 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 5. Transcription Progress Bar | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
-| 8. Open Source Foundation | v1.2 | 0/TBD | Not started | - |
+| 8. Open Source Foundation | v1.2 | 0/2 | Planning | - |
 | 9. GitHub Actions CI | v1.2 | 0/TBD | Not started | - |
 | 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |
