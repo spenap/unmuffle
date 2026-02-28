@@ -35,7 +35,7 @@ Full details: `milestones/v1.1-ROADMAP.md`
 
 **Milestone Goal:** Make the repo open-source ready with LICENSE, README, GitHub Actions CI, and updated dependencies.
 
-- [ ] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project
+- [x] **Phase 8: Open Source Foundation** - MIT LICENSE and full README documenting the project — completed 2026-02-28
 - [ ] **Phase 9: GitHub Actions CI** - Automated build, lint, and artifact pipeline with CI-only release signing
 - [ ] **Phase 10: Dependency Upgrades** - whisper.cpp submodule upgrade and SDK/NDK/library bumps
 
@@ -53,7 +53,7 @@ Full details: `milestones/v1.1-ROADMAP.md`
   5. README.md states the whisper.cpp version in use
 **Plans**: 2 plans
 - [x] 08-01-PLAN.md — MIT LICENSE + comprehensive README (description, features, privacy, build instructions, tech stack) — completed 2026-02-28
-- [ ] 08-02-PLAN.md — Add 5 device screenshots to README (user-provided captures)
+- [x] 08-02-PLAN.md — Add 5 device screenshots to README (user-provided captures) — completed 2026-02-28
 
 ### Phase 9: GitHub Actions CI
 **Goal**: Every push and PR automatically builds, lints, and uploads APK artifacts; release builds are signed via secrets only
@@ -88,6 +88,6 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 5. Transcription Progress Bar | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
-| 8. Open Source Foundation | 1/2 | In Progress|  | - |
+| 8. Open Source Foundation | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | 0/TBD | Not started | - |
 | 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |
