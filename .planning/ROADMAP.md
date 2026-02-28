@@ -92,4 +92,4 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
 | 8. Open Source Foundation | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
-| 10. Dependency Upgrades | 2/2 | Complete   | 2026-02-28 | - |
+| 10. Dependency Upgrades | 2/2 | Complete    | 2026-02-28 | - |
