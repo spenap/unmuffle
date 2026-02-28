@@ -74,7 +74,7 @@ v1.1 decisions:
 
 ### Blockers/Concerns
 
-- v1.1 tag not yet created — should be placed on `main` branch, not `claude-tooling`
+None.
 
 ### Inference Timing Benchmark (Phase 1 Baseline)
 

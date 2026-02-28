@@ -8,3 +8,5 @@ app/build/
 *.a
 # Keep submodule pointer but not its build artifacts
 app/src/main/cpp/whisper.cpp/build/
+# Claude Code
+.claude/
