@@ -88,6 +88,6 @@ Full details: `milestones/v1.1-ROADMAP.md`
 | 5. Transcription Progress Bar | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 6. F-Droid Distribution Prep | v1.1 | — | Deferred | — |
 | 7. Branch Rename | v1.1 | — | Manual | 2026-02-28 |
-| 8. Open Source Foundation | v1.2 | 2/2 | Complete | 2026-02-28 |
+| 8. Open Source Foundation | v1.2 | Complete    | 2026-02-28 | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | 0/TBD | Not started | - |
 | 10. Dependency Upgrades | v1.2 | 0/TBD | Not started | - |
