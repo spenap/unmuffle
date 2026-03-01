@@ -63,7 +63,7 @@ Full details: `milestones/v1.2-ROADMAP.md`
   2. `SettingsRepository` reads and writes language preference synchronously via SharedPreferences without DataStore instantiation errors
   3. `WhisperModel` enum defines TINY and SMALL variants with filename, download URL, SHA256, size, and display name
   4. README states that INTERNET and ACCESS_NETWORK_STATE are used for one-time model download, not for transcription
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
 - [ ] 11-01: SettingsRepository, WhisperModel enum, ModelManager generalization
