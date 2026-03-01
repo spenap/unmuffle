@@ -80,11 +80,11 @@ Plans:
   4. REBRAND-04: GitHub repository is renamed from transchat-app to unmuffle and the local remote URL is updated (manual step guided by phase)
   5. The transcript result screen shows title and transcript text without overlap; copy and share buttons are fully visible and tappable
   6. All screens use Theme.Material3.DayNight.NoActionBar; all textAppearance attributes use M3 equivalents; Dynamic color applies on Android 12+
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: JNI symbol update + package rename (atomic: Kotlin namespace, applicationId, whisper_jni.cpp, proguard-rules.pro, strings.xml)
-- [ ] 12-02: Documentation rename + REBRAND-04 guide + M3 theme migration + layout fix (themes.xml, all layouts, UnmuffleApplication, material 1.13.0 bump)
+- [ ] 12-01: Atomic package rename — Kotlin namespace, applicationId, 7 JNI signatures, ProGuard rules, manifest labels, theme names, settings.gradle.kts
+- [ ] 12-02: M3 theme migration + dynamic color + layout fix + README rename + REBRAND-04 guide
 
 ### Phase 13: Language Selection Dialog
 **Goal**: Users choose their transcription language before inference starts and can opt to skip the dialog on future shares
