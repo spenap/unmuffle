@@ -9,15 +9,15 @@ Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 
 ### Fixes
 
-- [ ] **FIX-01**: Layout regression fixed — transcript text not overlapped by title, copy/share buttons fully visible
+- [x] **FIX-01**: Layout regression fixed — transcript text not overlapped by title, copy/share buttons fully visible
 - [x] **FIX-02**: README accurately describes INTERNET + ACCESS_NETWORK_STATE permissions used for model download
 
 ### Rebrand
 
 - [x] **REBRAND-01**: App name displayed as "Unmuffle" everywhere (launcher, share sheet, app bar)
 - [x] **REBRAND-02**: Package renamed com.simonpena.transchat → com.simonpena.unmuffle (namespace, applicationId, JNI C++ symbols)
-- [ ] **REBRAND-03**: README, CI workflow, and all documentation reference "Unmuffle"
-- [ ] **REBRAND-04**: GitHub repository renamed from transchat-app to unmuffle (remote URL updated in local config)
+- [x] **REBRAND-03**: README, CI workflow, and all documentation reference "Unmuffle"
+- [x] **REBRAND-04**: GitHub repository renamed from transchat-app to unmuffle (remote URL updated in local config)
 
 ### Language
 
@@ -34,9 +34,9 @@ Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 
 ### UI Polish
 
-- [ ] **UI-01**: Material 3 theme applied (Theme.Material3.DayNight)
-- [ ] **UI-02**: All layouts updated to M3 component styles and attributes
-- [ ] **UI-03**: Dynamic color support (Material You on Android 12+)
+- [x] **UI-01**: Material 3 theme applied (Theme.Material3.DayNight)
+- [x] **UI-02**: All layouts updated to M3 component styles and attributes
+- [x] **UI-03**: Dynamic color support (Material You on Android 12+)
 
 ## Future Requirements
 
@@ -70,12 +70,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 12 | Pending |
+| FIX-01 | Phase 12 | Complete |
 | FIX-02 | Phase 11 | Complete |
 | REBRAND-01 | Phase 12 | Complete |
 | REBRAND-02 | Phase 12 | Complete |
-| REBRAND-03 | Phase 12 | Pending |
-| REBRAND-04 | Phase 12 | Pending |
+| REBRAND-03 | Phase 12 | Complete |
+| REBRAND-04 | Phase 12 | Complete |
 | LANG-01 | Phase 11 | Complete |
 | LANG-02 | Phase 13 | Pending |
 | LANG-03 | Phase 13 | Pending |
@@ -83,9 +83,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SET-02 | Phase 14 | Pending |
 | SET-03 | Phase 14 | Pending |
 | SET-04 | Phase 14 | Pending |
-| UI-01 | Phase 12 | Pending |
-| UI-02 | Phase 12 | Pending |
-| UI-03 | Phase 12 | Pending |
+| UI-01 | Phase 12 | Complete |
+| UI-02 | Phase 12 | Complete |
+| UI-03 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.3 requirements: 16 total
