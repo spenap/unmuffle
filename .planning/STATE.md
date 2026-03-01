@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Unmuffle
 status: unknown
-last_updated: "2026-03-01T12:53:39.533Z"
+last_updated: "2026-03-01T17:56:18.381Z"
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -18,22 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** v1.3 Unmuffle — Phase 11 complete, Phase 12 next
+**Current focus:** v1.3 Unmuffle — Phase 12 in progress (plan 01 complete)
 
 ## Current Position
 
-Phase: 11 of 14 (Foundation + Language JNI Chain) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
+Phase: 12 of 14 (App Rename + M3 + Layout Fix) — IN PROGRESS
+Plan: 1 of 3 in current phase — COMPLETE
 Status: Executing
-Last activity: 2026-03-01 — 11-02 complete (languageCode JNI chain threading + README permissions fix)
+Last activity: 2026-03-01 — 12-01 complete (package rename TransChat -> Unmuffle, JNI, ProGuard, manifest, themes)
 
-Progress: [██░░░░░░░░] 28% (v1.3 — 2/7 plans)
+Progress: [███░░░░░░░] 33% (v1.3 — 3/9 plans)
 
 ## Performance Metrics
 
 **Velocity (historical):**
-- Total plans completed: 19 (across v1.0-v1.2)
+- Total plans completed: 20 (across v1.0-v1.2 + v1.3 phase 11-12-01)
 - v1.2: 6 plans in ~90 min
+- 12-01: 2 min (19 files renamed, 7 JNI symbols, 8 config files)
 
 ## Accumulated Context
 
@@ -53,6 +54,9 @@ v1.3 decisions:
 - ReleaseStringUTFChars called AFTER whisper_full() returns — params.language char* must remain valid during inference
 - languageCode: String = "auto" default at WhisperContext and WhisperEngine layers keeps SmokeTestActivity and existing callers working unchanged
 - TranscriptionViewModel default reads SettingsRepository at call time (not class init) — ensures fresh preference each invocation
+- 12-01: Single atomic commit for entire JNI+package rename — Kotlin package, C++ symbols, build config, ProGuard, manifest must match at every commit boundary to prevent UnsatisfiedLinkError
+- 12-01: User-visible string literals updated inline (DownloadViewModel notification, ShareReceiverActivity toast, layout XMLs) — no string resource extraction needed at this stage
+- [Phase 12]: Single atomic commit for JNI+package rename — Kotlin package, C++ symbols, build config, ProGuard, manifest must match at every commit boundary to prevent UnsatisfiedLinkError
 
 ### Pending Todos
 
@@ -66,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 11-02 — languageCode JNI chain threading and README permissions fix
-Next step: Execute Phase 12 (package rename TransChat -> Unmuffle)
+Stopped at: Completed 12-01 — package rename TransChat -> Unmuffle (atomic JNI-safe commit 577a328)
+Next step: Execute Phase 12 plan 02 (Material 3 theme migration)

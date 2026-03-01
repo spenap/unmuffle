@@ -14,8 +14,8 @@ Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 
 ### Rebrand
 
-- [ ] **REBRAND-01**: App name displayed as "Unmuffle" everywhere (launcher, share sheet, app bar)
-- [ ] **REBRAND-02**: Package renamed com.simonpena.transchat → com.simonpena.unmuffle (namespace, applicationId, JNI C++ symbols)
+- [x] **REBRAND-01**: App name displayed as "Unmuffle" everywhere (launcher, share sheet, app bar)
+- [x] **REBRAND-02**: Package renamed com.simonpena.transchat → com.simonpena.unmuffle (namespace, applicationId, JNI C++ symbols)
 - [ ] **REBRAND-03**: README, CI workflow, and all documentation reference "Unmuffle"
 - [ ] **REBRAND-04**: GitHub repository renamed from transchat-app to unmuffle (remote URL updated in local config)
 
@@ -72,8 +72,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | FIX-01 | Phase 12 | Pending |
 | FIX-02 | Phase 11 | Complete |
-| REBRAND-01 | Phase 12 | Pending |
-| REBRAND-02 | Phase 12 | Pending |
+| REBRAND-01 | Phase 12 | Complete |
+| REBRAND-02 | Phase 12 | Complete |
 | REBRAND-03 | Phase 12 | Pending |
 | REBRAND-04 | Phase 12 | Pending |
 | LANG-01 | Phase 11 | Complete |
