@@ -1,639 +1,616 @@
-# Architecture Patterns: TransChat v1.1 Feature Integration
+# Architecture Patterns: Unmuffle v1.3 Feature Integration
 
-**Domain:** Android on-device ML inference — progress callbacks, F-Droid distribution, R8 shrinking
-**Researched:** 2026-02-27
-**Overall confidence:** HIGH (all three areas verified against live codebase, whisper.h API, F-Droid official docs, Android R8 docs)
-
----
-
-## Context: What Already Exists (v1.0)
-
-The v1.0 architecture is stable and well-structured. This document focuses exclusively on how the three v1.1 features integrate with it, identifying exactly which files change, which files are new, and the data flow across component boundaries.
-
-Existing pipeline (unchanged in v1.1):
-
-```
-ShareReceiverActivity
-  → TranscriptionActivity
-    → TranscriptionViewModel (StateFlow<UiState>)
-      → WhisperEngine.transcribe(FloatArray): String
-        → WhisperContext.transcribeData(FloatArray): String
-          → WhisperLib.fullTranscribe(contextPtr, numThreads, audioData)  [JNI]
-            → whisper_jni.cpp: fullTranscribe()
-              → whisper_full(ctx, params, audioDataArr, audioDataLength)
-```
-
-Key constraint: `whisper_full()` is synchronous and blocking. The whisper.cpp context is owned by a `newSingleThreadExecutor`. The JNI call runs to completion before returning — there is no cooperative cancellation point inside `whisper_full`.
+**Domain:** Android on-device ML — settings persistence, language selection, model switching, UI theming
+**Researched:** 2026-03-01
+**Confidence:** HIGH (based on direct codebase inspection + Android official docs)
 
 ---
 
-## Feature 1: Progress Callbacks
+## Context: Existing v1.2 Architecture
 
-### What whisper.cpp Provides
+The v1.2 codebase is a multi-activity Kotlin app using the traditional View system (XML layouts + AppCompatActivity). No Jetpack Compose exists — all UIs use `setContentView()` with Material Components for Android.
 
-`whisper.h` (v1.7.4, confirmed in `/app/src/main/cpp/whisper.cpp/include/whisper.h`) exposes two callback hooks on `whisper_full_params`:
+### Activity Roster
 
-```c
-// Called on each progress update (0-100 int)
-typedef void (*whisper_progress_callback)(
-    struct whisper_context * ctx,
-    struct whisper_state   * state,
-    int                      progress,  // 0-100
-    void                   * user_data
-);
+```
+MainActivity                       ← transparent router (model present? → Ready : Download)
+  ↓ startActivity + finish()
+DownloadActivity                   ← model download + SHA256 verify (DownloadViewModel)
+  ↓ startActivity + finish() on complete
+ReadyActivity                      ← static "how to use" screen, no ViewModel
 
-// Called for each newly completed text segment
-typedef void (*whisper_new_segment_callback)(
-    struct whisper_context * ctx,
-    struct whisper_state   * state,
-    int                      n_new,     // number of new segments
-    void                   * user_data
-);
+ShareReceiverActivity              ← transparent share target, syncs URI copy, routes to Transcription
+  ↓ startActivity + finish()
+TranscriptionActivity              ← progress + result screen (TranscriptionViewModel)
+SmokeTestActivity                  ← developer tool, not in production flow
 ```
 
-Both are set on the `whisper_full_params` struct before calling `whisper_full()`. The `user_data` pointer is opaque to whisper.cpp — it is passed through unchanged to each callback invocation.
+### Core Pipeline (Unchanged v1.0→v1.2)
 
-These callbacks fire on the same thread that called `whisper_full()` — in this app, the single-thread executor thread owned by `WhisperContext`.
+```
+ShareReceiverActivity.onCreate()
+  → AudioCopier.copyToCache()            [synchronous, URI permission expires on background]
+  → startActivity(TranscriptionActivity)
 
-### Integration Point: whisper_jni.cpp
+TranscriptionActivity
+  → TranscriptionViewModel.startTranscription(audioPath)
+    → WhisperEngine.loadModel(modelPath)
+      → WhisperContext.createContextFromFile() [JNI: whisper_init_from_file_with_params]
+    → AudioDecoder.decode(audioPath)      [MediaCodec, Dispatchers.Default]
+    → PcmResampler.toWhisperFormat()      [linear interpolation to 16kHz mono]
+    → WhisperEngine.transcribe(pcm) { p → _uiState.emit(Processing(p)) }
+      → WhisperContext.transcribeData()   [single-thread executor, blocks 12-15s]
+        → WhisperLib.fullTranscribe()     [JNI: whisper_full, params.language = "auto"]
+        → poller coroutine: getProgress() every 200ms
+    → HallucinationFilter.filter(raw)
+    → _uiState.emit(Success(transcript)) or NoSpeech or Error
+```
 
-The current `fullTranscribe` JNI function in `whisper_jni.cpp` does not set callbacks:
+### Key Architectural Constraints (Cannot Change)
+
+| Constraint | Reason | Impact on v1.3 |
+|------------|--------|----------------|
+| `whisper_full()` is synchronous/blocking | whisper.cpp design | Language must be passed before call, not during |
+| `WhisperContext` owns a `newSingleThreadExecutor` | whisper.cpp not thread-safe | Model switching must serialize through this thread |
+| URI content permission expires on backgrounding | Android platform | `AudioCopier.copyToCache()` must remain synchronous in `onCreate` |
+| `params.language = "auto"` is hardcoded in `whisper_jni.cpp` | Current implementation | Language selection requires adding JNI parameter |
+| `ModelManager.MODEL_FILENAME` is a constant string | Current implementation | Model switching requires refactoring to a variable |
+| All activities are `AppCompatActivity` (no Compose) | Existing codebase | Settings UI uses XML + Material Components, not Compose |
+
+---
+
+## v1.3 Feature Integration Analysis
+
+### Feature A: Language Selection Dialog
+
+**What it is:** On each share intent, show a dialog asking "Which language?" with an option to remember the choice.
+
+**Integration point:** `ShareReceiverActivity.onCreate()` — between URI copy and launching `TranscriptionActivity`.
+
+**Current flow:**
+```
+ShareReceiverActivity.onCreate()
+  → AudioCopier.copyToCache()   [sync]
+  → startActivity(TranscriptionActivity)  [immediately]
+  → finish()
+```
+
+**v1.3 flow:**
+```
+ShareReceiverActivity.onCreate()
+  → AudioCopier.copyToCache()   [sync — must remain first]
+  → read SettingsRepository.getLanguage()
+  → if (language == "ask"):
+      show language dialog (AlertDialog)
+        → on confirm: startActivity(TranscriptionActivity + EXTRA_LANGUAGE)
+        → on dismiss: finish()
+  → else:
+      startActivity(TranscriptionActivity + EXTRA_LANGUAGE)
+  → finish()  [deferred until dialog confirmed]
+```
+
+**New extra on TranscriptionActivity intent:**
+```kotlin
+// ShareReceiverActivity:
+intent.putExtra(TranscriptionActivity.EXTRA_LANGUAGE, resolvedLanguageCode)
+
+// TranscriptionActivity:
+const val EXTRA_LANGUAGE = "extra_language"
+val language = intent.getStringExtra(EXTRA_LANGUAGE) ?: "auto"
+viewModel.startTranscription(audioPath, language)
+```
+
+**Language code passes down the entire call chain:**
+
+```
+TranscriptionActivity
+  → TranscriptionViewModel.startTranscription(audioPath, language: String)
+    → WhisperEngine.transcribe(pcm, language, onProgress)
+      → WhisperContext.transcribeData(data, language, onProgress)
+        → WhisperLib.fullTranscribe(contextPtr, numThreads, audioData, language)
+          → whisper_jni.cpp: params.language = languageCode.c_str()
+```
+
+**JNI change required in `whisper_jni.cpp`:**
 
 ```cpp
-// Current (v1.0):
-struct whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
-params.n_threads = numThreads;
-// ... other params ...
-// NO callbacks set
-int ret = whisper_full(ctx, params, audioDataArr, audioDataLength);
-```
-
-To add progress reporting, `fullTranscribe` must accept a Java/Kotlin callback object and register it with the params before calling `whisper_full`.
-
-### JNI Callback Pattern: How Upcalls Work
-
-The standard Android NDK pattern for C++ → Kotlin callbacks:
-
-1. The Kotlin side passes a callback object (or the `WhisperLib.Companion` object itself) to the JNI function as a `jobject`.
-2. The C++ side stores a `GlobalRef` to that object (local refs are invalid after the JNI call returns to Java).
-3. The C++ callback function receives `user_data` (the GlobalRef cast to `void*`), re-attaches the JVM thread (callbacks fire on a native thread — the JNIEnv from the original call is NOT valid here), calls `env->CallVoidMethod(jobj, methodId, progress)`, then detaches.
-4. After `whisper_full` returns, the GlobalRef is deleted.
-
-The critical constraint: **callbacks fire on the native thread (the single-thread executor), not the main thread**. The Kotlin callback must not touch UI directly — it must post to a StateFlow or Channel.
-
-### Recommended Pattern: Atomic Integer (No JNI Upcall)
-
-The JNI upcall pattern is correct but adds complexity (GlobalRef, thread attach/detach, FindClass caching). For a progress bar that shows 0-100%, a simpler approach has lower risk:
-
-**Option A — AtomicInteger polling (RECOMMENDED for this app):**
-
-```cpp
-// In whisper_jni.cpp
-struct ProgressState {
-    std::atomic<int> progress{0};
-};
-
-static void progress_cb(whisper_context*, whisper_state*, int p, void* user_data) {
-    auto* state = static_cast<ProgressState*>(user_data);
-    state->progress.store(p, std::memory_order_relaxed);
-}
-
-// fullTranscribeWithProgress: runs whisper_full, returns progress pointer
-// Kotlin polls via a new JNI function: getProgress(ptr): Int
-```
-
-This requires a new JNI function `getProgress(Long): Int` but eliminates all thread attach/detach complexity. Kotlin polls from a coroutine using `delay(200)` while `fullTranscribe` runs on the executor thread.
-
-However, since `transcribeData` in `WhisperContext` uses `withContext(scope.coroutineContext)` to block the coroutine, polling from the ViewModel requires a parallel coroutine.
-
-**Option B — Channel-based upcall (RECOMMENDED if segment text is needed):**
-
-If the UI should show partial transcript text as segments complete (not just a progress bar), a JNI upcall is the only viable approach. The new_segment_callback fires with completed segment text available via `whisper_full_get_segment_text`.
-
-### Chosen Architecture for v1.1: Progress Bar Only (Option A)
-
-Given that v1.1 scope is specifically "progress bar with segment callbacks," and voice messages are typically under 2 minutes, the AtomicInteger approach is appropriate. The progress bar goes from 0% to 100% based on the `whisper_progress_callback` integer value.
-
-### New and Modified Components
-
-**Modified: `whisper_jni.cpp`**
-
-Add a static `ProgressState` struct and register `progress_callback` on params. Add a new exported function:
-
-```cpp
-JNIEXPORT jint JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_getProgress(
-        JNIEnv*, jobject, jlong progressStatePtr) {
-    auto* state = (ProgressState*)(intptr_t)progressStatePtr;
-    return state ? state->progress.load() : 0;
-}
-```
-
-Modify `fullTranscribe` signature to return `jlong` (the ProgressState pointer) instead of `void`, OR add a separate `beginTranscribeSession`/`endTranscribeSession` pair.
-
-Simpler approach: allocate the ProgressState before calling `fullTranscribe`, pass its address via `progress_callback_user_data`, and expose a `getProgress(contextPtr)` that reads the atomic stored on the context-level ProgressState. Since the context is single-use per session, this is safe.
-
-**Modified: `WhisperLib.kt`**
-
-Add:
-```kotlin
-external fun getProgress(contextPtr: Long): Int
-```
-
-**Modified: `WhisperContext.transcribeData()`**
-
-The current signature returns `String`. To enable progress polling, the ViewModel needs to launch two concurrent coroutines on the executor scope — one for transcription, one for progress polling. This requires exposing the scope or restructuring `transcribeData`.
-
-Better: pass a progress lambda into `transcribeData`:
-
-```kotlin
-suspend fun transcribeData(
-    data: FloatArray,
-    onProgress: (Int) -> Unit = {}
-): String = withContext(scope.coroutineContext) {
-    // Launch progress poller as a child coroutine
-    val pollerJob = launch {
-        while (isActive) {
-            onProgress(WhisperLib.getProgress(ptr))
-            delay(100)
-        }
-    }
-    WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data)
-    pollerJob.cancel()
-    onProgress(100) // Ensure 100% shown
-    // ... collect segments ...
-}
-```
-
-**Modified: `WhisperEngine.transcribe()`**
-
-Add `onProgress: (Int) -> Unit = {}` parameter, forwarded to `WhisperContext.transcribeData()`.
-
-**Modified: `TranscriptionViewModel.startTranscription()`**
-
-Pass a progress lambda to `engine.transcribe()`:
-
-```kotlin
-val raw = engine.transcribe(pcm) { progress ->
-    _uiState.value = UiState.Processing(progress)
-}
-```
-
-**Modified: `UiState` sealed class**
-
-```kotlin
-// v1.0:
-object Processing : UiState()
-
-// v1.1:
-data class Processing(val progress: Int = 0) : UiState()
-```
-
-This is a data class change, not a sealed class restructure — the Activity already handles `UiState.Processing` in a `when` block and only needs to read `state.progress` to drive a `LinearProgressIndicator`.
-
-**Modified: `activity_transcription.xml`**
-
-Replace the `CircularProgressIndicator` (indeterminate spinner) with a `LinearProgressIndicator`:
-
-```xml
-<LinearProgressIndicator
-    android:id="@+id/progress_bar"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    app:trackCornerRadius="4dp"
-    android:indeterminate="false"
-    app:indicatorColor="?attr/colorPrimary"
-    android:max="100"
-    android:progress="0" />
-```
-
-**Modified: `TranscriptionActivity`**
-
-In the `UiState.Processing` branch of the `when` block:
-
-```kotlin
-is UiState.Processing -> {
-    progressBar.progress = state.progress
-    progressPercent.text = "${state.progress}%"
+// Current:
+JNIEXPORT void JNICALL
+Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
+    JNIEnv *env, jobject, jlong contextPtr, jint numThreads, jfloatArray audioData) {
     // ...
-}
+    params.language = "auto";
+
+// v1.3:
+JNIEXPORT void JNICALL
+Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
+    JNIEnv *env, jobject, jlong contextPtr, jint numThreads, jfloatArray audioData,
+    jstring languageCode) {                             // ← new parameter
+    const char* lang = env->GetStringUTFChars(languageCode, nullptr);
+    // ...
+    params.language = lang;
+    // ...
+    env->ReleaseStringUTFChars(languageCode, lang);
 ```
 
-### Data Flow: Progress Callback
-
-```
-whisper_full() [C++]
-  → progress_callback fires every ~10%
-    → ProgressState.progress.store(p)
-
-WhisperContext.transcribeData() [Kotlin, executor thread]
-  → child coroutine polls every 100ms
-    → WhisperLib.getProgress(ptr) [JNI]
-      → returns ProgressState.progress.load()
-    → onProgress(progress) [lambda]
-      → WhisperEngine forwards to ViewModel lambda
-
-TranscriptionViewModel [Main thread via StateFlow]
-  → _uiState.value = UiState.Processing(progress)
-
-TranscriptionActivity [Main thread]
-  → progressBar.progress = state.progress
-```
-
-### Component Change Summary
-
-| Component | Change Type | What Changes |
-|-----------|------------|--------------|
-| `whisper_jni.cpp` | Modified | Add `ProgressState` struct, register `progress_callback`, add `getProgress` JNI export |
-| `WhisperLib.kt` | Modified | Add `external fun getProgress(contextPtr: Long): Int` |
-| `WhisperContext.kt` | Modified | `transcribeData` gains `onProgress: (Int) -> Unit` param, launches poller coroutine |
-| `WhisperEngine.kt` | Modified | `transcribe()` gains `onProgress` param, forwards to WhisperContext |
-| `UiState` (in `TranscriptionViewModel.kt`) | Modified | `Processing` changes from `object` to `data class(val progress: Int = 0)` |
-| `TranscriptionViewModel.kt` | Modified | Pass progress lambda to `engine.transcribe()`, emit `UiState.Processing(progress)` |
-| `TranscriptionActivity.kt` | Modified | Read `state.progress` in `UiState.Processing` branch, set on progress bar |
-| `activity_transcription.xml` | Modified | Replace `CircularProgressIndicator` (indeterminate) with `LinearProgressIndicator` |
-
-No new classes required. The entire change propagates through the existing call chain.
-
----
-
-## Feature 2: F-Droid Metadata
-
-### F-Droid Fastlane Structure
-
-F-Droid reads app metadata from a `fastlane/metadata/android/` tree inside the repository root. This is the same format used by the fastlane supply tool. The structure is checked into the repository alongside the app source code.
-
-Confirmed layout (from F-Droid official documentation, HIGH confidence):
-
-```
-<repo root>/
-  fastlane/
-    metadata/
-      android/
-        en-US/
-          title.txt              ← App name (50 chars max)
-          short_description.txt  ← Tagline (80 chars max, no trailing period)
-          full_description.txt   ← Store listing body (4000 chars max)
-          changelogs/
-            2.txt                ← Changelog for versionCode=2 (500 chars max)
-            1.txt                ← Changelog for versionCode=1
-          images/
-            icon.png             ← 512x512 PNG
-            featureGraphic.png   ← 1024x500 PNG (optional)
-            phoneScreenshots/
-              01.png
-              02.png
-```
-
-For the TransChat project, where `app/build.gradle.kts` has `versionCode = 1`:
-
-```
-fastlane/metadata/android/en-US/changelogs/1.txt
-```
-
-### Placement in This Repository
-
-The fastlane tree sits at the repository root, not inside `app/`:
-
-```
-transchat-app/           ← repository root
-  fastlane/
-    metadata/
-      android/
-        en-US/
-          title.txt
-          short_description.txt
-          full_description.txt
-          changelogs/
-            1.txt        ← for versionCode 1 (initial release)
-            2.txt        ← for versionCode 2 (v1.1)
-```
-
-versionCode must match between `app/build.gradle.kts` and the changelog filename. When v1.1 ships, `versionCode` should be incremented to 2 and `changelogs/2.txt` added.
-
-### F-Droid Submission Metadata (`metadata/com.simonpena.transchat.yml`)
-
-In addition to the fastlane tree (which supplies the display content), F-Droid's build server requires a YAML file in the fdroiddata repository. This is maintained by F-Droid maintainers/volunteers, not the app developer. However, the app developer can prepare a draft:
-
-```yaml
-# This file lives in fdroiddata repo, not this repo
-AntiFeatures: []
-Categories:
-  - Multimedia
-License: MIT   # or whatever the license is
-AuthorName: Simon Pena
-SourceCode: https://github.com/simonpena/transchat-app
-IssueTracker: https://github.com/simonpena/transchat-app/issues
-
-RepoType: git
-Repo: https://github.com/simonpena/transchat-app
-
-Builds:
-  - versionName: '1.1'
-    versionCode: 2
-    commit: v1.1
-    submodules: true
-    gradle:
-      - yes
-    ndk: r26c
-
-AutoUpdateMode: None
-UpdateCheckMode: Tags
-```
-
-Note: `submodules: true` is required because whisper.cpp is a git submodule.
-
-### Reproducible Build Consideration
-
-F-Droid reproducible builds are sensitive to NDK path differences (they affect debug symbol paths, which affect the linker's build-id). The app already uses `ndkVersion = "26.1.10909125"` (NDK r26c) in `build.gradle.kts`, which pins the NDK version for reproducibility.
-
-To further improve reproducibility for the NDK build, consider adding to `CMakeLists.txt`:
-
-```cmake
-# Disable build-id to improve reproducibility across different build machines
-# (different paths in debug symbols cause different build-ids)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=none")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=none")
-```
-
-This is a known F-Droid recommendation for NDK-based apps (MEDIUM confidence — from F-Droid reproducible builds docs).
-
-### New Files for F-Droid
-
-| File Path | Type | Content |
-|-----------|------|---------|
-| `fastlane/metadata/android/en-US/title.txt` | New | `TransChat` |
-| `fastlane/metadata/android/en-US/short_description.txt` | New | `Transcribe WhatsApp and Telegram voice messages on-device` |
-| `fastlane/metadata/android/en-US/full_description.txt` | New | Full privacy-focused store description |
-| `fastlane/metadata/android/en-US/changelogs/1.txt` | New | Initial release changelog |
-| `fastlane/metadata/android/en-US/changelogs/2.txt` | New | v1.1 changelog (add when versionCode bumped to 2) |
-| `fastlane/metadata/android/en-US/images/icon.png` | New | 512x512 app icon |
-
-No changes to `app/build.gradle.kts` required for fastlane metadata. The versionCode increment is the only build file change for v1.1.
-
----
-
-## Feature 3: R8 Configuration
-
-### Current State
-
-`app/proguard-rules.pro` already exists with these rules:
-
-```proguard
-# Keep all JNI-facing native methods
--keepclassmembers class * {
-    native <methods>;
-}
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
-# Keep the entire transchat package
--keep class com.simonpena.transchat.** { *; }
-
-# Keep WhisperLib companion object specifically
--keep class com.simonpena.transchat.WhisperLib { *; }
--keep class com.simonpena.transchat.WhisperLib$Companion { *; }
-```
-
-`app/build.gradle.kts` already references this file:
+**Dialog implementation:** Use `AlertDialog.Builder` (Material Components) with a single-choice list of language options. Matches the existing non-Compose UI pattern of the app.
 
 ```kotlin
-release {
-    isMinifyEnabled = true
-    proguardFiles(
-        getDefaultProguardFile("proguard-android-optimize.txt"),
-        "proguard-rules.pro"
+// In ShareReceiverActivity (or extracted to a helper):
+AlertDialog.Builder(this)
+    .setTitle("Language")
+    .setSingleChoiceItems(languageNames, selectedIndex) { _, which ->
+        selectedLanguage = languageCodes[which]
+    }
+    .setPositiveButton("OK") { _, _ ->
+        launchTranscription(cachedFile, selectedLanguage)
+    }
+    .setNegativeButton("Cancel") { _, _ -> finish() }
+    .show()
+```
+
+**"Remember my choice" toggle:** A `CheckBox` in the dialog content view, or a `MultiChoiceItems` item at the bottom. On confirmation with box checked: `SettingsRepository.setLanguage(selectedLanguage)`. If unchecked: `SettingsRepository.setLanguage("ask")`.
+
+---
+
+### Feature B: Settings Page
+
+**What it is:** A new Settings screen reachable from `ReadyActivity` (and potentially from `TranscriptionActivity`'s overflow menu). Contains: default language, model selection (tiny/small).
+
+**Integration point:** `ReadyActivity` gains a settings button. New `SettingsActivity` added to manifest.
+
+**Navigation:**
+```
+ReadyActivity  ──[Settings button]──→  SettingsActivity
+```
+
+`ReadyActivity` is currently a static XML screen with no ViewModel. For v1.3:
+- Add a Settings/gear icon button to `activity_ready.xml`.
+- `ReadyActivity.onCreate()`: `btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }`.
+
+**`SettingsActivity` structure:**
+- `AppCompatActivity` subclass (consistent with existing app)
+- XML layout with Material Components: `SwitchMaterial` or `RadioGroup` for language default; separate section for model selection
+- No ViewModel needed — reads/writes `SettingsRepository` directly (synchronous SharedPreferences reads are acceptable for this simple use case)
+- Back button saves settings implicitly (no explicit "Save" needed — write on each change)
+
+**Alternative (PreferenceFragmentCompat):** The AndroidX Preference library provides a built-in settings UI framework. Pros: handles save/restore automatically, matches system Settings UI conventions. Cons: less visual control, requires another dependency, styling with Material 3 is indirect. **Recommendation: use plain `AppCompatActivity` + XML layout for full control over Material 3 appearance, consistent with the rest of the app.**
+
+---
+
+### Feature C: Model Switching (Tiny vs Small)
+
+**What it is:** Allow the user to select between `ggml-tiny-q5_1.bin` (~38MB) and `ggml-small-q5_1.bin` (~190MB, current). Both are multilingual Whisper models.
+
+**Complexity:** This is the most architecturally significant v1.3 change.
+
+**Current `ModelManager` is built around a single model:**
+
+```kotlin
+object ModelManager {
+    const val MODEL_FILENAME = "ggml-small-q5_1.bin"
+    const val MODEL_URL = "https://huggingface.co/..."
+    const val MODEL_SHA256 = "ae85e4a..."
+    const val MODEL_SIZE_BYTES = 199_819_264L
+
+    fun modelFile(context: Context): File { ... }
+    fun isModelPresentFast(context: Context): Boolean { ... }
+}
+```
+
+**Required refactoring:** `ModelManager` needs to be aware of which model is active.
+
+```kotlin
+enum class WhisperModel(
+    val filename: String,
+    val url: String,
+    val sha256: String,
+    val sizeBytes: Long,
+    val displayName: String
+) {
+    TINY(
+        filename = "ggml-tiny-q5_1.bin",
+        url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin",
+        sha256 = "<verified at research time>",
+        sizeBytes = 31_953_408L,  // ~30MB q5_1
+        displayName = "Tiny (~30MB, faster)"
+    ),
+    SMALL(
+        filename = "ggml-small-q5_1.bin",
+        url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
+        sha256 = "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+        sizeBytes = 199_819_264L,
+        displayName = "Small (~190MB, more accurate)"
     )
 }
 ```
 
-### Analysis of Existing Rules
+`ModelManager` methods become model-aware:
 
-**The broad `-keep class com.simonpena.transchat.** { *; }` is correct but overprotective.** It preserves every field and method in every class in the package, including things R8 could otherwise shrink. This is safe but leaves optimization on the table.
-
-**The two `native <methods>` rules are the critical ones.** The `proguard-android-optimize.txt` base file already includes `-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }`, so the existing rules in `proguard-rules.pro` are partly redundant. No harm — redundant keep rules do not break anything.
-
-### What v1.1 Adds to R8 Configuration
-
-#### New JNI function: `getProgress`
-
-Adding `external fun getProgress(contextPtr: Long): Int` to `WhisperLib.Companion` requires no new ProGuard rule because:
-- The broad `-keep class com.simonpena.transchat.WhisperLib$Companion { *; }` already covers it.
-- The `native <methods>` rules already cover it.
-
-#### UiState change: `Processing` becomes a data class
-
-`UiState.Processing` changing from `object` to `data class(val progress: Int = 0)` has no R8 impact. The class is used internally by the app and never accessed via reflection or JNI.
-
-#### Sealed class and ViewModels
-
-The existing rules keep all of `com.simonpena.transchat.**`, which includes `UiState`, `TranscriptionViewModel`, and all sealed subclasses. No additional rules needed.
-
-### Recommended R8 Refinement (Optional)
-
-The current `-keep class com.simonpena.transchat.** { *; }` could be narrowed to reduce APK size, but given that the app is small and privacy-focused (simple UX), this is a minor concern. If the rule is tightened:
-
-```proguard
-# Keep JNI bridge — class name and companion must not be renamed
-# (JNI name mangling requires exact package+class names)
--keep class com.simonpena.transchat.WhisperLib { *; }
--keep class com.simonpena.transchat.WhisperLib$Companion { *; }
-
-# Keep ViewModels (accessed by AndroidX ViewModelProvider via reflection)
--keep class com.simonpena.transchat.*ViewModel { *; }
--keep class com.simonpena.transchat.*ViewModel$** { *; }
-
-# Keep Activities (accessed by Android system via reflection at startup)
--keep class com.simonpena.transchat.*Activity { *; }
-
-# Keep UiState sealed hierarchy (accessed via when() — no reflection, but keep to be safe)
--keep class com.simonpena.transchat.UiState { *; }
--keep class com.simonpena.transchat.UiState$** { *; }
+```kotlin
+fun modelFile(context: Context, model: WhisperModel = activeModel(context)): File { ... }
+fun isModelPresentFast(context: Context, model: WhisperModel): Boolean { ... }
+fun activeModel(context: Context): WhisperModel {
+    return SettingsRepository.getModel(context)  // reads SharedPreferences
+}
 ```
 
-However, the risk of breaking things by narrowing rules outweighs the size benefit for this app. **Recommendation: leave the existing rules as-is for v1.1 and only tighten if APK size becomes a concern.**
+**Model switching cascades affect:**
 
-### R8 Rule File Location
+| Component | Change |
+|-----------|--------|
+| `ModelManager` | Add `WhisperModel` enum, make all methods model-aware |
+| `SettingsRepository` | Persist active model selection |
+| `MainActivity` | Route based on `isModelPresentFast(activeModel)` |
+| `ShareReceiverActivity` | Check active model presence |
+| `DownloadActivity` + `DownloadViewModel` | Download the selected model's URL/filename |
+| `TranscriptionViewModel` | Load `ModelManager.modelFile(activeModel)` |
+| `SettingsActivity` | UI to select model; if selected model not present, prompt download |
 
-There is exactly one ProGuard rule file location in this project:
+**Critical model-switching edge case:** If the user switches from Small→Tiny and Tiny is not downloaded yet, the app must either (a) start a download or (b) revert to the previously downloaded model. The simplest correct behavior: switching to a model that isn't downloaded triggers `DownloadActivity` for that model. The old model file is kept — storage is not deleted on switch.
 
-```
-app/proguard-rules.pro
-```
-
-Referenced from `app/build.gradle.kts`. No separate module-level files (the app has a single module). No `consumer-rules.pro` (only relevant for library modules).
-
-The base rules from AOSP are injected automatically by the Android Gradle Plugin:
-
-```
-<SDK>/tools/proguard/proguard-android-optimize.txt
-```
-
-Both files are merged at build time. Rules in `proguard-rules.pro` take precedence for conflicts.
-
-### Critical R8 Constraint: JNI Name Mangling
-
-The JNI function names in `whisper_jni.cpp` are derived from the Java package + class + method name via a deterministic mangling rule:
-
-```
-Java_<package>_<class>_<method>
-```
-
-For example:
-```
-Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe
-```
-
-The `00024` is the Unicode escape for `$` (the companion object separator). If R8 renames `WhisperLib` or its `Companion`, the JNI symbol lookup fails at runtime with `UnsatisfiedLinkError`. The existing keep rules correctly prevent this.
-
-**Any new JNI method added to `WhisperLib.Companion` is automatically protected by the existing `-keep class com.simonpena.transchat.WhisperLib$Companion { *; }` rule.** No additional rule needed per new method.
+**WhisperEngine memory implication:** The engine keeps the loaded model in native memory (~190MB for small, ~40MB for tiny). Switching models requires `engine.release()` then `engine.loadModel(newPath)`. This 2-5s reload only happens when the active model changes between transcriptions — not on every share. Since `TranscriptionViewModel` is recreated for each transcription session, this is handled naturally (the ViewModel always calls `loadModel` in `startTranscription`).
 
 ---
 
-## Build Order for v1.1
+### Feature D: App Rename (TransChat → Unmuffle)
 
-Dependencies between the three feature areas:
+**What it is:** Rename `android:label`, package strings, `strings.xml` references, manifest label, README, CI references.
 
-```
-R8 rules (proguard-rules.pro)
-  ← no dependencies on other v1.1 features
-  ← can ship independently
+**NOT a package rename:** The requirement says "package, strings, manifest" but changing the Java package (`com.simonpena.transchat`) would break the JNI name mangling. **Recommendation: rename display strings only, not the Java package.** The JNI C++ symbols (`Java_com_simonpena_transchat_WhisperLib_...`) would require renaming all C++ JNI functions if the package changes — that is refactoring risk without user benefit.
 
-F-Droid metadata (fastlane/)
-  ← no code dependencies
-  ← depends on: versionCode incremented in build.gradle.kts
-  ← can be prepared in parallel with progress callback work
+**What changes:**
+- `AndroidManifest.xml`: `android:label="Unmuffle"` and `android:label` on `ShareReceiverActivity`
+- `res/values/strings.xml`: All string references to "TransChat"
+- `DownloadViewModel.kt`: `setTitle("Unmuffle — Whisper Model")`
+- `README.md`, `.github/workflows/` references
 
-Progress callbacks
-  ← depends on: whisper_jni.cpp changes first (adds getProgress)
-  ← then: WhisperLib.kt (new external fun)
-  ← then: WhisperContext.kt (poller coroutine)
-  ← then: WhisperEngine.kt (forward onProgress param)
-  ← then: UiState.Processing change
-  ← then: TranscriptionViewModel.kt (emit progress)
-  ← then: activity_transcription.xml (new progress bar widget)
-  ← then: TranscriptionActivity.kt (read progress from state)
-```
-
-Recommended implementation order within progress callbacks:
-
-1. Add `ProgressState` struct + `progress_callback` to `whisper_jni.cpp` + add `getProgress` JNI export — verify with `adb logcat` that callback fires.
-2. Add `external fun getProgress` to `WhisperLib.kt`.
-3. Modify `WhisperContext.transcribeData()` to launch poller coroutine + accept `onProgress` lambda.
-4. Modify `WhisperEngine.transcribe()` to accept + forward `onProgress`.
-5. Change `UiState.Processing` from `object` to `data class`.
-6. Modify `TranscriptionViewModel` to pass progress lambda.
-7. Update `activity_transcription.xml` — replace spinner with linear progress bar.
-8. Update `TranscriptionActivity` to set `progressBar.progress`.
-
-Each step is independently testable before proceeding.
+**What does NOT change:**
+- Java package `com.simonpena.transchat`
+- JNI function names in `whisper_jni.cpp`
+- ProGuard keep rules (class names unchanged)
 
 ---
 
-## Component Boundaries: New vs Modified
+### Feature E: UI/UX Polish (Material 3)
 
-### New Files (v1.1)
+**Current state:** App uses `Theme.MaterialComponents.DayNight.DarkActionBar` (Material Components 2/3 hybrid). The theme is defined in `res/values/themes.xml`.
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `title.txt` | `fastlane/metadata/android/en-US/` | F-Droid app name |
-| `short_description.txt` | `fastlane/metadata/android/en-US/` | F-Droid tagline |
-| `full_description.txt` | `fastlane/metadata/android/en-US/` | F-Droid store listing |
-| `changelogs/1.txt` | `fastlane/metadata/android/en-US/changelogs/` | Initial release notes |
-| `changelogs/2.txt` | `fastlane/metadata/android/en-US/changelogs/` | v1.1 release notes |
-| `icon.png` | `fastlane/metadata/android/en-US/images/` | 512x512 app icon |
+**v1.3 goal:** Material 3 (`Theme.Material3.*`) styling, layout regression fix (title overlapping transcript).
 
-### Modified Files (v1.1)
+**Theme migration path:**
 
-| File | Location | What Changes |
-|------|----------|-------------|
-| `whisper_jni.cpp` | `app/src/main/cpp/` | Add `ProgressState` struct, register `progress_callback`, add `getProgress` export |
-| `WhisperLib.kt` | `app/src/main/java/com/simonpena/transchat/` | Add `external fun getProgress(contextPtr: Long): Int` |
-| `WhisperContext` (inside `WhisperLib.kt`) | same file | `transcribeData()` gains `onProgress` param + poller coroutine |
-| `WhisperEngine.kt` | `app/src/main/java/com/simonpena/transchat/` | `transcribe()` gains `onProgress: (Int) -> Unit = {}` |
-| `TranscriptionViewModel.kt` | `app/src/main/java/com/simonpena/transchat/` | `UiState.Processing` becomes `data class`, pass progress lambda to engine |
-| `TranscriptionActivity.kt` | `app/src/main/java/com/simonpena/transchat/` | Read `state.progress`, set on progress bar |
-| `activity_transcription.xml` | `app/src/main/res/layout/` | Replace `CircularProgressIndicator` with `LinearProgressIndicator` |
-| `app/build.gradle.kts` | `app/` | Increment `versionCode` from 1 to 2 for v1.1 |
-| `proguard-rules.pro` | `app/` | No required changes; optional narrowing of broad keep rule |
+```xml
+<!-- Current: -->
+<style name="Theme.TransChat" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
 
-### No Changes Required
+<!-- v1.3: -->
+<style name="Theme.Unmuffle" parent="Theme.Material3.DayNight">
+```
 
-| Component | Why Untouched |
-|-----------|---------------|
-| `AudioDecoder.kt` | Progress is only needed during Whisper inference, not decode |
-| `PcmResampler.kt` | Same reason |
-| `HallucinationFilter.kt` | Runs after inference, no progress needed |
-| `ShareReceiverActivity.kt` | Passes audio path through, does not observe progress |
-| `ModelManager.kt` | Model load is fast (~136ms), no progress needed there |
-| `CMakeLists.txt` | No new source files; `getProgress` is in existing `whisper_jni.cpp` |
-| AndroidManifest.xml | No new activities, permissions, or intent filters |
+Material 3 is available via `com.google.android.material:material:1.12.0` (already in `libs.versions.toml`) — version 1.12.0 includes Material 3 components including `Theme.Material3.*`. No dependency upgrade needed.
+
+**Layout regression fix:** The `activity_transcription.xml` layout has a known bug where the title overlaps the transcript text and buttons are partially occluded. The fix requires adding proper top/bottom constraints. The existing layout uses `FrameLayout` as root with `LinearLayout` groups — the result group needs a title `TextView` that is properly constrained above the `ScrollView`.
+
+**Transparent theme for headless activities:** The `Theme.TransChat.Transparent` → `Theme.Unmuffle.Transparent` rename needs to update both `themes.xml` and the two manifest entries that reference it (`MainActivity`, `ShareReceiverActivity`).
 
 ---
 
-## Architecture Diagram: v1.1 Progress Flow
+## New Components Required
+
+| Component | Type | Purpose | Integration |
+|-----------|------|---------|-------------|
+| `SettingsRepository` | `object` (singleton) | Read/write SharedPreferences for language + model settings | Used by `ShareReceiverActivity`, `MainActivity`, `TranscriptionViewModel`, `SettingsActivity` |
+| `WhisperModel` | `enum class` | Model variants (tiny, small) with URL/SHA256/size | Lives in `ModelManager.kt` or its own file |
+| `SettingsActivity` | `AppCompatActivity` | Settings screen UI | New activity, registered in manifest |
+| `activity_settings.xml` | Layout XML | Settings screen layout (language selector + model picker) | Referenced by `SettingsActivity` |
+| Language codes list | `object` or `companion object` | Supported language codes + display names | Used by dialog in `ShareReceiverActivity` and settings |
+
+---
+
+## Modified Components
+
+| Component | What Changes | Why |
+|-----------|-------------|-----|
+| `whisper_jni.cpp` | `fullTranscribe` gains `jstring languageCode` param | Language must reach whisper_full params |
+| `WhisperLib.kt` | `fullTranscribe` external fun gains `language: String` param | JNI signature must match C++ |
+| `WhisperContext.transcribeData()` | Gains `language: String` param, passes to JNI | Propagate language down call chain |
+| `WhisperEngine.transcribe()` | Gains `language: String` param, forwards down | Same |
+| `TranscriptionViewModel.startTranscription()` | Gains `language: String` param | Receives from Activity intent extra |
+| `TranscriptionActivity` | Reads `EXTRA_LANGUAGE` from intent, passes to ViewModel | Passes language from share dialog |
+| `ShareReceiverActivity` | Shows language dialog or reads saved preference; adds `EXTRA_LANGUAGE` to intent | New language flow entry point |
+| `ModelManager` | Becomes multi-model-aware using `WhisperModel` enum | Support tiny/small switching |
+| `MainActivity` | Routes using active model from `SettingsRepository` | Model-aware routing |
+| `DownloadViewModel` | Downloads the selected model's URL/filename | Model-aware download |
+| `DownloadActivity` | Shows which model is being downloaded | UI clarity |
+| `ReadyActivity` | Gains Settings button | Entry point to `SettingsActivity` |
+| `AndroidManifest.xml` | New `SettingsActivity` registration; rename labels | New screen + rename |
+| `res/values/themes.xml` | Migrate to Material 3 theme parent; rename to Unmuffle | UI polish |
+| `activity_transcription.xml` | Fix layout regression (title + button constraints) | Known bug |
+| `activity_ready.xml` | Add Settings button | Navigation to Settings |
+| `libs.versions.toml` | No dependency change needed (material 1.12.0 has M3) | — |
+| `proguard-rules.pro` | Add `SettingsActivity` keep rule (Activities are already kept by broad rule) | No change actually needed |
+
+---
+
+## SettingsRepository: Recommended Implementation
+
+**Use SharedPreferences (not DataStore) for this app.**
+
+Rationale: The values read in `ShareReceiverActivity.onCreate()` and `MainActivity.onCreate()` are read synchronously on the main thread before any UI appears. DataStore is async (Flow/coroutine-based) and is not suitable for synchronous reads in `onCreate`. SharedPreferences `getString()` is synchronous and safe for small key-value data like language and model selection.
+
+DataStore is the Google-recommended modern API, but its async nature would require restructuring the share flow to be coroutine-driven before the URI permission expires — adding risk without benefit for 2 small preference values.
+
+```kotlin
+object SettingsRepository {
+
+    private const val PREFS_NAME = "unmuffle_settings"
+    private const val KEY_LANGUAGE = "language"
+    private const val KEY_MODEL = "model"
+    private const val DEFAULT_LANGUAGE = "ask"  // "ask" = always show dialog
+
+    fun getLanguage(context: Context): String {
+        return prefs(context).getString(KEY_LANGUAGE, DEFAULT_LANGUAGE) ?: DEFAULT_LANGUAGE
+    }
+
+    fun setLanguage(context: Context, languageCode: String) {
+        prefs(context).edit().putString(KEY_LANGUAGE, languageCode).apply()
+    }
+
+    fun getModel(context: Context): WhisperModel {
+        val name = prefs(context).getString(KEY_MODEL, WhisperModel.SMALL.name)
+        return WhisperModel.entries.find { it.name == name } ?: WhisperModel.SMALL
+    }
+
+    fun setModel(context: Context, model: WhisperModel) {
+        prefs(context).edit().putString(KEY_MODEL, model.name).apply()
+    }
+
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+}
+```
+
+---
+
+## Data Flow Changes for v1.3
+
+### Language Selection Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  TranscriptionActivity (Main thread)                            │
-│  Observes: StateFlow<UiState>                                   │
-│  UiState.Processing(progress: Int) → progressBar.progress = p  │
-└───────────────────┬─────────────────────────────────────────────┘
-                    │ StateFlow emission (Dispatchers.Main)
-                    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  TranscriptionViewModel                                          │
-│  _uiState.value = UiState.Processing(progress)                  │
-│  Passes onProgress lambda → engine.transcribe(pcm) { p → ... } │
-└───────────────────┬─────────────────────────────────────────────┘
-                    │ lambda call (executor thread)
-                    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  WhisperEngine.transcribe(audioData, onProgress)                │
-│  Delegates to WhisperContext.transcribeData(data, onProgress)   │
-└───────────────────┬─────────────────────────────────────────────┘
-                    │ coroutine on single-thread executor
-                    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  WhisperContext.transcribeData() [single-thread executor]        │
-│  ├── child coroutine: poller                                    │
-│  │     loop: WhisperLib.getProgress(ptr) every 100ms           │
-│  │           → calls onProgress(p)                             │
-│  └── WhisperLib.fullTranscribe(ptr, threads, data) [blocks]    │
-│         → whisper_full() running in C++ [12-15s]               │
-│               → progress_callback fires every ~10%              │
-│                     → ProgressState.progress.store(p)          │
-└─────────────────────────────────────────────────────────────────┘
+[User shares voice message]
+    ↓
+ShareReceiverActivity.onCreate()
+    ↓ sync
+AudioCopier.copyToCache()  →  CopyResult.Success(cachedFile)
+    ↓
+SettingsRepository.getLanguage()
+    ├── "ask" → show AlertDialog with language list
+    │     → user picks language + optional "remember"
+    │     → if remember: SettingsRepository.setLanguage(code)
+    │     → startActivity(TranscriptionActivity + EXTRA_LANGUAGE=code + EXTRA_AUDIO_PATH=path)
+    └── "es"/"en"/etc → startActivity directly with saved language code
+    ↓
+TranscriptionActivity.onCreate()
+    → reads EXTRA_LANGUAGE and EXTRA_AUDIO_PATH
+    → viewModel.startTranscription(audioPath, language)
+    ↓
+TranscriptionViewModel → WhisperEngine → WhisperContext → WhisperLib.fullTranscribe(language)
+    ↓ JNI
+whisper_jni.cpp: params.language = languageCode  (or "auto")
 ```
+
+### Model Switching Flow
+
+```
+[User opens SettingsActivity]
+    → reads current model from SettingsRepository.getModel()
+    → shows RadioGroup/Spinner: Tiny / Small
+
+[User selects different model]
+    → SettingsRepository.setModel(newModel)
+    → if !ModelManager.isModelPresentFast(context, newModel):
+        → show dialog: "Tiny model not downloaded. Download now?"
+        → startActivity(DownloadActivity + EXTRA_MODEL=newModel.name)
+
+[Next share intent]
+    → ShareReceiverActivity checks ModelManager.isModelPresentFast(activeModel)
+    → TranscriptionViewModel loads ModelManager.modelFile(activeModel)
+```
+
+### State Management Summary
+
+```
+SettingsRepository (SharedPreferences)
+    ↑ write                      ↑ write
+SettingsActivity          ShareReceiverActivity (language dialog + remember)
+    ↓ read                       ↓ read
+ModelManager              ShareReceiverActivity (language for intent)
+MainActivity              MainActivity (model routing)
+```
+
+---
+
+## Recommended Build Order
+
+Dependencies between v1.3 features determine safe implementation order:
+
+```
+Step 1: SettingsRepository (no deps)
+        WhisperModel enum (no deps)
+        ← These are pure data/storage, no UI, independently testable
+
+Step 2: ModelManager refactor (depends on WhisperModel + SettingsRepository)
+        ← Enables model-aware routing/checking throughout
+
+Step 3: Language JNI chain (depends on nothing but impacts many files)
+        whisper_jni.cpp → WhisperLib.kt → WhisperContext → WhisperEngine
+          → TranscriptionViewModel → TranscriptionActivity
+        ← Work bottom-up (JNI first, UI last); test with hardcoded "es" before wiring dialog
+
+Step 4: App rename (TransChat → Unmuffle)
+        ← Touches strings/manifest only; safe to do in isolation
+        ← Do before UI polish so themes.xml rename is done once
+
+Step 5: UI polish + layout fix (depends on rename for theme naming)
+        themes.xml migration to Material 3
+        activity_transcription.xml layout regression fix
+        ← Visual changes; low risk of breaking logic
+
+Step 6: Language selection dialog in ShareReceiverActivity
+        (depends on: Step 1 SettingsRepository, Step 3 language chain working)
+        ← Wire dialog to SettingsRepository.getLanguage/setLanguage
+        ← At this point, end-to-end language flow works
+
+Step 7: Settings screen (SettingsActivity + ReadyActivity button)
+        (depends on: Step 1 SettingsRepository, Step 2 ModelManager, Step 4 rename)
+        ← Last because it surfaces all settings that prior steps established
+        ← Model download trigger from settings requires DownloadActivity changes (Step 2)
+```
+
+**Why this order:**
+
+- `SettingsRepository` is a zero-risk foundation. Nothing else in the app breaks if it's added first.
+- Language JNI chain (Step 3) must go bottom-up because each layer depends on the layer below it compiling.
+- The rename (Step 4) is done before UI polish (Step 5) to avoid renaming themes twice.
+- The language dialog (Step 6) is wired after both the persistence (Step 1) and the downstream JNI chain (Step 3) are in place — otherwise the dialog would have nowhere to route the selected language.
+- Settings screen (Step 7) is last because it is the surface that integrates all prior steps.
+
+---
+
+## Component Diagram: v1.3 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  ENTRY POINTS                                                        │
+│  MainActivity (router)    ShareReceiverActivity (share target)       │
+│       ↓                              ↓                              │
+│  SettingsRepository ←────────────────┘                             │
+│  ModelManager ←──────────────────────┘                             │
+└─────────────────────────────────────────────────────────────────────┘
+            ↓                            ↓
+┌───────────────────────┐   ┌────────────────────────────────────────┐
+│  DOWNLOAD FLOW        │   │  TRANSCRIPTION FLOW                    │
+│  DownloadActivity     │   │  TranscriptionActivity                 │
+│  DownloadViewModel    │   │  TranscriptionViewModel                │
+│  ModelManager         │   │  WhisperEngine                         │
+│  (WhisperModel enum)  │   │  WhisperContext (single-thread exec)   │
+└───────────────────────┘   │  WhisperLib (JNI bridge)               │
+                             │  whisper_jni.cpp                       │
+                             │    params.language = langCode          │
+                             └────────────────────────────────────────┘
+            ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│  SETTINGS FLOW (NEW in v1.3)                                        │
+│  ReadyActivity ──[settings btn]──→ SettingsActivity                 │
+│  SettingsActivity reads/writes: SettingsRepository                  │
+│    - language preference (ask / es / en / pt / ...)                 │
+│    - model preference (TINY / SMALL)                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PERSISTENCE LAYER (NEW in v1.3)                                    │
+│  SettingsRepository (SharedPreferences "unmuffle_settings")         │
+│    KEY_LANGUAGE: String  ("ask" | "auto" | "es" | "en" | ...)      │
+│    KEY_MODEL: String  ("TINY" | "SMALL")                            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Async Settings Read in ShareReceiverActivity
+
+**What people do:** Use DataStore (Kotlin Flow) for settings, then `runBlocking` in `onCreate` to read synchronously, or launch a coroutine and defer the URI copy.
+
+**Why it's wrong:** The URI content permission expires when the sending app is backgrounded. Any async gap between `onCreate` and `copyToCache` risks the permission expiring. This is why the existing `copyToCache` is explicitly synchronous.
+
+**Do this instead:** SharedPreferences synchronous read. Language code and model name are not sensitive — no encryption needed.
+
+---
+
+### Anti-Pattern 2: Package Rename for App Rename
+
+**What people do:** Rename the Java package from `com.simonpena.transchat` to `com.simonpena.unmuffle` as part of the app rename.
+
+**Why it's wrong:** The JNI C++ function names in `whisper_jni.cpp` encode the package name (`Java_com_simonpena_transchat_WhisperLib_00024Companion_*`). Renaming the package requires renaming all 7 JNI functions in C++ and updating the ProGuard rules. This is refactoring risk with zero user-visible benefit (users never see the package name).
+
+**Do this instead:** Rename `android:label` strings only. Update `strings.xml`, manifest labels, README, and CI — not the Java package.
+
+---
+
+### Anti-Pattern 3: Reloading the Model on Every Transcription
+
+**What people do:** Call `engine.loadModel()` on every `startTranscription()` invocation, assuming this is safer.
+
+**Why it's wrong:** Model loading takes 2-5 seconds and allocates ~190MB of native memory. `WhisperEngine` is instantiated inside `TranscriptionViewModel`, which is created fresh for each `TranscriptionActivity` instance. The model is already loaded once per session; reloading is just a 2-5s delay for the user on every voice message.
+
+**Do this instead:** Keep the existing pattern — load once in `startTranscription`, release in `onCleared`. When model switching is added, the new model path is passed to the same `loadModel()` call; there's no need to pre-cache or warm the model.
+
+---
+
+### Anti-Pattern 4: Storing Model Files on Internal filesDir vs External
+
+**What people do:** Move model storage to `context.filesDir` for simpler access.
+
+**Why it's wrong:** `DownloadManager` (a separate system process) cannot write to `filesDir`. The existing `getExternalFilesDir(null)` is app-private, deleted on uninstall, and accessible by `DownloadManager`. This must be preserved.
+
+**Do this instead:** Keep model storage in `getExternalFilesDir(null)/models/` for both tiny and small model files.
+
+---
+
+### Anti-Pattern 5: Adding Jetpack Compose for New Screens
+
+**What people do:** Add Compose to the new Settings screen for "modern" UI while keeping XML for existing screens.
+
+**Why it's wrong:** The codebase is 100% XML + AppCompatActivity. Introducing Compose for one screen adds the Compose dependency tree (~5-10MB to the APK), requires migrating to `ComponentActivity` for that Activity (or mixing AppCompat + Compose), and creates an inconsistent codebase pattern. The Material Components XML library already provides equivalent Material 3 components.
+
+**Do this instead:** Use `AppCompatActivity` + XML + Material Components (the existing pattern) for `SettingsActivity`.
+
+---
+
+## Integration Points Summary
+
+| Boundary | Direction | Protocol | Notes |
+|----------|-----------|----------|-------|
+| `ShareReceiverActivity` → `TranscriptionActivity` | Intent extras | `EXTRA_AUDIO_PATH` (exists) + `EXTRA_LANGUAGE` (new) | Language must be resolved before `startActivity` |
+| `SettingsRepository` ↔ All Activities | Direct call | SharedPreferences (sync read, async `.apply()` write) | Single `SettingsRepository` object, no dependency injection needed |
+| `ModelManager` ↔ `WhisperModel` | Type reference | `WhisperModel` enum passed to all model methods | Enum serialized as `.name` String in SharedPreferences |
+| `TranscriptionViewModel` → `WhisperEngine` | Kotlin API | `transcribe(pcm, language, onProgress)` | Language added to existing signature |
+| `WhisperEngine` → `WhisperContext` → `WhisperLib` | Kotlin API → JNI | `fullTranscribe(contextPtr, numThreads, audioData, language)` | JNI function signature change requires both C++ and Kotlin updates |
+| `SettingsActivity` → `DownloadActivity` | Intent extras | `EXTRA_MODEL` (new) | Only if selected model not downloaded |
 
 ---
 
 ## Confidence Assessment
 
-| Area | Confidence | Source |
-|------|------------|--------|
-| whisper.cpp progress_callback API | HIGH | Verified in `/app/src/main/cpp/whisper.cpp/include/whisper.h` lines 454-455, 553-555 |
-| AtomicInteger pattern for JNI progress | HIGH | Standard C++ atomic + JNI pattern; no upcall complexity |
-| UiState.Processing change | HIGH | Direct code inspection of `TranscriptionViewModel.kt` |
-| F-Droid fastlane directory layout | HIGH | F-Droid official documentation (multiple sources confirm) |
-| F-Droid fastlane file names | HIGH | F-Droid official documentation |
-| R8 existing rule sufficiency | HIGH | Code inspection of `proguard-rules.pro` + `build.gradle.kts` |
-| NDK build-id reproducibility | MEDIUM | F-Droid reproducible builds docs, not yet tested against this specific project |
-| Progress callback fire frequency | MEDIUM | whisper.cpp source shows ~10% increments but exact behavior depends on audio length and model |
+| Area | Confidence | Basis |
+|------|------------|-------|
+| Language JNI chain | HIGH | Direct read of `whisper_jni.cpp` — `params.language` is hardcoded "auto", adding param is mechanical |
+| SharedPreferences for settings | HIGH | Official Android docs; synchronous requirement from existing URI copy pattern |
+| `WhisperModel` enum approach | HIGH | Direct read of `ModelManager.kt` — single-model constants are obvious extension points |
+| Settings screen as plain AppCompatActivity | HIGH | Consistent with existing 5-activity pattern; Compose adds APK cost without benefit |
+| Material 3 theme migration | HIGH | `com.google.android.material:material:1.12.0` (already in project) supports `Theme.Material3.DayNight` |
+| Model switching edge cases | MEDIUM | WhisperEngine reload path is correct; DownloadActivity multi-model flow needs careful testing |
+| Language dialog "remember" UX | MEDIUM | Pattern is standard but exact dialog widget (Spinner vs RadioGroup vs SingleChoiceItems) is implementation decision |
 
 ---
 
 ## Sources
 
-- `whisper.h` (v1.7.4, lines 449-570): progress_callback and new_segment_callback typedefs and struct fields — verified in this repository at `/app/src/main/cpp/whisper.cpp/include/whisper.h` (HIGH confidence)
-- `whisper_jni.cpp` (this repository): Current JNI bridge — 6 exported functions, no callbacks set (HIGH confidence — direct code read)
-- `WhisperLib.kt` / `WhisperContext` (this repository): Current JNI Kotlin binding — single-thread executor pattern (HIGH confidence)
-- `TranscriptionViewModel.kt` (this repository): UiState sealed class, Processing object, StateFlow<UiState> (HIGH confidence)
-- `proguard-rules.pro` (this repository): Existing R8 rules (HIGH confidence — direct read)
-- [F-Droid: All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/) — fastlane directory structure (HIGH confidence)
-- [F-Droid: Submitting to F-Droid Quick Start Guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) — submission process (HIGH confidence)
-- [F-Droid: Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds/) — NDK path / build-id concerns (MEDIUM confidence)
-- [Android Developers: Keep rule use cases and examples](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples) — JNI keep rules, upcall preservation (HIGH confidence)
-- [Android Developers Blog: Configure and troubleshoot R8 Keep Rules (Nov 2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html) — R8 native method handling (HIGH confidence)
-- [Android Developers: JNI Tips](https://developer.android.com/training/articles/perf-jni) — GlobalRef pattern, thread attachment for upcalls (HIGH confidence)
+- `whisper_jni.cpp` (this repository, direct read): `params.language = "auto"` — line 66; `fullTranscribe` signature — HIGH confidence
+- `WhisperLib.kt` / `WhisperContext` (this repository, direct read): Single-thread executor, `transcribeData` signature — HIGH confidence
+- `TranscriptionViewModel.kt` (this repository): `startTranscription(audioPath: String)` signature — HIGH confidence
+- `ShareReceiverActivity.kt` (this repository): Synchronous `copyToCache` constraint — HIGH confidence
+- `ModelManager.kt` (this repository): Single-model constants, `getExternalFilesDir` rationale in comments — HIGH confidence
+- `libs.versions.toml` (this repository): `material = "1.12.0"` already present — HIGH confidence
+- `res/values/themes.xml` (this repository): `Theme.MaterialComponents.DayNight.DarkActionBar` current parent — HIGH confidence
+- [Android DataStore vs SharedPreferences 2025](https://www.atipik.ch/en/blog/android-jetpack-datastore-vs-sharedpreferences): DataStore is async, SharedPreferences is synchronous — confirmed official recommendation context
+- [Android Developers: Preferences DataStore codelab](https://developer.android.com/codelabs/android-preferences-datastore): DataStore uses Flow/coroutines — confirms incompatibility with sync-required share flow
+- [whisper.cpp discussions: Android multilingual support](https://github.com/ggml-org/whisper.cpp/discussions/549): `params.language` accepts 2-char ISO codes or "auto" — MEDIUM confidence (community, not official docs)
+
+---
+
+*Architecture research for: Unmuffle v1.3 (language selection, settings, model switching, UI polish)*
+*Researched: 2026-03-01*

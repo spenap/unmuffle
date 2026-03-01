@@ -1,344 +1,192 @@
 # Project Research Summary
 
-**Project:** TransChat v1.1 — Progress Callbacks, F-Droid Distribution, R8 Shrinking
-**Domain:** Android on-device ML transcription — v1.1 polish and distribution milestone
-**Researched:** 2026-02-27
-**Scope:** Milestone-scoped. v1.0 foundations (whisper.cpp v1.7.4 via JNI, Kotlin, NDK 26.1, MediaCodec, ViewModel + StateFlow) are validated and unchanged. This summary covers only what changes or is added for v1.1.
-**Confidence:** HIGH across all three feature areas
-
----
+**Project:** Unmuffle v1.3 — Language Selection, Settings Page, Model Choice, UI Polish, App Rename
+**Domain:** Android on-device ML — JNI-backed Whisper transcription with share-target UX
+**Researched:** 2026-03-01
+**Confidence:** HIGH
 
 ## Executive Summary
 
-TransChat v1.1 adds three engineering deliverables to the validated v1.0 MVP: a real-time transcription progress bar driven by whisper.cpp native callbacks, F-Droid distribution readiness (metadata files and build recipe), and a surgical R8/ProGuard configuration that replaces the current over-broad keep rule with targeted rules. Research across all four domains confirms these features are achievable within the existing codebase with no new Gradle dependencies, no new library integrations, and no architectural changes. The v1.0 component chain (whisper_jni.cpp → WhisperLib → WhisperContext → WhisperEngine → TranscriptionViewModel → TranscriptionActivity) absorbs all three changes through incremental extension.
+Unmuffle v1.3 is an incremental feature milestone on a stable, production-validated Android app that transcribes voice messages on-device using whisper.cpp via JNI. The existing stack (Kotlin, NDK r27c, whisper.cpp v1.8.3, MediaCodec, ViewModel + StateFlow, R8, GitHub Actions) is locked and proven. v1.3 adds only two new Gradle artifacts: `androidx.datastore:datastore-preferences:1.2.0` (for the settings persistence layer) and a material version bump from 1.12.0 to 1.13.0 (for Material 3 theme support). All five feature areas — language selection, settings page, model management, Material 3 polish, and the app rename — extend existing patterns without introducing new architectural paradigms or new third-party library risk.
 
-The progress callback implementation has two viable approaches. STACK.md and FEATURES.md both recommend wiring the JNI upcall directly (Approach A: `NewGlobalRef` + `CallVoidMethod` from the native thread). ARCHITECTURE.md recommends an `AtomicInteger` poll approach (Approach B: C++ atomic written by the callback, Kotlin coroutine polling every 100ms) as lower-risk for the specific case of a progress bar. Both are architecturally sound; the polling approach eliminates `AttachCurrentThread` / `DetachCurrentThread` complexity but requires a child coroutine to run alongside `whisper_full()`. The direct upcall approach is more real-time but has two critical pitfalls (global reference leak, wrong-thread UI access) documented in PITFALLS.md with prevention code. Choose based on team comfort with JNI threading.
+The recommended implementation order is strictly dependency-driven: establish the SettingsRepository persistence singleton and WhisperModel enum first, then generalize ModelManager to support multiple models, then thread the language parameter down the full JNI call chain (five Kotlin layers plus one C++ function), then perform the mechanical app rename, then apply the Material 3 theme migration and layout bug fix, then wire the language selection dialog, and finally build the SettingsActivity that surfaces all prior work. This sequence is not arbitrary — each step is independently compilable and testable before the next step depends on it. The architecture research derives this order directly from the actual code dependency graph and documents it as the recommended build order.
 
-F-Droid submission has no code changes — it is entirely metadata and build-recipe work. The app's stack is already F-Droid-clean (no Firebase, no Play Services, no prebuilt `.so` files, all dependencies are Apache 2.0 / open source). The two actions required before submission are: add a `LICENSE` file (hard gate, automatic rejection without it), and create the `fastlane/metadata/android/` directory tree. The fastlane file naming follows F-Droid's convention (`summary.txt` and `description.txt`), which diverges from standard fastlane naming (`short_description.txt`, `full_description.txt`) — this is the most likely silent failure mode. R8 configuration is a targeted rewrite of the existing `proguard-rules.pro` that removes the blanket `-keep class com.simonpena.transchat.** { *; }` and replaces it with surgical rules covering only the JNI surface, ViewModels, and UiState sealed hierarchy.
-
----
+The three critical risks are: JNI function name breakage after the package rename (silent at compile time, fatal at runtime — all 7 C++ function signatures must be updated atomically with the Kotlin package rename), content URI permission expiry if any dialog appears in ShareReceiverActivity before the audio file is copied to cache (the language dialog must be placed in TranscriptionActivity, not ShareReceiverActivity), and DataStore multiple-instance corruption if the DataStore property delegate is declared in more than one place (a single top-level declaration in SettingsRepository.kt is the required pattern). All three risks have documented, low-effort mitigations — none requires rearchitecting the app.
 
 ## Key Findings
 
-### From STACK.md: Technology Decisions for v1.1
+### Recommended Stack
 
-**No new Gradle dependencies.** All three v1.1 features are implementable with the existing dependency set:
+The only new library is `androidx.datastore:datastore-preferences:1.2.0`. DataStore 1.2.0 specifically fixes a `UnsatisfiedLinkError` in R8-shrunk apps — directly relevant because this project uses R8 with `isMinifyEnabled = true`. The material artifact bumps from 1.12.0 to 1.13.0 for Material 3 theme parent availability and dialog styling fixes. All other dependencies are unchanged. Notably, the architecture research recommends using SharedPreferences (not DataStore) for synchronous preference reads in `ShareReceiverActivity.onCreate()`, because DataStore's async Flow-based API is incompatible with the synchronous read required before the content URI permission window closes. DataStore is used in SettingsRepository for the settings screen, where async reads are acceptable.
 
-| Feature | Stack Impact |
-|---------|-------------|
-| Progress callbacks | Pure C++ + Kotlin change in existing JNI bridge; android.widget.ProgressBar is a framework widget |
-| F-Droid metadata | Text files + YAML in repo; no build dependencies |
-| R8 configuration | `proguard-rules.pro` edits only; no new tools |
+**Core technologies:**
+- `whisper.cpp v1.8.3 via JNI` — on-device transcription engine, locked and production-verified; unchanged for v1.3
+- `androidx.datastore:datastore-preferences:1.2.0` — settings persistence layer; R8-compatible (fixes UnsatisfiedLinkError in minified builds); declared once as a top-level singleton
+- `com.google.android.material:material:1.13.0` — Material 3 theme support; `Theme.Material3.DayNight.NoActionBar` confirmed as canonical parent for XML view-based apps
+- `SharedPreferences` (no new artifact) — synchronous preference reads in `ShareReceiverActivity.onCreate()` and `MainActivity.onCreate()` where DataStore's async nature would introduce URI permission race conditions
+- `MaterialAlertDialogBuilder.setSingleChoiceItems()` — language picker dialog; included in the existing material artifact, no new dependency
+- `WhisperModel` enum + `SettingsRepository` object — new Kotlin types implementing multi-model support and preference persistence; no external library required
 
-**Confirmed whisper.cpp callback API (HIGH confidence — read directly from repo source):**
+**What NOT to add:**
+- Jetpack Compose: app is 100% XML Views; adding Compose for a settings screen adds ~5-10MB to the APK with no user-visible benefit
+- `androidx.preference:preference` (PreferenceFragmentCompat): couples settings to SharedPreferences; harder to style with Material 3; hand-written Activity is cleaner for two preference items
+- Navigation Component, Hilt, Room: disproportionate for this app's linear six-activity flow and single ViewModel
 
-Both `progress_callback` (fires per audio chunk, 0-100 integer, 1-4 firings for a 30-60s voice message) and `new_segment_callback` (fires per decoded text segment, 3-10 firings for a 30s message) are present in `whisper.h` v1.7.4 and currently unwired in `whisper_jni.cpp`. For a progress bar, `progress_callback` provides the integer 0-100 directly; `new_segment_callback` is semantically richer but requires segment-count-to-percentage estimation.
+### Expected Features
 
-**Version codes:** `app/build.gradle.kts` must increment `versionCode = 2` and `versionName = "1.1"` for F-Droid and Play Store. The fastlane changelog file must be named `2.txt` to match.
+The feature research establishes a clear three-tier priority structure for v1.3.
 
-**F-Droid build recipe NDK field:** Specify `ndk: r26c` in the fdroiddata YAML (shorthand) or `26.1.10909125` (numeric exact form). The numeric form is more precise and avoids aliasing bugs.
+**Must have (table stakes — P1 for v1.3 launch):**
+- Layout bug fix (title overlaps transcript, buttons partially occluded) — result screen is visually broken without this; P0
+- App rename: TransChat to Unmuffle — required before any public announcement or F-Droid submission
+- Fix README permissions claim (says "no network permissions" but `INTERNET` and `ACCESS_NETWORK_STATE` exist) — documentation correctness
+- Language selection dialog on share intent — the headline feature of the milestone
+- "Remember my choice" persistent preference — without this the dialog is friction on every share
+- Material 3 theme migration — applies in the same XML pass as the layout fix
 
-### From FEATURES.md: What to Build and What to Defer
+**Should have (competitive differentiators — P2):**
+- Settings page (language default) — useful for power users; the "remember" checkbox covers the primary use case
+- Settings page (model selection UI placeholder) — surfaces the model story before full implementation
 
-**Progress bar (table stakes):**
-- Determinate `LinearProgressIndicator` driven by real `progress_callback` values — not timer-based simulation
-- `UiState.Processing` promoted from `object` to `data class(val progress: Int = 0)` — sealed class breaking change, Activity's `when` block must be updated
-- `ProgressCallback` functional interface in `WhisperLib` — must survive R8 with an explicit keep rule
+**Defer to v1.4+:**
+- Tiny model download + ModelManager refactor — largest work item; validate user demand before investing
+- Tiny model accuracy disclaimer — defer until the feature ships
+- Cancel button that truly interrupts whisper.cpp inference — requires `abort_callback` JNI support; significant scope increase
 
-**Progress bar (defer to v1.2):**
-- Partial segment text appearing during inference — requires `new_segment_callback` + second JNI upcall path; high complexity, not needed for the progress win
-- `abort_callback` for real cancellation — coroutine cancellation does not interrupt `whisper_full()`; cancel button without this is misleading; defer or omit entirely
+**Anti-features explicitly rejected:**
+- Per-App Language Preferences API (Android 13+): switches the app's UI locale, not the Whisper transcription language — wrong API for this use case
+- Jetpack DataStore for synchronous reads in ShareReceiverActivity: DataStore is async; `runBlocking` workarounds create URI permission race conditions
+- Whisper turbo or medium model: ~530MB and ~790MB respectively — impractical for mobile on-device storage and RAM
+- Transcript history: violates the ephemeral privacy model that is the app's core value proposition
 
-**F-Droid (table stakes):**
-- `LICENSE` file in repo root — hard gate; no license = automatic rejection
-- `fastlane/metadata/android/en-US/` directory with `summary.txt`, `description.txt`, `changelogs/2.txt`
-- `submodules: true` in fdroiddata YAML — whisper.cpp is a git submodule; omitting this causes F-Droid build failure
+### Architecture Approach
 
-**F-Droid (defer):**
-- Reproducible builds (bit-for-bit APK match) — NDK reproducibility across macOS vs Linux is not achievable without significant infrastructure; acceptable to skip for initial inclusion
-- IzzyOnDroid pre-listing — good stepping stone but optional; prioritize official F-Droid
+The existing architecture is a six-activity Kotlin app using XML Views and AppCompatActivity throughout. v1.3 adds one new Activity (SettingsActivity), one new Kotlin object singleton (SettingsRepository), and one new enum class (WhisperModel). The core transcription pipeline is extended by threading a `language: String` parameter down the entire call chain: ShareReceiverActivity intent extra → TranscriptionActivity → TranscriptionViewModel.startTranscription() → WhisperEngine.transcribe() → WhisperContext.transcribeData() → WhisperLib.fullTranscribe() → `whisper_jni.cpp` `params.language` field (currently hardcoded to `"auto"`). Model switching extends ModelManager from a single-model object with hardcoded constants into a WhisperModel-enum-driven, multi-model-aware component.
 
-**R8 (table stakes):**
-- Remove `-keep class com.simonpena.transchat.** { *; }` — defeats all R8 shrinking
-- Add targeted rules for: JNI downcalls (`WhisperLib$Companion` native methods), JNI upcall (`ProgressCallback.onProgress`), ViewModels, UiState sealed hierarchy, stack trace attributes
-- **Critical new rule for v1.1:** `-keepclassmembers interface com.simonpena.transchat.WhisperLib$ProgressCallback { public abstract void onProgress(int); }` — R8 cannot see that this method is called from native code via `CallVoidMethod` and will strip it without an explicit keep rule
+**Major components:**
+1. `SettingsRepository` (new object singleton) — reads/writes SharedPreferences for language code and model selection; single source of truth for all preference access across all activities
+2. `WhisperModel` enum (new, in ModelManager.kt or own file) — encapsulates filename, URL, SHA256, sizeBytes, and displayName for TINY (~32MB) and SMALL (~190MB) model variants
+3. `SettingsActivity` (new AppCompatActivity) — hand-written settings screen with Material Components; plain XML layout with two tappable preference rows; avoids PreferenceFragmentCompat to maintain full Material 3 styling control consistent with the rest of the app
+4. Modified JNI call chain — language parameter propagates from ShareReceiverActivity intent extra through five Kotlin layers and one C++ function into `whisper_jni.cpp params.language`
+5. `UnmuffleApplication` (new Application subclass) — registers `DynamicColors.applyToActivitiesIfAvailable(this)` for Android 12+ dynamic color support; registered in AndroidManifest.xml
 
-**Recommended build order from FEATURES.md:**
-1. R8 rules rewrite (lowest risk, proves release build is clean)
-2. `progress_callback` C++ + Kotlin wiring ([1]-[5] in the dependency chain)
-3. `UiState.Processing` change + `LinearProgressIndicator` UI ([6]-[7])
-4. `LICENSE` file
-5. `fastlane/metadata/` directory and content
-6. fdroiddata YAML or `.fdroid.yml` (submit after v1.1 tagged)
-7. Branch rename (`master` to `main`) — do last
+**Architecture rule confirmed by research:** No Jetpack Compose, no Navigation Component, no Hilt, no DI framework. The app is a linear activity chain with direct `startActivity()` calls. This remains correct at six activities.
 
-### From ARCHITECTURE.md: Component Changes and Data Flow
+### Critical Pitfalls
 
-**8 modified files, 6 new files. No new classes required.**
+1. **JNI function names break silently after package rename** — all 7 function signatures in `whisper_jni.cpp` encode the Kotlin package path using Java name-mangling (e.g., `Java_com_simonpena_transchat_WhisperLib_00024Companion_initContext`). Update them atomically with the Kotlin package rename. Update `proguard-rules.pro` `-keep class` rules in the same commit. Verify with `nm -D app/build/intermediates/stripped_native_libs/.../libwhisper.so | grep Java_`. Failure is silent at compile time and fatal at runtime (`UnsatisfiedLinkError` on first transcription).
 
-Modified components for the progress callback:
+2. **Content URI permission expires if dialog precedes audio copy in ShareReceiverActivity** — Android grants temporary read access to the content URI for the duration of the intent dispatch. If the user switches apps while a dialog is visible, the permission can be revoked. `AudioCopier.copyToCache()` must always be the first operation in `ShareReceiverActivity.onCreate()`, before any dialog. The language selection dialog belongs in TranscriptionActivity (before inference starts), not in ShareReceiverActivity. Failure is intermittent (`SecurityException` only when the user is slow with the dialog), making it hard to reproduce in testing.
 
-| File | What Changes |
-|------|-------------|
-| `app/src/main/cpp/whisper_jni.cpp` | Add `ProgressState` struct, register `progress_callback` via `user_data`, add `getProgress` JNI export |
-| `app/src/main/java/.../WhisperLib.kt` | Add `external fun getProgress(contextPtr: Long): Int` |
-| `WhisperContext` (in WhisperLib.kt) | `transcribeData()` gains `onProgress: (Int) -> Unit = {}` param; launches child poller coroutine |
-| `app/src/main/java/.../WhisperEngine.kt` | `transcribe()` gains `onProgress` param, forwards to WhisperContext |
-| `app/src/main/java/.../TranscriptionViewModel.kt` | `UiState.Processing` becomes `data class(val progress: Int = 0)`; passes progress lambda to engine |
-| `app/src/main/java/.../TranscriptionActivity.kt` | Reads `state.progress` in `UiState.Processing` branch; sets on progress bar |
-| `app/src/main/res/layout/activity_transcription.xml` | Replaces `CircularProgressIndicator` (indeterminate) with `LinearProgressIndicator` |
-| `app/build.gradle.kts` | `versionCode = 2`, `versionName = "1.1"` |
+3. **ProGuard R8 keep rules become no-ops after package rename** — Android Studio's Rename refactor does not update `proguard-rules.pro`. After renaming the package, the `-keep class com.simonpena.transchat.WhisperLib` rules silently match nothing, R8 removes the JNI bridge classes, and the release build crashes. Debug builds (R8 disabled) work fine. Update `proguard-rules.pro` in the same commit as the package rename; consider replacing `-keep` rules with `@Keep` annotations on WhisperLib and WhisperLib$Companion so they survive future refactors.
 
-New files for F-Droid:
+4. **DataStore multiple instance corruption** — `DataStore<Preferences>` throws `IllegalStateException: There are multiple DataStores active for the same file` if instantiated more than once for the same file name. Declare the DataStore property delegate exactly once as a top-level property in SettingsRepository.kt (`private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")`). Pass SettingsRepository as a dependency to any consumer rather than creating DataStore instances ad hoc. Failure is runtime-only, not visible at compile time.
 
-| File | Content |
-|------|---------|
-| `fastlane/metadata/android/en-US/title.txt` | `TransChat` |
-| `fastlane/metadata/android/en-US/summary.txt` | 80-char tagline (use F-Droid naming, not fastlane naming) |
-| `fastlane/metadata/android/en-US/description.txt` | Full privacy-focused store description |
-| `fastlane/metadata/android/en-US/changelogs/1.txt` | Initial release notes |
-| `fastlane/metadata/android/en-US/changelogs/2.txt` | v1.1 release notes |
-| `fastlane/metadata/android/en-US/images/icon.png` | 512x512 app icon |
-
-**Progress data flow (AtomicInteger polling architecture — ARCHITECTURE.md recommendation):**
-
-```
-whisper_full() [C++]
-  -> progress_callback fires every ~10% of audio processed
-     -> ProgressState.progress.store(p) [atomic write, no JNI upcall]
-
-WhisperContext.transcribeData() [Kotlin, single-thread executor]
-  -> child coroutine polls every 100ms: WhisperLib.getProgress(ptr)
-     -> onProgress(p) [lambda propagated up through WhisperEngine to ViewModel]
-        -> _uiState.value = UiState.Processing(progress)
-
-TranscriptionActivity [Main thread, StateFlow collector]
-  -> progressBar.progress = state.progress
-```
-
-**R8 rules: no change required for the `getProgress` method** — it is an `external` fun in `WhisperLib$Companion`, already protected by the existing companion keep rule. The only new rule required is for the `ProgressCallback.onProgress` upcall method.
-
-**Untouched components:** `AudioDecoder`, `PcmResampler`, `HallucinationFilter`, `ShareReceiverActivity`, `ModelManager`, `CMakeLists.txt`, `AndroidManifest.xml`.
-
-### From PITFALLS.md: Critical Risks for v1.1
-
-**v1.1 critical pitfalls (must address during implementation):**
-
-**Pitfall 15 — JNI callback fires on native thread; wrong-thread UI access crashes app.** The single-thread executor thread is already JVM-attached; `GetEnv` retrieves the existing `JNIEnv*` without `AttachCurrentThread`. The Kotlin callback method must only write to `MutableStateFlow` (thread-safe); any `Handler`, `View`, or `Looper` access from the callback crashes with `CalledFromWrongThreadException` or `IllegalStateException`. With the polling architecture, this pitfall is eliminated entirely — the C++ callback only writes an atomic integer.
-
-**Pitfall 16 — JNI global reference leak crashes app after many transcriptions.** Every `NewGlobalRef` must be paired with `DeleteGlobalRef`. Implement cleanup in `ViewModel.onCleared()` or the equivalent teardown path. Enable CheckJNI during development to catch leaks early. With the polling architecture (AtomicInteger, no `jobject` passed to C++), this pitfall is also eliminated.
-
-**Pitfall 19 — R8 strips JNI upcall methods called only from native code.** R8 performs static dead-code analysis; methods with no Kotlin/Java callers are removed. `ProgressCallback.onProgress(int)` has no Kotlin caller — it is invoked only via `CallVoidMethod`. Without an explicit `-keepclassmembers` rule, it is stripped in release builds and `NoSuchMethodError` occurs at the first progress update. This is a release-only failure — debug builds skip R8.
-
-**Pitfall 17 — F-Droid rejects prebuilt `.so` files.** The current build compiles whisper.cpp from source via `CMakeLists.txt` — this is correct. Verify no `.so` files are committed to `app/src/main/jniLibs/` before submission. F-Droid's build server must produce a complete APK from `./gradlew assembleRelease` with no prebuilt binaries.
-
-**v1.1 moderate pitfalls:**
-
-**Pitfall 20 — High-frequency callbacks degrade inference speed.** `new_segment_callback` fires 10-20 times for a 60s clip — acceptable overhead. `encoder_begin_callback` fires ~30 times per 30s clip — still acceptable. Any finer-grained polling (per-tensor callback, tight polling loop from Kotlin) adds measurable latency on mid-range devices. Benchmark before and after adding the callback.
-
-**Pitfall 21 — Wrong fastlane file names cause silent F-Droid linter failure.** F-Droid uses `summary.txt` (not `short_description.txt`) and `description.txt` (not `full_description.txt`). Using standard fastlane names results in an empty listing with no error from the linter.
-
-**Pitfall 22 — R8 full mode strips generic type signatures for StateFlow-wrapped state classes.** Add `-keepattributes Signature` and `-keepattributes *Annotation*` to `proguard-rules.pro`. The `proguard-android-optimize.txt` base already includes `Signature` for common cases, but explicit inclusion is safer after narrowing the broad keep rule.
-
-**Pitfall 23 — Branch rename breaks CI and F-Droid source checkout.** Before renaming `master` to `main`: search all of `.github/`, `.fdroid.yml`, `fastlane/`, and `README*` for the string "master"; update references in the same commit; set GitHub default branch immediately after push.
-
----
+5. **Material 2 to Material 3 attribute names break existing layouts** — `?attr/textAppearanceBody1`, `?attr/textAppearanceBody2`, `?attr/textAppearanceHeadline6`, and `?attr/textAppearanceCaption` are Material 2 attribute names that do not exist in Material 3 themes. After changing the theme parent, these resolve to null — text becomes invisible or InflateException occurs. Update all four attribute names to their M3 equivalents in the same commit as the theme parent change. Test all four UI states (Processing, Success, NoSpeech, Error) on a device before merging.
 
 ## Implications for Roadmap
 
-The three v1.1 features are largely independent of each other. R8 configuration and F-Droid metadata have zero code dependencies on the callback feature. The progress callback is a sequential chain through 7 files. This independence supports parallel development tracks.
+The architecture research provides an explicit 7-step build order derived from the actual code dependency graph. The roadmap phases below map directly to that order. The dependency structure is non-negotiable: SettingsRepository must exist before any other component can read or write preferences; the JNI language chain must work before the language dialog can have any effect; the rename must precede the theme migration to avoid renaming theme files twice.
 
-### Suggested Phase Structure
+### Phase 1: Persistence Foundation
+**Rationale:** SettingsRepository and WhisperModel enum have zero dependencies on any other v1.3 work. Every subsequent phase depends on them. Establishing these first ensures all other phases build on a stable, testable foundation.
+**Delivers:** `SettingsRepository` object with `getLanguage`/`setLanguage`/`getModel`/`setModel` methods backed by SharedPreferences; `WhisperModel` enum with TINY and SMALL variants including filename, URL, SHA256, sizeBytes, and displayName constants.
+**Addresses:** "Remember my choice" persistence, model selection storage; foundational prerequisite for all other phases.
+**Avoids:** DataStore multiple-instance corruption (singleton established once here, not recreated in each consumer).
 
-**Phase 1: R8 Configuration Rewrite**
+### Phase 2: ModelManager Generalization
+**Rationale:** ModelManager must become multi-model-aware before DownloadActivity, MainActivity routing, or SettingsActivity can reference model variants. This is a prerequisite for the settings UI model selection and for the model download flow.
+**Delivers:** Refactored ModelManager using WhisperModel enum; model-aware `isModelPresentFast(model)` and `modelFile(model)` methods; updated MainActivity routing using `SettingsRepository.getModel()`; updated DownloadActivity and DownloadViewModel to accept a model target intent extra.
+**Uses:** WhisperModel enum and SettingsRepository from Phase 1.
+**Avoids:** Model-switching context memory race (proper WhisperEngine reload path established; model selector disabled while transcription is active).
 
-Rationale: lowest risk, highest confidence, no new code. Proves the release build is clean before JNI complexity is added. The surgical keep rules must be in place before the `ProgressCallback` interface is finalized (the interface name must match the keep rule).
+### Phase 3: Language JNI Call Chain
+**Rationale:** This is the deepest change in v1.3 — a `language: String` parameter must be threaded through five Kotlin layers and one C++ function. It must be built bottom-up (C++ first, Kotlin layers upward) and tested at each step with a hardcoded language code before wiring the dialog UI. Doing this before the app rename keeps the JNI function names stable during the threading work.
+**Delivers:** `whisper_jni.cpp fullTranscribe` gains `jstring languageCode` parameter; WhisperLib.fullTranscribe(), WhisperContext.transcribeData(), WhisperEngine.transcribe(), TranscriptionViewModel.startTranscription() all gain `language: String` parameter; TranscriptionActivity reads `EXTRA_LANGUAGE` from intent and passes to ViewModel.
+**Avoids:** Language UI appearing functional while JNI still uses hardcoded "auto" (the primary "looks done but isn't" failure mode documented in PITFALLS.md).
 
-Delivers:
-- `proguard-rules.pro` rewritten with targeted rules replacing the blanket keep
-- Release build compiles and runs correctly with minification active
-- Placeholder `ProgressCallback` keep rule ready (commented, to be uncommented when interface is named)
-- `-keepattributes Signature` and stack trace attributes added
+### Phase 4: App Rename (TransChat to Unmuffle)
+**Rationale:** The rename is mechanical but touches 8 distinct locations. Doing it after Phase 3 means the JNI C++ functions are in their final form before the package namespace is changed; doing it before Phase 5 means themes.xml is renamed once (Theme.TransChat → Theme.Unmuffle) during the theme migration rather than as a separate step.
+**Delivers:** App displays as "Unmuffle" in launcher, share sheet, and download notification; `applicationId` and `namespace` updated to `com.simonpena.unmuffle` in build.gradle.kts; all 7 JNI function signatures updated in whisper_jni.cpp; proguard-rules.pro updated; strings.xml updated; themes.xml renamed; README corrected; GitHub Actions workflow comments updated.
+**Avoids:** JNI function name breakage (atomic rename across Kotlin source and C++), ProGuard keep rule staleness (proguard-rules.pro updated in same commit), share sheet label gap (manifest `android:label` on ShareReceiverActivity explicitly updated), DownloadManager notification title updated.
 
-Pitfalls avoided: Pitfall 19 (R8 strips upcall), Pitfall 22 (R8 full mode strips signatures).
+### Phase 5: Material 3 Theme Migration and Layout Bug Fix
+**Rationale:** The layout regression (title overlapping transcript, buttons partially occluded) is a P0 fix that belongs in the same XML pass as the Material 3 migration because the textAppearance attribute renames must happen simultaneously. Doing these together avoids touching layout files twice and ensures new UI components built in Phases 6 and 7 are built against the final M3 theme from the start.
+**Delivers:** Theme parent changed to `Theme.Material3.DayNight.NoActionBar` (or `Theme.Unmuffle` after Phase 4 rename); all textAppearance attributes updated to M3 equivalents; `activity_transcription.xml` layout regression fixed; `UnmuffleApplication.kt` created with DynamicColors; material bumped to 1.13.0 in libs.versions.toml.
+**Avoids:** M2/M3 attribute mismatch leaving text invisible or buttons misshapen; ensures all four UI states (Processing, Success, NoSpeech, Error) render correctly before new screens are built.
 
-Research flag: Standard patterns. No additional research needed.
+### Phase 6: Language Selection Dialog
+**Rationale:** This is the headline feature of v1.3 but depends on Phase 1 (SettingsRepository), Phase 3 (language JNI chain working end-to-end), and Phase 5 (correct theme for dialog styling). After those three phases are complete, the dialog is purely additive UI wiring with no risk to existing functionality.
+**Delivers:** Language selection dialog (MaterialAlertDialogBuilder.setSingleChoiceItems) placed in TranscriptionActivity (before inference starts); "Remember my choice" behavior via SettingsRepository.setLanguage(); language code flows to whisper.cpp params.language at inference time; fast path skips dialog if preference is already set.
+**Avoids:** URI permission expiry pitfall (audio copy in ShareReceiverActivity.onCreate() remains first; dialog is placed in TranscriptionActivity, not ShareReceiverActivity).
 
----
-
-**Phase 2: Progress Callback — C++ and Kotlin Wiring**
-
-Rationale: Highest user-visible value. Sequential chain through 5 files (whisper_jni.cpp through WhisperEngine). Each step is independently testable. Complete this chain before touching the UI — validate callback firing via logcat before wiring to StateFlow.
-
-Delivers:
-- `ProgressState` struct in `whisper_jni.cpp` with atomic int
-- `progress_callback` registered on `whisper_full_params`
-- `getProgress` JNI export function
-- `WhisperLib.kt`: `external fun getProgress(contextPtr: Long): Int`
-- `WhisperContext.transcribeData()`: `onProgress` param + child poller coroutine
-- `WhisperEngine.transcribe()`: `onProgress` param forwarded
-
-Implementation note: Use the AtomicInteger polling approach (ARCHITECTURE.md recommendation) rather than direct JNI upcall. Eliminates Pitfalls 15 and 16. The poller coroutine runs as a `launch { }` child inside `withContext(scope.coroutineContext)` and is cancelled automatically when `fullTranscribe` returns.
-
-Pitfalls avoided: Pitfall 15 (wrong-thread UI access — eliminated by polling architecture), Pitfall 16 (global ref leak — eliminated by polling architecture), Pitfall 20 (callback overhead — polling every 100ms is negligible).
-
-Research flag: AtomicInteger + polling is a standard pattern. JNI `GetEnv` threading rules are documented in Android NDK JNI Tips.
-
----
-
-**Phase 3: Progress UI — UiState Change and LinearProgressIndicator**
-
-Rationale: Completes the user-visible progress feature. Depends on Phase 2. The `UiState.Processing` change from `object` to `data class` is a breaking sealed-class change — all `when` branches in `TranscriptionActivity` must be updated in the same commit.
-
-Delivers:
-- `UiState.Processing` changed to `data class(val progress: Int = 0)`
-- `TranscriptionViewModel` passes progress lambda to `engine.transcribe()`
-- `activity_transcription.xml`: `CircularProgressIndicator` replaced with `LinearProgressIndicator`
-- `TranscriptionActivity`: reads `state.progress`, sets on progress bar + optional percentage text label
-- Back press handler during inference (show dialog or disable back — omit cancel button unless `abort_callback` is implemented)
-
-Pitfalls avoided: Fake/timer-based progress anti-pattern avoided by using real callback values. Cancel button omitted to avoid the "cancels coroutine but not native call" misleading UX.
-
-Research flag: `LinearProgressIndicator` is Material Design 3 standard. No research needed.
-
----
-
-**Phase 4: F-Droid Metadata and Submission Prep**
-
-Rationale: Entirely metadata work, independent of all other phases. Can be done in parallel with Phases 2-3 or after. Gate: `LICENSE` file must exist before any submission.
-
-Delivers:
-- `LICENSE` file in repository root
-- `fastlane/metadata/android/en-US/` directory tree with F-Droid-named files (`summary.txt`, `description.txt`)
-- `changelogs/1.txt` (initial release) and `changelogs/2.txt` (v1.1)
-- 512x512 app icon at `fastlane/metadata/android/en-US/images/icon.png`
-- `build.gradle.kts`: `versionCode = 2`, `versionName = "1.1"`
-- Draft fdroiddata YAML with `submodules: true`, exact NDK version `26.1.10909125`, `subdir: app`
-- Pre-submission verification: clean checkout + `./gradlew assembleRelease` produces complete APK with no prebuilt `.so`
-
-Pitfalls avoided: Pitfall 17 (prebuilt `.so` rejection), Pitfall 21 (wrong fastlane file names — use `summary.txt` not `short_description.txt`).
-
-Research flag: F-Droid official docs are authoritative. Reproducible build not targeted for v1.1 — standard F-Droid signing (F-Droid signs with their key) is acceptable for initial submission.
-
----
-
-**Phase 5: Branch Rename and Final Verification**
-
-Rationale: Low-risk, discrete, and must be done after all PRs are merged. Audit before rename.
-
-Delivers:
-- Audit: `grep -r "master" .github/ .fdroid.yml fastlane/ README*`
-- Branch renamed: `git branch -m master main && git push origin -u main && git push origin --delete master`
-- GitHub Settings: default branch changed to `main`
-- All CI workflows verified running on `main`
-
-Pitfalls avoided: Pitfall 23 (CI stops running, F-Droid source checkout breaks).
-
-Research flag: Standard git/GitHub operational guidance.
-
----
+### Phase 7: Settings Activity
+**Rationale:** SettingsActivity surfaces the language default and model selection controls established by prior phases. It is appropriately last because it integrates all prior phases: reads/writes SettingsRepository (Phase 1), displays WhisperModel options and triggers DownloadActivity for undownloaded models (Phase 2), appears in the correctly named and themed app (Phases 4 and 5), and provides an alternative path to setting the language preference (Phase 6).
+**Delivers:** SettingsActivity (plain AppCompatActivity with XML layout) containing language default picker and model selector; ReadyActivity gains a settings button (gear icon); model download trigger from settings if selected model is not present; SettingsActivity registered in AndroidManifest.xml.
+**Uses:** All prior phases.
 
 ### Phase Ordering Rationale
 
-- Phase 1 (R8) first because: (a) proves release build is clean before adding complexity; (b) keep rules must exist before `ProgressCallback` interface is named in Phase 2.
-- Phases 2 and 3 are sequential: UI can only read `state.progress` after the ViewModel emits it, which requires the callback chain to be wired.
-- Phase 4 (F-Droid) is fully independent — can run in parallel with Phases 2-3. The `versionCode` bump in Phase 4 is the only shared file with the callback chain.
-- Phase 5 (branch rename) must be last — after all feature branches are merged.
-- Deferred to v1.2: `new_segment_callback` for partial segment text preview; reproducible builds; `abort_callback` for real cancellation.
+- Phases 1 and 2 establish the data foundation before any UI work; they introduce zero user-visible changes and zero risk to the existing transcription pipeline.
+- Phase 3 (JNI language chain) is the highest technical risk in v1.3 and is done early while the codebase is still in its pre-rename, pre-theme-migration state, minimizing the number of simultaneous variables.
+- Phase 4 (rename) follows Phase 3 so the JNI functions are already in their correct renamed form before the Kotlin package changes; the rename happens before Phase 5 so theme files are renamed once.
+- Phase 5 (M3 migration) before Phase 6 (dialog) ensures the language dialog is built against the final Material 3 theme and does not need restyling.
+- Phase 6 (dialog) before Phase 7 (settings) because the settings page's language section is a superset of the dialog's language preference — the dialog UX should be proven before exposing a second path to the same preference.
+- Phase 7 is last because it integrates all prior phases.
 
 ### Research Flags
 
-Needs deeper research before or during planning:
-- **None identified.** All three v1.1 features have well-documented implementation patterns verified against authoritative sources (whisper.h in repo, F-Droid official docs, Android Developer R8 blog Nov 2025, Android NDK JNI Tips).
+Phases with well-documented patterns (standard execution, skip additional research):
+- **Phase 1 (Persistence):** SharedPreferences pattern is standard Android; SettingsRepository is a simple object singleton; DataStore singleton requirement is officially documented.
+- **Phase 4 (Rename):** Mechanical file edits; the 8-location checklist in PITFALLS.md is exhaustive; JNI name mangling is deterministic.
+- **Phase 5 (M3 migration):** The complete textAppearance attribute rename table is confirmed from MDC-Android official migration guide; material 1.13.0 is confirmed latest stable.
 
-Standard patterns (skip research-phase):
-- **Phase 1 (R8):** Android Developers Blog Nov 2025 is the current reference. Rules are concrete and testable.
-- **Phase 2 (callback C++):** AtomicInteger + polling is standard. whisper.cpp callback API confirmed from repo source.
-- **Phase 3 (progress UI):** `LinearProgressIndicator` is Material Design 3 standard. `UiState` sealed class change is straightforward Kotlin.
-- **Phase 4 (F-Droid):** F-Droid official docs are authoritative and current.
-- **Phase 5 (branch rename):** Standard git operations.
-
----
+Phases requiring careful task breakdown before implementation (not full research, but explicit task decomposition):
+- **Phase 3 (JNI chain):** Five-layer parameter threading is low-risk individually but high-risk as a single large diff. Recommend one task per layer: C++ whisper_jni.cpp first, then WhisperLib.kt, WhisperContext, WhisperEngine, TranscriptionViewModel, TranscriptionActivity. Test with a hardcoded "es" before wiring the dialog.
+- **Phase 6 (Language dialog):** The URI permission pitfall requires an explicit architectural decision — dialog in TranscriptionActivity (recommended) vs other locations — to be locked in before implementation begins. This decision materially affects the diff.
+- **Phase 2 (ModelManager):** The model-switching edge case (switching while transcription is active) requires disabling the model selector in the Settings UI while `uiState` is Processing. This guard must be an explicit task in Phase 2 or Phase 7 planning.
 
 ## Confidence Assessment
 
-| Area | Confidence | Basis |
+| Area | Confidence | Notes |
 |------|------------|-------|
-| whisper.cpp callback API | HIGH | Verified directly from `whisper.h` and `whisper.cpp` source in this repository (lines confirmed in STACK.md) |
-| JNI callback threading model | HIGH | Android NDK JNI Tips official docs; AtomicInteger approach eliminates the hardest threading pitfalls |
-| F-Droid fastlane file structure | HIGH | F-Droid official documentation (multiple sources confirm directory layout and file naming) |
-| F-Droid YAML/build recipe | MEDIUM | Field syntax confirmed from F-Droid Build Metadata Reference; `submodules: true` requirement confirmed; specific field values should be verified against current fdroiddata templates at submission time |
-| R8 JNI keep rules | HIGH | Android Developers Blog Nov 2025 + Android official keep-rule docs + direct inspection of existing `proguard-rules.pro` |
-| `progress_callback` fire frequency | MEDIUM | whisper.cpp source confirms formula (`(100*(seek-start))/(end-start)`); exact firing count depends on audio length and model segment boundaries; 1-4 firings for typical voice messages |
-| F-Droid NDK reproducibility | MEDIUM | F-Droid reproducible builds docs confirm NDK sensitivity; accepted as non-blocking for v1.1 initial submission |
+| Stack | HIGH | All recommendations verified against official Android docs and in-repo dependency files; DataStore 1.2.0 R8 UnsatisfiedLinkError fix is directly relevant to this project's R8 configuration |
+| Features | HIGH | Priority tiers based on direct codebase read of all relevant source files; dependency graph derived from actual source code, not inference; anti-features backed by official API rationale |
+| Architecture | HIGH | Build order derived from direct inspection of whisper_jni.cpp, WhisperLib.kt, WhisperContext, ShareReceiverActivity.kt, ModelManager.kt; URI permission constraint is documented Android platform behavior |
+| Pitfalls | HIGH | JNI mangling rules are deterministic (NDK documentation); URI permission expiry is documented Android behavior; DataStore singleton requirement is official documentation; M3 attribute renames are confirmed from MDC migration guide |
 
-**Overall confidence:** HIGH for implementation approach; MEDIUM for F-Droid YAML specifics and callback frequency on atypical audio.
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Direct JNI upcall vs AtomicInteger polling:** Research files disagree on the preferred approach (STACK.md and FEATURES.md prefer upcall; ARCHITECTURE.md prefers polling). Both are correct. This is a team decision, not a research gap. Recommendation: polling (eliminates two critical pitfalls with negligible downside for a progress bar).
+- **Tiny model SHA256:** The architecture document lists the SMALL model SHA256 as verified (`ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb`) but notes the TINY model SHA256 as `<verified at research time>` — this value must be confirmed from the HuggingFace repository before Phase 1 or 2 implementation. The URL (`ggml-tiny-q5_1.bin`, ~32.2MB) is confirmed; only the SHA256 is outstanding.
 
-- **`progress_callback` granularity on very short audio:** A 12-second voice message maps to 1 WHISPER_CHUNK_SIZE (30s). `progress_callback` may fire only once at 100%. The AtomicInteger polling approach still shows "something happening" via the poller, but the progress bar may jump from 0 to 100 in a single step. Consider whether a hybrid (show indeterminate until first callback, then switch to determinate) is needed. Low-risk decision, can be made during Phase 3.
+- **Language dialog placement — final decision:** Both research files agree the dialog must not appear in ShareReceiverActivity between intent receipt and audio copy. The consensus recommendation is TranscriptionActivity (show before starting inference, while the audio is loaded). The exact UX flow (dialog appears after the audio-loading state or before the progress bar starts) should be locked in at the start of Phase 6 planning.
 
-- **F-Droid review timeline:** Community reports indicate 1-8 weeks from MR open to inclusion, depending on reviewer availability. Not a research gap but a planning assumption to document.
-
-- **`ProgressCallback` interface placement:** FEATURES.md shows it as an inner interface of `WhisperLib`; ARCHITECTURE.md uses the polling approach which requires no interface at all. Finalize before writing the R8 keep rule (Phase 1).
-
----
-
-## Consensus Across Research Files
-
-All four research files agree on:
-
-1. **No new Gradle dependencies for v1.1** — all three features use existing infrastructure.
-2. **The broad `-keep class com.simonpena.transchat.** { *; }` must be replaced** — it defeats all R8 shrinking and must be narrowed before shipping a release build with meaningful size reduction.
-3. **F-Droid fastlane files must use F-Droid naming** (`summary.txt`, `description.txt`) **not standard fastlane naming** — this is the single most likely silent failure in F-Droid submission prep.
-4. **`LICENSE` file is a hard gate for F-Droid** — no license = automatic rejection, not a review comment.
-5. **Reproducible builds are not required for initial F-Droid inclusion** — NDK binary differences across platforms make bit-for-bit reproducibility very hard; standard F-Droid signing is acceptable for v1.1.
-6. **The progress callback chain is a strict sequential dependency** — any break between whisper_jni.cpp and TranscriptionActivity causes a crash or regression; each step must be tested before proceeding to the next.
-7. **Release build validation is mandatory** — R8 stripping of upcall methods (Pitfall 19) and JNI name mangling issues (Pitfall 12) only manifest in release builds. Test with a real release APK before merging the progress callback feature.
-
----
+- **DataStore vs SharedPreferences implementation boundary:** STACK.md recommends DataStore for SettingsRepository while ARCHITECTURE.md recommends SharedPreferences for all preference reads. These are reconciled: use SharedPreferences throughout SettingsRepository (synchronous reads required by ShareReceiverActivity and MainActivity); DataStore is available as an option only if SettingsActivity needs reactive preference observation (e.g., updating the UI as preferences change). A single decision at Phase 1 start avoids implementing both.
 
 ## Sources
 
-### From STACK.md (HIGH confidence)
-- `app/src/main/cpp/whisper.cpp/include/whisper.h` — callback typedefs, lines 449-456 (in repo)
-- `app/src/main/cpp/whisper.cpp/src/whisper.cpp` — `progress_callback` invocation, lines 5526-5530; `new_segment_callback` invocation, lines 6166-6227 (in repo)
-- [Android NDK JNI Tips — GetEnv / AttachCurrentThread](https://developer.android.com/training/articles/perf-jni)
-- [F-Droid All About Descriptions, Graphics, and Screenshots](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)
-- [F-Droid Build Metadata Reference](https://f-droid.org/docs/Build_Metadata_Reference/)
-- [Android Developers Blog: Configure and Troubleshoot R8 Keep Rules (Nov 2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html)
+### Primary (HIGH confidence)
+- Android Developers — DataStore (developer.android.com/topic/libraries/architecture/datastore) — DataStore 1.2.0 R8 compatibility fix confirmed
+- AndroidX DataStore Releases (developer.android.com/jetpack/androidx/releases/datastore) — version 1.2.0 confirmed stable, released November 19, 2025
+- MDC-Android Getting Started (github.com/material-components/material-components-android/blob/master/docs/getting-started.md) — Theme.Material3.DayNight.NoActionBar confirmed; material 1.13.0 confirmed latest stable (September 2024)
+- Android NDK JNI Tips (developer.android.com/training/articles/perf-jni) — JNI function name mangling rules, GetEnv threading behavior
+- Android URI Permissions (developer.android.com/reference/android/content/UriPermission) — URI grant expiry on backgrounding
+- Android configure app module (developer.android.com/build/configure-app-module) — namespace vs applicationId distinction
+- Direct codebase inspection: `whisper_jni.cpp` (params.language hardcoded "auto" at line 66; 7 JNI function signatures confirmed), `WhisperLib.kt`, `WhisperEngine.kt`, `WhisperContext`, `ModelManager.kt` (single-model constants), `ShareReceiverActivity.kt` (synchronous copyToCache constraint), `TranscriptionViewModel.kt`, `activity_transcription.xml`, `themes.xml` (MaterialComponents parent confirmed), `libs.versions.toml` (material 1.12.0 confirmed), `proguard-rules.pro` (WhisperLib keep rules confirmed), `AndroidManifest.xml`
+- HuggingFace ggerganov/whisper.cpp (huggingface.co/ggerganov/whisper.cpp/tree/main) — ggml-tiny-q5_1.bin (~32.2MB) and ggml-small-q5_1.bin (~190MB) confirmed; SMALL SHA256 verified
 
-### From FEATURES.md (HIGH confidence)
-- `app/src/main/cpp/whisper.cpp/include/whisper.h` lines 449-564 — callback API (read directly)
-- `app/src/main/cpp/whisper_jni.cpp` — current JNI bridge, no callbacks set (read directly)
-- `app/src/main/java/com/simonpena/transchat/WhisperLib.kt` — current Kotlin JNI binding (read directly)
-- `app/proguard-rules.pro` and `app/build.gradle.kts` — current R8 config (read directly)
-- [F-Droid Inclusion How-To](https://f-droid.org/en/docs/Inclusion_How-To/)
-- [Material Design 3 Progress Indicators](https://m3.material.io/components/progress-indicators)
-- [R8 Keep rule use cases and examples](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples)
+### Secondary (MEDIUM confidence)
+- whisper.cpp discussions #549 (github.com/ggml-org/whisper.cpp/discussions/549) — `params.language` accepts ISO 639-1 two-letter codes and "auto"; community-confirmed, not official docs
+- whisper.cpp language detection issue #1831 (github.com/ggml-org/whisper.cpp/issues/1831) — language detection behavior on multilingual models
+- DataStore vs SharedPreferences 2025 (atipik.ch/en/blog/android-jetpack-datastore-vs-sharedpreferences) — confirms SharedPreferences remains appropriate for synchronous reads in onCreate
 
-### From ARCHITECTURE.md (HIGH confidence)
-- `whisper.h` v1.7.4 lines 449-570 — progress_callback and new_segment_callback fields (verified in repo)
-- `TranscriptionViewModel.kt` — UiState sealed class, Processing object, StateFlow (direct read)
-- `proguard-rules.pro` — existing R8 rules (direct read)
-- [F-Droid: Submitting to F-Droid Quick Start Guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/)
-- [F-Droid: Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds/)
-
-### From PITFALLS.md (HIGH confidence)
-- [Android NDK JNI Tips — Threading](https://developer.android.com/training/articles/perf-jni)
-- [Android NDK JNI Wiki](https://github.com/android/ndk/wiki/JNI)
-- [JNI Global Reference Leak — Google Filament Issue #4957](https://github.com/google/filament/issues/4957)
-- [F-Droid Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/) — prebuilt .so rejection
-- [F-Droid: All About Descriptions](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/) — fastlane file naming
-- [Android Developers: Keep Rule Use Cases](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples) — upcall protection
-- [Android Developers Blog: Configure and troubleshoot R8 Keep Rules (2025)](https://android-developers.googleblog.com/2025/11/configure-and-troubleshoot-r8-keep-rules.html)
-- [SDL JNI @Keep issue #3563](https://github.com/libsdl-org/SDL/issues/3563) — real-world upcall stripping example
-- [GitHub renaming guidance](https://github.com/github/renaming)
+### Tertiary (MEDIUM-LOW confidence)
+- Whisper model accuracy comparison (openwhispr.com/blog/whisper-model-sizes-explained) — tiny vs small accuracy delta; tiny significantly less accurate for non-English. Use as guidance for accuracy disclaimer copy, not as engineering spec.
+- DataStore singleton requirement blog (medium.com/@ivanlocode) — practical explanation of the multiple-instance IllegalStateException; consistent with official docs
 
 ---
-
-*Research completed: 2026-02-27*
-*Milestone scope: v1.1 — progress callbacks, F-Droid distribution, R8 shrinking*
+*Research completed: 2026-03-01*
+*Milestone scope: v1.3 — language selection, settings, model management, Material 3 polish, app rename*
 *Ready for roadmap: yes*
