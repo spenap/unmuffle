@@ -60,19 +60,21 @@ class WhisperEngine {
     /**
      * Transcribe [audioData] (16kHz mono float32 PCM) and return the transcript string.
      *
+     * @param languageCode ISO 639-1 language code (e.g. "en", "es") or "auto" for auto-detection.
+     *   Default "auto" for backward compatibility with existing callers (e.g. SmokeTestActivity).
      * @param onProgress Called with 0-100 progress values during inference. Default no-op.
      * @throws IllegalStateException if [loadModel] has not been called successfully
      * @return Transcript text, or empty string if no speech detected (no_speech_thold applied)
      */
-    suspend fun transcribe(audioData: FloatArray, onProgress: (Int) -> Unit = {}): String {
+    suspend fun transcribe(audioData: FloatArray, languageCode: String = "auto", onProgress: (Int) -> Unit = {}): String {
         val ctx = whisperContext
             ?: throw IllegalStateException("Model not loaded — call loadModel() first")
 
         val startMs = System.currentTimeMillis()
-        Log.i(TAG, "Starting transcription of ${audioData.size} samples (${audioData.size / 16000.0f}s)")
+        Log.i(TAG, "Starting transcription of ${audioData.size} samples (${audioData.size / 16000.0f}s) lang=$languageCode")
 
         return withContext(Dispatchers.Default) {
-            val result = ctx.transcribeData(audioData, onProgress)
+            val result = ctx.transcribeData(audioData, languageCode, onProgress)
             val durationMs = System.currentTimeMillis() - startMs
             Log.i(TAG, "Transcription complete in ${durationMs}ms, result: '${result.take(80)}'")
             result

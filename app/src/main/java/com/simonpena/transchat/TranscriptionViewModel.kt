@@ -54,8 +54,12 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
      * Pipeline: load model -> decode audio -> resample to 16kHz -> transcribe -> filter.
      *
      * Call once from Activity.onCreate() guarded by savedInstanceState == null.
+     *
+     * @param languageCode ISO 639-1 language code (e.g. "en", "es") or "auto" for auto-detection.
+     *   Defaults to the stored preference from [SettingsRepository]. Callers can override
+     *   by passing an explicit code — Phase 13 language dialog will do this.
      */
-    fun startTranscription(audioPath: String) {
+    fun startTranscription(audioPath: String, languageCode: String = SettingsRepository.getLanguage(getApplication())) {
         audioFilePath = audioPath
 
         inferenceJob = viewModelScope.launch {
@@ -89,8 +93,8 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
 
-                // Step 4: Transcribe via WhisperEngine
-                val raw = engine.transcribe(pcm) { progress ->
+                // Step 4: Transcribe via WhisperEngine (pass runtime language code)
+                val raw = engine.transcribe(pcm, languageCode) { progress ->
                     _uiState.value = UiState.Processing(progress)
                 }
                 Log.i(TAG, "Raw transcript: '${raw.take(80)}'")

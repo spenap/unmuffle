@@ -49,10 +49,13 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_initContext(
 // Run transcription — blocking, call from background thread only (15-60s on mid-range)
 JNIEXPORT void JNICALL
 Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
-        JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint numThreads, jfloatArray audioData) {
+        JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint numThreads,
+        jfloatArray audioData, jstring languageCode) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
     jfloat *audioDataArr = env->GetFloatArrayElements(audioData, nullptr);
     jsize audioDataLength = env->GetArrayLength(audioData);
+
+    const char* lang = env->GetStringUTFChars(languageCode, nullptr);
 
     struct whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.n_threads        = numThreads;
@@ -63,15 +66,17 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
     params.translate        = false;
     params.no_context       = true;          // each clip is independent
     params.single_segment   = false;         // let whisper segment naturally via timestamps
-    params.language         = "auto";        // auto-detect (multilingual model)
+    params.language         = lang;          // runtime language code (e.g. "auto", "en", "es")
 
     // Reset and register progress callback
     g_progress_state.progress.store(0, std::memory_order_relaxed);
     params.progress_callback           = whisper_progress_cb;
     params.progress_callback_user_data = &g_progress_state;
 
-    LOGI("Starting transcription with %d threads on %d samples", numThreads, (int)audioDataLength);
+    LOGI("Starting transcription with %d threads on %d samples, lang=%s", numThreads, (int)audioDataLength, lang);
     int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
+    // Release AFTER whisper_full() — params.language pointer must remain valid during inference
+    env->ReleaseStringUTFChars(languageCode, lang);
     env->ReleaseFloatArrayElements(audioData, audioDataArr, JNI_ABORT);
     if (ret != 0) {
         LOGE("whisper_full failed with code %d", ret);

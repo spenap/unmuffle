@@ -46,7 +46,7 @@ internal class WhisperLib {
         external fun initContext(modelPath: String): Long
 
         // Run full transcription — blocking, must be called from a non-main thread
-        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray)
+        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray, languageCode: String)
 
         external fun getTextSegmentCount(contextPtr: Long): Int
         external fun getTextSegment(contextPtr: Long, index: Int): String
@@ -72,11 +72,14 @@ internal class WhisperContext private constructor(private var ptr: Long) {
      * Transcribes [data] (16kHz mono float32 PCM) and returns concatenated segment text.
      * This function suspends on the single-thread executor — it does NOT run on the caller's thread.
      *
+     * @param languageCode ISO 639-1 language code (e.g. "en", "es") or "auto" for auto-detection.
+     *   Default "auto" for backward compatibility with existing callers.
      * @param onProgress Called with 0-100 progress values during inference. Invoked on
      *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
      */
     suspend fun transcribeData(
         data: FloatArray,
+        languageCode: String = "auto",
         onProgress: (Int) -> Unit = {}
     ): String = withContext(scope.coroutineContext) {
         // Poller runs on Default, NOT the single-thread executor (which is blocked by fullTranscribe)
@@ -88,7 +91,7 @@ internal class WhisperContext private constructor(private var ptr: Long) {
             }
         }
         try {
-            WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data)
+            WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data, languageCode)
         } finally {
             pollerJob.cancel()
         }
