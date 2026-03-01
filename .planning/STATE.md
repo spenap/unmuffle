@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Unmuffle
 status: unknown
-last_updated: "2026-03-01T19:15:00Z"
+last_updated: "2026-03-01T19:34:13.888Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
 ---
