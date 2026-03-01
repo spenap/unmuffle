@@ -1,4 +1,4 @@
-# Unmuffle (formerly TransChat)
+# Unmuffle
 
 ## What This Is
 

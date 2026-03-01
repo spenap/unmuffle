@@ -70,28 +70,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | — | Pending |
-| FIX-02 | — | Pending |
-| REBRAND-01 | — | Pending |
-| REBRAND-02 | — | Pending |
-| REBRAND-03 | — | Pending |
-| REBRAND-04 | — | Pending |
-| LANG-01 | — | Pending |
-| LANG-02 | — | Pending |
-| LANG-03 | — | Pending |
-| SET-01 | — | Pending |
-| SET-02 | — | Pending |
-| SET-03 | — | Pending |
-| SET-04 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
+| FIX-01 | Phase 12 | Pending |
+| FIX-02 | Phase 11 | Pending |
+| REBRAND-01 | Phase 12 | Pending |
+| REBRAND-02 | Phase 12 | Pending |
+| REBRAND-03 | Phase 12 | Pending |
+| REBRAND-04 | Phase 12 | Pending |
+| LANG-01 | Phase 11 | Pending |
+| LANG-02 | Phase 13 | Pending |
+| LANG-03 | Phase 13 | Pending |
+| SET-01 | Phase 14 | Pending |
+| SET-02 | Phase 14 | Pending |
+| SET-03 | Phase 14 | Pending |
+| SET-04 | Phase 14 | Pending |
+| UI-01 | Phase 12 | Pending |
+| UI-02 | Phase 12 | Pending |
+| UI-03 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 ⚠️
+- Mapped to phases: 16
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-01*
-*Last updated: 2026-03-01 after initial definition*
+*Last updated: 2026-03-01 — traceability updated after roadmap creation*

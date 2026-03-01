@@ -1,10 +1,11 @@
-# Roadmap: TransChat
+# Roadmap: TransChat / Unmuffle
 
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-3 (shipped 2026-02-27)
 - ✅ **v1.1 Polish & Distribution** — Phases 4-7 (shipped 2026-02-28)
 - ✅ **v1.2 GitHub Readiness** — Phases 8-10 (shipped 2026-02-28)
+- 🚧 **v1.3 Unmuffle** — Phases 11-14 (in progress)
 
 ## Phases
 
@@ -42,6 +43,77 @@ Full details: `milestones/v1.2-ROADMAP.md`
 
 </details>
 
+### 🚧 v1.3 Unmuffle (In Progress)
+
+**Milestone Goal:** Ship the app as "Unmuffle" — a named, polished product with language selection, configurable settings, and a Material 3 UI.
+
+- [ ] **Phase 11: Foundation + Language JNI Chain** — SettingsRepository persistence singleton, WhisperModel enum, language parameter threaded through JNI, README permissions fix
+- [ ] **Phase 12: App Rename + Material 3 + Layout Fix** — TransChat renamed to Unmuffle across all code and config, M3 theme applied, layout regression fixed, dynamic color enabled
+- [ ] **Phase 13: Language Selection Dialog** — Language picker dialog before inference, remember-my-choice checkbox persisted and respected on subsequent shares
+- [ ] **Phase 14: Settings Activity** — Settings screen accessible from the app, language default picker, model selector (tiny/small), model download trigger
+
+## Phase Details
+
+### Phase 11: Foundation + Language JNI Chain
+**Goal**: Users' language choice reaches whisper.cpp at inference time; README accurately describes network permissions
+**Depends on**: Nothing (first phase of milestone)
+**Requirements**: LANG-01, FIX-02
+**Success Criteria** (what must be TRUE):
+  1. A hardcoded language code passed through the JNI call chain produces a transcript in that language (verifiable by changing the code and running inference)
+  2. `SettingsRepository` reads and writes language preference synchronously via SharedPreferences without DataStore instantiation errors
+  3. `WhisperModel` enum defines TINY and SMALL variants with filename, download URL, SHA256, size, and display name
+  4. README states that INTERNET and ACCESS_NETWORK_STATE are used for one-time model download, not for transcription
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: SettingsRepository, WhisperModel enum, ModelManager generalization
+- [ ] 11-02: Language parameter through JNI call chain (C++ → WhisperLib → WhisperContext → WhisperEngine → ViewModel → Activity) + README fix
+
+### Phase 12: App Rename + Material 3 + Layout Fix
+**Goal**: The app is named Unmuffle everywhere and uses Material 3 styling with no visual regressions
+**Depends on**: Phase 11 (JNI function names finalized before package rename)
+**Requirements**: REBRAND-01, REBRAND-02, REBRAND-03, REBRAND-04, FIX-01, UI-01, UI-02, UI-03
+**Success Criteria** (what must be TRUE):
+  1. The app appears as "Unmuffle" in the Android launcher, share sheet, and app bar
+  2. The package is com.simonpena.unmuffle in both applicationId and Kotlin namespace; all 7 JNI function signatures in whisper_jni.cpp match the new package
+  3. README, GitHub Actions workflow, and all documentation refer to "Unmuffle" with no remaining "TransChat" references
+  4. REBRAND-04: GitHub repository is renamed from transchat-app to unmuffle and the local remote URL is updated (manual step guided by phase)
+  5. The transcript result screen shows title and transcript text without overlap; copy and share buttons are fully visible and tappable
+  6. All screens use Theme.Material3.DayNight.NoActionBar; all textAppearance attributes use M3 equivalents; Dynamic color applies on Android 12+
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: JNI symbol update + package rename (atomic: Kotlin namespace, applicationId, whisper_jni.cpp, proguard-rules.pro, strings.xml)
+- [ ] 12-02: Documentation rename + REBRAND-04 guide + M3 theme migration + layout fix (themes.xml, all layouts, UnmuffleApplication, material 1.13.0 bump)
+
+### Phase 13: Language Selection Dialog
+**Goal**: Users choose their transcription language before inference starts and can opt to skip the dialog on future shares
+**Depends on**: Phase 11 (JNI language chain working), Phase 12 (correct M3 theme for dialog styling)
+**Requirements**: LANG-02, LANG-03
+**Success Criteria** (what must be TRUE):
+  1. A language picker dialog appears in TranscriptionActivity before the progress bar starts; audio copy in ShareReceiverActivity completes before any dialog is shown
+  2. User can check "Remember my choice" and the dialog does not appear on the next share — the previously chosen language is used directly
+  3. The remembered language preference is correctly read and applied on every subsequent share, with no reset between app restarts
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: Language selection dialog wired end-to-end (MaterialAlertDialogBuilder, remember-my-choice checkbox, SettingsRepository read/write, fast path when preference already set)
+
+### Phase 14: Settings Activity
+**Goal**: Users can change their language default and select a Whisper model from a dedicated settings screen
+**Depends on**: Phase 11 (SettingsRepository, WhisperModel enum), Phase 12 (app named and themed), Phase 13 (language preference proven in dialog)
+**Requirements**: SET-01, SET-02, SET-03, SET-04
+**Success Criteria** (what must be TRUE):
+  1. A settings icon in the app's main screen opens a settings screen (SettingsActivity)
+  2. User can change the language default between "Always ask" and any supported language; the next share reflects the new setting
+  3. User can select the Whisper model (tiny ~32MB or small ~190MB) from the settings screen
+  4. Selecting a model that is not present on device triggers the download flow; selecting an already-downloaded model takes effect immediately
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: SettingsActivity (AppCompatActivity, XML layout, language picker row, model selector row, ReadyActivity gear icon)
+- [ ] 14-02: Model download trigger from settings + model-switching guard while transcription is active
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -56,3 +128,7 @@ Full details: `milestones/v1.2-ROADMAP.md`
 | 8. Open Source Foundation | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 10. Dependency Upgrades | v1.2 | 2/2 | Complete | 2026-02-28 |
+| 11. Foundation + Language JNI Chain | v1.3 | 0/2 | Not started | - |
+| 12. App Rename + Material 3 + Layout Fix | v1.3 | 0/2 | Not started | - |
+| 13. Language Selection Dialog | v1.3 | 0/1 | Not started | - |
+| 14. Settings Activity | v1.3 | 0/2 | Not started | - |
