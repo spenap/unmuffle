@@ -21,7 +21,7 @@ Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 
 ### Language
 
-- [ ] **LANG-01**: User can choose transcription language before inference starts
+- [x] **LANG-01**: User can choose transcription language before inference starts
 - [ ] **LANG-02**: User can select "Remember my choice" to skip the language dialog on future shares
 - [ ] **LANG-03**: Language preference persisted and respected on subsequent shares
 
@@ -76,7 +76,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REBRAND-02 | Phase 12 | Pending |
 | REBRAND-03 | Phase 12 | Pending |
 | REBRAND-04 | Phase 12 | Pending |
-| LANG-01 | Phase 11 | Pending |
+| LANG-01 | Phase 11 | Complete |
 | LANG-02 | Phase 13 | Pending |
 | LANG-03 | Phase 13 | Pending |
 | SET-01 | Phase 14 | Pending |
