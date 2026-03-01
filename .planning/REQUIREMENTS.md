@@ -1,53 +1,68 @@
-# Requirements: TransChat
+# Requirements: Unmuffle
 
-**Defined:** 2026-02-28
+**Defined:** 2026-03-01
 **Core Value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
 
-## v1.2 Requirements
+## v1.3 Requirements
 
-Requirements for GitHub Readiness milestone. Each maps to roadmap phases.
+Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 
-### Open Source
+### Fixes
 
-- [x] **OSS-01**: Repository has MIT LICENSE file at root
-- [x] **OSS-02**: README.md with project description, features, and privacy highlights
-- [x] **OSS-03**: README.md includes build instructions (prerequisites, clone, build steps)
-- [x] **OSS-04**: README.md includes 5 screenshots (model download, ready state, share target, progress bar, result)
-- [x] **OSS-05**: README.md documents whisper.cpp version used
+- [ ] **FIX-01**: Layout regression fixed — transcript text not overlapped by title, copy/share buttons fully visible
+- [ ] **FIX-02**: README accurately describes INTERNET + ACCESS_NETWORK_STATE permissions used for model download
 
-### CI / Signing
+### Rebrand
 
-- [x] **CI-01**: GitHub Actions workflow builds debug APK on push/PR to main
-- [x] **CI-02**: GitHub Actions workflow builds release APK on tag push (v*)
-- [x] **CI-03**: GitHub Actions workflow runs lint on push/PR to main and tag push
-- [x] **CI-04**: GitHub Actions uploads debug and release APKs as artifacts on tag push (v*)
-- [x] **CI-05**: Release builds use signing config from GitHub Actions secrets on tag push (v*)
+- [ ] **REBRAND-01**: App name displayed as "Unmuffle" everywhere (launcher, share sheet, app bar)
+- [ ] **REBRAND-02**: Package renamed com.simonpena.transchat → com.simonpena.unmuffle (namespace, applicationId, JNI C++ symbols)
+- [ ] **REBRAND-03**: README, CI workflow, and all documentation reference "Unmuffle"
+- [ ] **REBRAND-04**: GitHub repository renamed from transchat-app to unmuffle (remote URL updated in local config)
 
-### Dependencies
+### Language
 
-- [x] **DEP-01**: whisper.cpp submodule upgraded from v1.7.4 to v1.8.3
-- [x] **DEP-02**: compileSdk and targetSdk upgraded from 34 to 35
-- [x] **DEP-03**: NDK upgraded from r26.1 to r27.2
-- [x] **DEP-04**: core-ktx upgraded from 1.13.1 to 1.15.0
+- [ ] **LANG-01**: User can choose transcription language before inference starts
+- [ ] **LANG-02**: User can select "Remember my choice" to skip the language dialog on future shares
+- [ ] **LANG-03**: Language preference persisted and respected on subsequent shares
+
+### Settings
+
+- [ ] **SET-01**: Settings page accessible from the app's main screen
+- [ ] **SET-02**: User can change default language (always prompt, or a specific language)
+- [ ] **SET-03**: User can select Whisper model (tiny ~32MB, base ~57MB, small ~190MB)
+- [ ] **SET-04**: Model change triggers download if selected model not already present on device
+
+### UI Polish
+
+- [ ] **UI-01**: Material 3 theme applied (Theme.Material3.DayNight)
+- [ ] **UI-02**: All layouts updated to M3 component styles and attributes
+- [ ] **UI-03**: Dynamic color support (Material You on Android 12+)
 
 ## Future Requirements
 
-Deferred to future release. Tracked but not in current roadmap.
+Deferred to v1.4 or later. Tracked but not in current roadmap.
 
-### Distribution
+### Quality
 
-- **DIST-01**: Fastlane metadata structure for F-Droid
-- **DIST-02**: fdroiddata YAML recipe for F-Droid submission
-- **DIST-03**: versionCode bump for F-Droid release
+- **TEST-01**: Unit tests for core transcription pipeline
+- **TEST-02**: CI runs test suite on push/PR
+- **TEST-03**: Instrumented UI tests for critical flows
+
+### Presence
+
+- **WEB-01**: GitHub Pages site for project
+- **DIST-01**: F-Droid submission (Fastlane metadata, fdroiddata recipe)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| F-Droid submission | Deferred — complete GitHub readiness first, submit next milestone |
-| Google Play Store | Not a target — F-Droid is the distribution channel |
-| NOTICES/ATTRIBUTION file | All deps are MIT/Apache 2.0, no copyleft — not legally required |
-| Local release keystore | CI-only signing chosen — no local keystore file |
+| Transcript history / saved transcripts | Violates ephemeral privacy model |
+| Cloud-based transcription | Defeats the privacy purpose |
+| Real-time/streaming transcription | Batch processing of shared files only |
+| Medium/large Whisper models | Impractical on mobile (490MB+, 60s+ inference) |
+| iOS version | Android only |
+| Compose migration | App uses XML Views throughout; Compose adds 4MB APK overhead with no benefit |
 
 ## Traceability
 
@@ -55,26 +70,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OSS-01 | Phase 8 | Complete |
-| OSS-02 | Phase 8 | Complete |
-| OSS-03 | Phase 8 | Complete |
-| OSS-04 | Phase 8 | Complete |
-| OSS-05 | Phase 8 | Complete |
-| CI-01 | Phase 9 | Complete |
-| CI-02 | Phase 9 | Complete |
-| CI-03 | Phase 9 | Complete |
-| CI-04 | Phase 9 | Complete |
-| CI-05 | Phase 9 | Complete |
-| DEP-01 | Phase 10 | Complete |
-| DEP-02 | Phase 10 | Complete |
-| DEP-03 | Phase 10 | Complete |
-| DEP-04 | Phase 10 | Complete |
+| FIX-01 | — | Pending |
+| FIX-02 | — | Pending |
+| REBRAND-01 | — | Pending |
+| REBRAND-02 | — | Pending |
+| REBRAND-03 | — | Pending |
+| REBRAND-04 | — | Pending |
+| LANG-01 | — | Pending |
+| LANG-02 | — | Pending |
+| LANG-03 | — | Pending |
+| SET-01 | — | Pending |
+| SET-02 | — | Pending |
+| SET-03 | — | Pending |
+| SET-04 | — | Pending |
+| UI-01 | — | Pending |
+| UI-02 | — | Pending |
+| UI-03 | — | Pending |
 
 **Coverage:**
-- v1.2 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0
+- v1.3 requirements: 16 total
+- Mapped to phases: 0
+- Unmapped: 16 ⚠️
 
 ---
-*Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after roadmap creation*
+*Requirements defined: 2026-03-01*
+*Last updated: 2026-03-01 after initial definition*
