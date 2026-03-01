@@ -1,8 +1,8 @@
-# TransChat
+# Unmuffle (formerly TransChat)
 
 ## What This Is
 
-An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, see a real-time progress bar during inference, read the transcript on a result screen, copy or share it. Zero network permissions — fully private, no data leaves the phone. Open-source (MIT) with GitHub Actions CI for automated builds and releases.
+An Android share target that transcribes voice messages on-device using Whisper. Share a voice message from WhatsApp or Telegram, choose your language, see a real-time progress bar during inference, read the transcript on a result screen, copy or share it. Requires INTERNET and ACCESS_NETWORK_STATE for one-time model download only — fully private after setup, no data leaves the phone. Open-source (MIT) with GitHub Actions CI for automated builds and releases.
 
 ## Core Value
 
@@ -30,7 +30,12 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 
 ### Active
 
-(None — planning next milestone)
+- [ ] Fix layout regression — title overlaps transcript text, buttons partially occluded — v1.3
+- [ ] Fix README permissions claim — manifest has INTERNET + ACCESS_NETWORK_STATE for model download — v1.3
+- [ ] Rename app TransChat → Unmuffle (package, strings, manifest, README, CI) — v1.3
+- [ ] Language selection dialog on share intent with "remember my choice" option — v1.3
+- [ ] Settings page (language default, model selection tiny/small) — v1.3
+- [ ] UI/UX polish aligned with modern Android (Material 3) styling — v1.3
 
 ### Out of Scope
 
@@ -55,7 +60,7 @@ User feedback: "Better than the built-in WhatsApp transcript feature."
 
 - **Platform**: Android only (no iOS)
 - **Language**: Kotlin + C++ (JNI bridge)
-- **Privacy**: Zero network permissions — must work fully offline
+- **Privacy**: INTERNET + ACCESS_NETWORK_STATE for model download only — transcription fully offline
 - **Model**: Whisper small multilingual q5_1 (~190MB) — balances accuracy and device resources
 - **Input**: Short voice messages (typically under 2 minutes)
 
@@ -74,9 +79,10 @@ User feedback: "Better than the built-in WhatsApp transcript feature."
 | Linear interpolation resampler | Handles any input rate (48kHz, 44.1kHz) with single code path | Good — simple and universal |
 | Surgical R8 over blanket keep | Enables real shrinking while protecting JNI + sealed classes | Good — 8.7% APK reduction |
 | AtomicInteger polling for progress | Avoids JNI upcall threading complexity | Good — clean, 200ms polling |
-| F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | Pending — deferred to after GitHub readiness |
+| F-Droid as distribution target | Open-source, privacy-aligned, no Google Play dependency | Pending — deferred to future milestone |
+| Rename to Unmuffle | Memorable, descriptive ("un-muffle" a voice message), unique | — Pending |
 | Split CI strategy | Fast feedback on push/PR, full pipeline only on tag | Good — efficient, signing secrets only exposed on tag push |
 | WHISPER_VERSION compile definition | v1.8.3 needs it but we bypass upstream CMakeLists.txt | Good — clean fix for direct compilation |
 
 ---
-*Last updated: 2026-02-28 after v1.2 milestone*
+*Last updated: 2026-03-01 after starting v1.3 milestone*
