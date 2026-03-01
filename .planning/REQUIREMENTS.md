@@ -10,7 +10,7 @@ Requirements for the Unmuffle milestone. Each maps to roadmap phases.
 ### Fixes
 
 - [ ] **FIX-01**: Layout regression fixed — transcript text not overlapped by title, copy/share buttons fully visible
-- [ ] **FIX-02**: README accurately describes INTERNET + ACCESS_NETWORK_STATE permissions used for model download
+- [x] **FIX-02**: README accurately describes INTERNET + ACCESS_NETWORK_STATE permissions used for model download
 
 ### Rebrand
 
@@ -71,7 +71,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FIX-01 | Phase 12 | Pending |
-| FIX-02 | Phase 11 | Pending |
+| FIX-02 | Phase 11 | Complete |
 | REBRAND-01 | Phase 12 | Pending |
 | REBRAND-02 | Phase 12 | Pending |
 | REBRAND-03 | Phase 12 | Pending |

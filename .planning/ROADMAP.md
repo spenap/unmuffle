@@ -47,7 +47,7 @@ Full details: `milestones/v1.2-ROADMAP.md`
 
 **Milestone Goal:** Ship the app as "Unmuffle" — a named, polished product with language selection, configurable settings, and a Material 3 UI.
 
-- [ ] **Phase 11: Foundation + Language JNI Chain** — SettingsRepository persistence singleton, WhisperModel enum, language parameter threaded through JNI, README permissions fix
+- [x] **Phase 11: Foundation + Language JNI Chain** — SettingsRepository persistence singleton, WhisperModel enum, language parameter threaded through JNI, README permissions fix (completed 2026-03-01)
 - [ ] **Phase 12: App Rename + Material 3 + Layout Fix** — TransChat renamed to Unmuffle across all code and config, M3 theme applied, layout regression fixed, dynamic color enabled
 - [ ] **Phase 13: Language Selection Dialog** — Language picker dialog before inference, remember-my-choice checkbox persisted and respected on subsequent shares
 - [ ] **Phase 14: Settings Activity** — Settings screen accessible from the app, language default picker, model selector (tiny/small), model download trigger
@@ -63,7 +63,7 @@ Full details: `milestones/v1.2-ROADMAP.md`
   2. `SettingsRepository` reads and writes language preference synchronously via SharedPreferences without DataStore instantiation errors
   3. `WhisperModel` enum defines TINY and SMALL variants with filename, download URL, SHA256, size, and display name
   4. README states that INTERNET and ACCESS_NETWORK_STATE are used for one-time model download, not for transcription
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 11-01: SettingsRepository, WhisperModel enum, ModelManager generalization
@@ -128,7 +128,7 @@ Plans:
 | 8. Open Source Foundation | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 10. Dependency Upgrades | v1.2 | 2/2 | Complete | 2026-02-28 |
-| 11. Foundation + Language JNI Chain | 1/2 | In Progress|  | - |
+| 11. Foundation + Language JNI Chain | 2/2 | Complete   | 2026-03-01 | - |
 | 12. App Rename + Material 3 + Layout Fix | v1.3 | 0/2 | Not started | - |
 | 13. Language Selection Dialog | v1.3 | 0/1 | Not started | - |
 | 14. Settings Activity | v1.3 | 0/2 | Not started | - |
