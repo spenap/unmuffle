@@ -12,13 +12,19 @@ private const val TAG = "ModelManager"
 /**
  * Manages the Whisper model file stored in app private storage.
  *
- * Model location: context.filesDir/models/ggml-small-q5_1.bin
- * Never stored on external storage — this is private, never backed up or shared.
+ * Model location: context.getExternalFilesDir(null)/models/<model.filename>
+ * Never stored on shared external storage — app-private, deleted on uninstall.
  *
  * All heavy operations (SHA256 of 190MB file) must be called from a coroutine.
+ *
+ * Backward-compatible note: The const val constants below mirror WhisperModel.SMALL
+ * metadata. They are kept for callers (DownloadViewModel, etc.) that reference them
+ * directly. They will be removed in Phase 14 when those callers are updated.
  */
 object ModelManager {
 
+    // Backward-compatible constants — mirror WhisperModel.SMALL (see WhisperModel.kt)
+    // Do NOT remove until Phase 14 refactor of DownloadViewModel and callers.
     const val MODEL_FILENAME = "ggml-small-q5_1.bin"
     const val MODEL_URL =
         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin"
@@ -30,16 +36,23 @@ object ModelManager {
     const val MODEL_SIZE_BYTES = 199_819_264L  // ~190 MB
 
     /**
-     * Absolute path to the model file in app-private external storage.
-     * Uses getExternalFilesDir so DownloadManager (a separate system process)
-     * can write to it. Still app-private and deleted on uninstall.
+     * Absolute path to the model file for [model] in app-private external storage.
+     * Uses getExternalFilesDir so DownloadManager (a separate system process) can write to it.
+     * Still app-private and deleted on uninstall.
      */
-    fun modelFile(context: Context): File {
+    fun modelFile(context: Context, model: WhisperModel): File {
         val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
         val modelsDir = File(baseDir, "models")
         modelsDir.mkdirs()
-        return File(modelsDir, MODEL_FILENAME)
+        return File(modelsDir, model.filename)
     }
+
+    /**
+     * Absolute path to the currently-selected model file.
+     * Reads model selection from [SettingsRepository] — defaults to WhisperModel.SMALL.
+     */
+    fun modelFile(context: Context): File =
+        modelFile(context, SettingsRepository.getModel(context))
 
     /**
      * Returns true if the model file exists at the expected path.
@@ -48,29 +61,42 @@ object ModelManager {
     fun modelExists(context: Context): Boolean = modelFile(context).exists()
 
     /**
-     * Full model readiness check: file exists AND SHA256 matches.
-     * Runs the SHA256 digest on a 190MB file — call from a coroutine on Dispatchers.IO.
+     * Full model readiness check for [model]: file exists AND SHA256 matches.
+     * Runs the SHA256 digest on a potentially large file — call from a coroutine on Dispatchers.IO.
      *
      * @return true if the model is present and has the correct checksum
      */
-    suspend fun isModelReady(context: Context): Boolean = withContext(Dispatchers.IO) {
-        val file = modelFile(context)
-        if (!file.exists()) return@withContext false
-        val hash = computeSha256(file)
-        val match = hash == MODEL_SHA256
-        if (!match) {
-            Log.w(TAG, "SHA256 mismatch — expected $MODEL_SHA256, got $hash")
+    suspend fun isModelReady(context: Context, model: WhisperModel): Boolean =
+        withContext(Dispatchers.IO) {
+            val file = modelFile(context, model)
+            if (!file.exists()) return@withContext false
+            val hash = computeSha256(file)
+            val match = hash == model.sha256
+            if (!match) {
+                Log.w(TAG, "SHA256 mismatch for ${model.name} — expected ${model.sha256}, got $hash")
+            }
+            match
         }
-        match
-    }
 
     /**
-     * Quick existence-only check (no SHA256). Use in MainActivity routing where
-     * we want low latency — the full verify runs after download completes.
+     * Full readiness check for the currently-selected model.
+     * Reads model selection from [SettingsRepository].
      */
-    fun isModelPresentFast(context: Context): Boolean = modelFile(context).let {
-        it.exists() && it.length() > 0L
-    }
+    suspend fun isModelReady(context: Context): Boolean =
+        isModelReady(context, SettingsRepository.getModel(context))
+
+    /**
+     * Quick existence-only check for [model] (no SHA256). Use where low latency is needed.
+     */
+    fun isModelPresentFast(context: Context, model: WhisperModel): Boolean =
+        modelFile(context, model).let { it.exists() && it.length() > 0L }
+
+    /**
+     * Quick existence-only check for the currently-selected model (no SHA256).
+     * Reads model selection from [SettingsRepository].
+     */
+    fun isModelPresentFast(context: Context): Boolean =
+        isModelPresentFast(context, SettingsRepository.getModel(context))
 
     /**
      * Delete the model file (e.g. on failed or corrupt download before retry).
