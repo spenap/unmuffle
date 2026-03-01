@@ -1,4 +1,4 @@
-# TransChat
+# Unmuffle
 
 Transcribe shared voice messages locally and privately — no cloud, no data leaks.
 
@@ -15,7 +15,7 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 
 ## Privacy
 
-TransChat requires INTERNET and ACCESS_NETWORK_STATE permissions for the one-time model download only. Once the model is installed, no network access occurs. Audio never leaves the device. There is no analytics, no telemetry, and no tracking of any kind. Transcripts are ephemeral — they are never stored on disk.
+Unmuffle requires INTERNET and ACCESS_NETWORK_STATE permissions for the one-time model download only. Once the model is installed, no network access occurs. Audio never leaves the device. There is no analytics, no telemetry, and no tracking of any kind. Transcripts are ephemeral — they are never stored on disk.
 
 ## Screenshots
 
@@ -26,7 +26,7 @@ TransChat requires INTERNET and ACCESS_NETWORK_STATE permissions for the one-tim
 ## How It Works
 
 1. Share a voice message from WhatsApp, Telegram, or any messaging app
-2. TransChat decodes the audio (OGG/Opus, MP3) via Android MediaCodec
+2. Unmuffle decodes the audio (OGG/Opus, MP3) via Android MediaCodec
 3. Audio is resampled to 16kHz mono for Whisper
 4. whisper.cpp runs on-device inference using the small multilingual model
 5. Post-processing filters hallucinations from silent/noise segments
@@ -45,8 +45,8 @@ TransChat requires INTERNET and ACCESS_NETWORK_STATE permissions for the one-tim
 ### Steps
 
 ```bash
-git clone --recurse-submodules https://github.com/spenap/transchat-app.git
-cd transchat-app
+git clone --recurse-submodules https://github.com/spenap/unmuffle.git
+cd unmuffle
 ```
 
 If you already cloned without submodules:
