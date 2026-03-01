@@ -128,7 +128,7 @@ Plans:
 | 8. Open Source Foundation | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 9. GitHub Actions CI | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 10. Dependency Upgrades | v1.2 | 2/2 | Complete | 2026-02-28 |
-| 11. Foundation + Language JNI Chain | 2/2 | Complete   | 2026-03-01 | - |
+| 11. Foundation + Language JNI Chain | 2/2 | Complete    | 2026-03-01 | - |
 | 12. App Rename + Material 3 + Layout Fix | v1.3 | 0/2 | Not started | - |
 | 13. Language Selection Dialog | v1.3 | 0/1 | Not started | - |
 | 14. Settings Activity | v1.3 | 0/2 | Not started | - |
