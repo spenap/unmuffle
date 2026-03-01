@@ -10,12 +10,12 @@ Transcribe shared voice messages locally and privately — no cloud, no data lea
 - Real-time progress bar during transcription (0-100%)
 - Copy and Share buttons for the transcript result
 - Anti-hallucination filtering for silent/noise audio
-- Privacy-first: zero network permissions declared in manifest
+- Privacy-first: INTERNET and ACCESS_NETWORK_STATE are used only for the one-time model download — transcription runs fully offline
 - Small footprint: ~5.4 MB APK (arm64-v8a release build)
 
 ## Privacy
 
-TransChat has zero network permissions — not even INTERNET is declared in the manifest, except for the one-time model download. Audio never leaves the device. There is no analytics, no telemetry, and no tracking of any kind. The model download is the only network operation and happens once over WiFi by default. Transcripts are ephemeral — they are never stored on disk.
+TransChat requires INTERNET and ACCESS_NETWORK_STATE permissions for the one-time model download only. Once the model is installed, no network access occurs. Audio never leaves the device. There is no analytics, no telemetry, and no tracking of any kind. Transcripts are ephemeral — they are never stored on disk.
 
 ## Screenshots
 
