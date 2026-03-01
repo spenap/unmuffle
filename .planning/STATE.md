@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Unmuffle
 status: unknown
-last_updated: "2026-03-01T17:59:55Z"
+last_updated: "2026-03-01T19:15:00Z"
 progress:
   total_phases: 2
   completed_phases: 1
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** Transcribe shared voice messages locally and privately — no cloud, no data leaks.
-**Current focus:** v1.3 Unmuffle — Phase 12 in progress (plan 02 complete, awaiting checkpoint human-verify)
+**Current focus:** v1.3 Unmuffle — Phase 12 complete; ready for Phase 13 (Language Selection Dialog)
 
 ## Current Position
 
-Phase: 12 of 14 (App Rename + M3 + Layout Fix) — IN PROGRESS
-Plan: 2 of 3 in current phase — COMPLETE (awaiting Task 3 checkpoint:human-verify)
-Status: Checkpoint — awaiting device verification
-Last activity: 2026-03-01 — 12-02 complete (M3 theme, DynamicColors, layout fix, README rename)
+Phase: 12 of 14 (App Rename + M3 + Layout Fix) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Complete — device verified and approved
+Last activity: 2026-03-01 — 12-02 complete (M3 theme, DynamicColors, layout fix, README rename, device approval)
 
-Progress: [████░░░░░░] 44% (v1.3 — 4/9 plans)
+Progress: [█████░░░░░] 56% (v1.3 — 5/9 plans)
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ v1.3 decisions:
 - 12-02: Theme.Material3.DayNight.NoActionBar used for both themes — single parent eliminates FIX-01 without per-activity windowActionBar flags
 - 12-02: DynamicColors registered via Application.onCreate — applies to all current and future activities automatically
 - 12-02: REBRAND-04 (GitHub repo rename) is a manual user action documented as instructions after automated tasks complete
+- 12-02: MaterialToolbar added to all user-facing layouts after device verification revealed content drawing behind status bar and navigation bar — NoActionBar theme requires explicit toolbar and fitsSystemWindows handling
 
 ### Pending Todos
 
@@ -68,10 +69,10 @@ None.
 ### Blockers/Concerns
 
 - Tiny model SHA256 confirmed: 818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7 (used in WhisperModel.TINY)
-- REBRAND-04 (GitHub repo rename) is a manual user action — Phase 12 guides it but cannot automate it
+- REBRAND-04 (GitHub repo rename) is a manual user action — Phase 12 guided it but cannot automate it
 
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: 12-02 Task 3 checkpoint:human-verify — M3 theme migration, dynamic color, layout fix, and README rename complete; awaiting device verification
-Next step: User verifies on device (Task 3), then Phase 12 final verification (12-03)
+Stopped at: 12-02 complete — device verified and approved; Phase 12 done
+Next step: Phase 13 (Language Selection Dialog)
