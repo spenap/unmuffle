@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 /**
  * Post-processing filter for Whisper inference output.

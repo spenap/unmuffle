@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import android.app.Application
 import android.app.DownloadManager
@@ -65,7 +65,7 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         val request = DownloadManager.Request(Uri.parse(ModelManager.MODEL_URL))
-            .setTitle("TransChat — Whisper Model")
+            .setTitle("Unmuffle — Whisper Model")
             .setDescription("Downloading transcription model (190 MB)...")
             .setDestinationInExternalFilesDir(context, null, "models/${ModelManager.MODEL_FILENAME}")
             .setAllowedNetworkTypes(networkTypes)

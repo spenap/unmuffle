@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import android.media.MediaCodec
 import android.media.MediaExtractor

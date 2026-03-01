@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import android.os.Bundle
 import android.widget.Button
@@ -21,7 +21,7 @@ import kotlin.math.sin
  *   5. WhisperContext.getSystemInfo() shows correct .so loaded
  *
  * Access: temporarily set as launcher in AndroidManifest, or use adb:
- *   adb shell am start -n com.simonpena.transchat/.SmokeTestActivity
+ *   adb shell am start -n com.simonpena.unmuffle/.SmokeTestActivity
  */
 class SmokeTestActivity : AppCompatActivity() {
 

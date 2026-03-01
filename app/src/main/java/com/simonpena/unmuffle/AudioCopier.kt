@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import android.content.ContentResolver
 import android.content.Context

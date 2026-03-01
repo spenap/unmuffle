@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 /**
  * CPU thread count configuration for Whisper inference.

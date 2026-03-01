@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +11,7 @@ import java.util.concurrent.Executors
 
 /**
  * Low-level JNI bridge matching function signatures in whisper_jni.cpp.
- * Package name (com.simonpena.transchat) and inner class name (WhisperLib$Companion)
+ * Package name (com.simonpena.unmuffle) and inner class name (WhisperLib$Companion)
  * must stay in sync with the C++ JNI name mangling. Do NOT rename this class or its
  * companion — that would break the JNI binding without a compile error.
  *

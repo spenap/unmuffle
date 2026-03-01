@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 import android.content.Intent
 import android.net.Uri
@@ -56,7 +56,7 @@ class ShareReceiverActivity : AppCompatActivity() {
             is AudioCopier.CopyResult.TooLarge -> {
                 Toast.makeText(
                     this,
-                    "File too large (25MB max). TransChat works best with voice messages.",
+                    "File too large (25MB max). Unmuffle works best with voice messages.",
                     Toast.LENGTH_LONG
                 ).show()
                 finish()

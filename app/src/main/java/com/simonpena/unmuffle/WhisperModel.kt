@@ -1,4 +1,4 @@
-package com.simonpena.transchat
+package com.simonpena.unmuffle
 
 /**
  * Enum representing supported Whisper model variants with their associated metadata.
