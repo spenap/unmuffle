@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "com.simonpena.transchat"
+    namespace = "com.simonpena.unmuffle"
     compileSdk = 35
     ndkVersion = "27.2.12479018"  // NDK r27c — 16KB page size support
 
     defaultConfig {
-        applicationId = "com.simonpena.transchat"
+        applicationId = "com.simonpena.unmuffle"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

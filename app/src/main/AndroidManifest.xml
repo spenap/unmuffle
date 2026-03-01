@@ -5,17 +5,17 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:label="TransChat"
+        android:label="Unmuffle"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.TransChat">
+        android:theme="@style/Theme.Unmuffle">
 
         <!-- Router: checks model and navigates to Download or Ready -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.TransChat.Transparent">
+            android:theme="@style/Theme.Unmuffle.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -36,8 +36,8 @@
         <activity
             android:name=".ShareReceiverActivity"
             android:exported="true"
-            android:label="TransChat"
-            android:theme="@style/Theme.TransChat.Transparent">
+            android:label="Unmuffle"
+            android:theme="@style/Theme.Unmuffle.Transparent">
 
             <!-- Intent filter 1: standard audio MIME types (WhatsApp, most apps) -->
             <intent-filter>
@@ -58,13 +58,13 @@
         <activity
             android:name=".TranscriptionActivity"
             android:exported="false"
-            android:theme="@style/Theme.TransChat" />
+            android:theme="@style/Theme.Unmuffle" />
 
         <!-- Phase 1 smoke test — developer tool, accessed via adb or temporary launcher swap -->
         <activity
             android:name=".SmokeTestActivity"
             android:exported="true"
-            android:label="TransChat Smoke Test" />
+            android:label="Unmuffle Smoke Test" />
 
     </application>
 

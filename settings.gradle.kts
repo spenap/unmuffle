@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "TransChat"
+rootProject.name = "Unmuffle"
 include(":app")

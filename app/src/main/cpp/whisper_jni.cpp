@@ -31,7 +31,7 @@ extern "C" {
 
 // Initialize from absolute file path — always use this, never byte array (OOM on 190MB)
 JNIEXPORT jlong JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_initContext(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(
         JNIEnv *env, jobject /* thiz */, jstring modelPathStr) {
     const char *modelPath = env->GetStringUTFChars(modelPathStr, nullptr);
     LOGI("Loading model from: %s", modelPath);
@@ -48,7 +48,7 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_initContext(
 
 // Run transcription — blocking, call from background thread only (15-60s on mid-range)
 JNIEXPORT void JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint numThreads,
         jfloatArray audioData, jstring languageCode) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
@@ -85,14 +85,14 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_fullTranscribe(
 }
 
 JNIEXPORT jint JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_getTextSegmentCount(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getTextSegmentCount(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
     return whisper_full_n_segments(ctx);
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_getTextSegment(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getTextSegment(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint index) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
     const char *text = whisper_full_get_segment_text(ctx, index);
@@ -100,7 +100,7 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_getTextSegment(
 }
 
 JNIEXPORT void JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_freeContext(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_freeContext(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
     LOGI("Freeing whisper context");
@@ -108,13 +108,13 @@ Java_com_simonpena_transchat_WhisperLib_00024Companion_freeContext(
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_getSystemInfo(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getSystemInfo(
         JNIEnv *env, jobject /* thiz */) {
     return env->NewStringUTF(whisper_print_system_info());
 }
 
 JNIEXPORT jint JNICALL
-Java_com_simonpena_transchat_WhisperLib_00024Companion_getProgress(
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getProgress(
         JNIEnv* /*env*/, jobject /*thiz*/) {
     return g_progress_state.progress.load(std::memory_order_relaxed);
 }
