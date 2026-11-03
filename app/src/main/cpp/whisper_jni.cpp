@@ -4,7 +4,9 @@
 #include <cstdio>
 #include <mutex>
 #include <android/log.h>
+#include <dlfcn.h>
 #include "whisper.cpp/include/whisper.h"
+#include "whisper.cpp/ggml/include/ggml-backend.h"
 
 #define LOG_TAG "WhisperJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -174,3 +176,14 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_takeNewSegments(
 }
 
 } // extern "C"
+
+// ggml's CPU backends sit next to this library, one per ARM level; load the
+// best one this phone supports before whisper asks for a CPU device.
+extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM*, void*) {
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&JNI_OnLoad), &info) && info.dli_fname) {
+        std::string dir(info.dli_fname);
+        ggml_backend_load_all_from_path(dir.substr(0, dir.rfind('/')).c_str());
+    }
+    return JNI_VERSION_1_6;
+}

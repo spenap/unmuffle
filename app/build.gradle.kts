@@ -29,6 +29,9 @@ android {
             cmake {
                 // 16 KB-aligned libraries, ggml's included, for 16 KB-page devices
                 arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+                // -O3 in every build: debug builds unoptimised take minutes, and
+                // release builds default to -O2.
+                arguments += "-DCMAKE_BUILD_TYPE=Release"
             }
         }
     }
@@ -58,8 +61,6 @@ android {
             applicationIdSuffix = ".debug"
             manifestPlaceholders["appLabel"] = "Unmuffle debug"
             isMinifyEnabled = false
-            // Unoptimised ggml takes minutes per message: optimise it here too.
-            externalNativeBuild { cmake { arguments += "-DCMAKE_BUILD_TYPE=Release" } }
         }
         release {
             // scripts/bench.sh: a release build next to the real app, debug-signed
@@ -76,6 +77,10 @@ android {
             )
         }
     }
+
+    // ggml finds its CPU backends by listing the native library directory,
+    // so the libraries are extracted on install.
+    packaging { jniLibs { useLegacyPackaging = true } }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
