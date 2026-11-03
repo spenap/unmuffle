@@ -29,6 +29,9 @@ CPU kernels (the `+fp16` in `CMakeLists.txt` reaches only the JNI code).
 - S25 threads (i8mm, q8_0, `-l es`): 7 about as fast as 6, 8 slower
   (11.9–17.0 s); any setting has an occasional slow run.
 - i8mm: no measurable gain.
+- Pixel 5 threads (2 fast and 6 slow cores; `+dotprod`, q8_0, `-l es`,
+  70 s message, two rounds): 2: 58.6 / 63.3 s, 4: 60.9 / 71.6, 6:
+  50.6 / 51.2, 8: 48.2 / 49.9. The app uses all cores but two.
 - A first S25 attempt, partly with the screen locked, was discarded.
 
 Laptop, greedy, 4 threads:
