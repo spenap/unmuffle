@@ -57,6 +57,7 @@ adb shell settings put global stay_on_while_plugged_in 15  # AC, USB, wireless, 
 trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
 trap 'exit 1' INT TERM
 adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 sleep 1
 asleep && { echo "Unlock the phone, then run again."; exit 1; }
 cool_to=$(thermal | awk '{ print $1 + 2 }')
@@ -101,12 +102,16 @@ for run in $(seq "$runs"); do
                 --eu android.intent.extra.STREAM "file:///sdcard/Android/data/$pkg/files/bench/$name" \
                 -n "$pkg/com.simonpena.unmuffle.ShareReceiverActivity" >/dev/null
             line=
-            for _ in $(seq 300); do
+            for waited in $(seq 300); do
                 sleep 1
                 caps=$((caps + $(freq_cap))); samples=$((samples + 1))
                 asleep && slept=yes
-                line=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | grep -E 'Transcription complete in|Resampled:' | tr -d '\r' || true)
+                log=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | tr -d '\r')
+                line=$(echo "$log" | grep -E 'Transcription complete in|Resampled:' || true)
                 echo "$line" | grep -q 'complete in' && break
+                if [ "$waited" -ge 20 ] && ! echo "$log" | grep -q 'Starting transcription'; then
+                    echo "$pkg $name: transcription didn't start within 20 s"; exit 1
+                fi
             done
             ms=$(echo "$line" | sed -n 's/.*complete in \([0-9]*\)ms.*/\1/p')
             secs=$(echo "$line" | sed -n 's/.*(\([0-9.]*\)s).*/\1/p' | head -1)

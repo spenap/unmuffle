@@ -60,6 +60,16 @@ For any agent (Claude Code, Codex…) and any person.
   installed, the device is awake and unlocked, each command succeeded,
   the first log line appears. Reproduce CI failures locally rather than
   iterating through pushes. Give every wait a timeout.
+- Many tests failing the same way means the environment, not the code:
+  read the first failure, fix the environment, iterate on one test
+  class, and run the full suite only to confirm.
+- Gate on a script's exit status, not its text.
+- Run long jobs (benchmarks, model downloads) in the background and stay
+  reachable.
+- The phones and speakers are shared: one agent at a time, nothing plays
+  unless asked, volume and settings left as found. Device runs keep the
+  screen on while plugged in (`stay_on_while_plugged_in` 15, restored
+  after); a PIN lock needs the user, so check it before starting.
 - Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
   the key in `~/.config/unmuffle` (backed up in Bitwarden) and publishes a
   GitHub Release. Release builds without the key use the debug key.
