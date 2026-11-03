@@ -3,6 +3,7 @@ package com.simonpena.unmuffle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -53,6 +54,8 @@ internal class WhisperLib {
         external fun freeContext(contextPtr: Long)
         external fun getSystemInfo(): String
         external fun getProgress(): Int
+        // UTF-8 text of the segments decoded since the last call, one per line
+        external fun takeNewSegments(): ByteArray
     }
 }
 
@@ -76,25 +79,31 @@ internal class WhisperContext private constructor(private var ptr: Long) {
      *   Default "auto" for backward compatibility with existing callers.
      * @param onProgress Called with 0-100 progress values during inference. Invoked on
      *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
+     * @param onSegment Called with each segment's text as it is decoded, from the same
+     *   thread as [onProgress], never concurrently with it.
      */
     suspend fun transcribeData(
         data: FloatArray,
         languageCode: String = "auto",
-        onProgress: (Int) -> Unit = {}
+        onProgress: (Int) -> Unit = {},
+        onSegment: (String) -> Unit = {}
     ): String = withContext(scope.coroutineContext) {
+        fun takeSegments() = String(WhisperLib.takeNewSegments(), Charsets.UTF_8)
+            .split('\n').filter { it.isNotEmpty() }.forEach(onSegment)
         // Poller runs on Default, NOT the single-thread executor (which is blocked by fullTranscribe)
         val pollerJob = launch(Dispatchers.Default) {
             while (isActive) {
-                val p = WhisperLib.getProgress()
-                onProgress(p)
+                onProgress(WhisperLib.getProgress())
+                takeSegments()
                 delay(200)
             }
         }
         try {
             WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data, languageCode)
         } finally {
-            pollerJob.cancel()
+            pollerJob.cancelAndJoin()
         }
+        takeSegments()
         onProgress(100) // Ensure 100% is reported before collecting segments
         val segmentCount = WhisperLib.getTextSegmentCount(ptr)
         buildString {

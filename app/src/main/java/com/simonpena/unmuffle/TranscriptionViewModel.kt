@@ -21,7 +21,8 @@ private const val TAG = "TranscriptionVM"
  * Observed by [TranscriptionActivity] via [TranscriptionViewModel.uiState].
  */
 sealed class UiState {
-    data class Processing(val progress: Int = -1) : UiState()
+    /** [progress] is -1 before inference starts; [partial] is the text so far. */
+    data class Processing(val progress: Int = -1, val partial: String = "") : UiState()
     data class Success(val transcript: String) : UiState()
     data class NoSpeech(val message: String) : UiState()
     data class Error(val message: String) : UiState()
@@ -94,9 +95,12 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
 
                 // Step 4: Transcribe via WhisperEngine (pass runtime language code)
-                val raw = engine.transcribe(pcm, languageCode) { progress ->
-                    _uiState.value = UiState.Processing(progress)
-                }
+                val streaming = StreamingTranscript()
+                val raw = engine.transcribe(
+                    pcm, languageCode,
+                    onProgress = { _uiState.value = streaming.progress(it) },
+                    onSegment = { _uiState.value = streaming.segment(it) },
+                )
                 Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
                 // Step 5: Filter hallucinations and non-speech markers

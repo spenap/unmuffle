@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <string>
 #include <atomic>
+#include <mutex>
 #include <android/log.h>
 #include "whisper.cpp/include/whisper.h"
 
@@ -10,6 +11,9 @@
 
 struct ProgressState {
     std::atomic<int> progress{0};
+    // Text of segments decoded but not yet taken by Kotlin, one per line.
+    std::mutex segments_mutex;
+    std::string new_segments;
 };
 
 // File-scoped — safe because WhisperContext serializes all access
@@ -25,6 +29,21 @@ static void whisper_progress_cb(
 {
     auto* ps = static_cast<ProgressState*>(user_data);
     ps->progress.store(progress, std::memory_order_relaxed);
+}
+
+static void whisper_new_segment_cb(
+    struct whisper_context* /*ctx*/,
+    struct whisper_state*   state,
+    int n_new,
+    void* user_data)
+{
+    auto* ps = static_cast<ProgressState*>(user_data);
+    const int n = whisper_full_n_segments_from_state(state);
+    std::lock_guard<std::mutex> lock(ps->segments_mutex);
+    for (int i = n - n_new; i < n; i++) {
+        ps->new_segments += whisper_full_get_segment_text_from_state(state, i);
+        ps->new_segments += '\n';
+    }
 }
 
 extern "C" {
@@ -68,10 +87,16 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
     params.single_segment   = false;         // let whisper segment naturally via timestamps
     params.language         = lang;          // runtime language code (e.g. "auto", "en", "es")
 
-    // Reset and register progress callback
+    // Reset and register progress and segment callbacks
     g_progress_state.progress.store(0, std::memory_order_relaxed);
-    params.progress_callback           = whisper_progress_cb;
-    params.progress_callback_user_data = &g_progress_state;
+    {
+        std::lock_guard<std::mutex> lock(g_progress_state.segments_mutex);
+        g_progress_state.new_segments.clear();
+    }
+    params.progress_callback              = whisper_progress_cb;
+    params.progress_callback_user_data    = &g_progress_state;
+    params.new_segment_callback           = whisper_new_segment_cb;
+    params.new_segment_callback_user_data = &g_progress_state;
 
     LOGI("Starting transcription with %d threads on %d samples, lang=%s", numThreads, (int)audioDataLength, lang);
     int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
@@ -117,6 +142,21 @@ JNIEXPORT jint JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getProgress(
         JNIEnv* /*env*/, jobject /*thiz*/) {
     return g_progress_state.progress.load(std::memory_order_relaxed);
+}
+
+// Segments decoded since the last call, as UTF-8, one per line. Bytes, not a
+// jstring: NewStringUTF expects modified UTF-8 and aborts on emoji.
+JNIEXPORT jbyteArray JNICALL
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_takeNewSegments(
+        JNIEnv* env, jobject /*thiz*/) {
+    std::string taken;
+    {
+        std::lock_guard<std::mutex> lock(g_progress_state.segments_mutex);
+        taken.swap(g_progress_state.new_segments);
+    }
+    jbyteArray bytes = env->NewByteArray((jsize)taken.size());
+    env->SetByteArrayRegion(bytes, 0, (jsize)taken.size(), (const jbyte*)taken.data());
+    return bytes;
 }
 
 } // extern "C"

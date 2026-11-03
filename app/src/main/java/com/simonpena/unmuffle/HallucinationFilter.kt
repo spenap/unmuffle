@@ -25,7 +25,7 @@ object HallucinationFilter {
     )
 
     // Regex for markers in square brackets or parentheses that contain no speech
-    private val MARKER_REGEX = Regex("""\[[\w\s_]+\]|\([\w\s_]+\)""")
+    internal val MARKER_REGEX = Regex("""\[[\w\s_]+\]|\([\w\s_]+\)""")
 
     /**
      * Filter whisper output, returning null if no meaningful speech was detected.
