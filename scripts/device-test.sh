@@ -15,7 +15,7 @@ DEST=/sdcard/Android/data/$APP/files/models
 # plugged in (any charger) until the script ends.
 adb get-state >/dev/null
 old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
-adb shell svc power stayon true
+adb shell settings put global stay_on_while_plugged_in 15  # AC, USB, wireless, dock
 trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
 adb shell input keyevent KEYCODE_WAKEUP
 sleep 1
