@@ -18,6 +18,8 @@ Audio never leaves the device.
   `--recurse-submodules`).
 - Build: `./gradlew assembleDebug`. SDK in `~/Android/Sdk`, JDK 17,
   NDK 27.2.12479018, CMake 3.22.1.
+- Instrumented test (share → transcript, tiny model) on a phone:
+  `scripts/device-test.sh`. CI only builds it: the APK is arm64-only.
 
 ## Target device
 - **Samsung Galaxy S25** (arm64, current Android/One UI): the device it

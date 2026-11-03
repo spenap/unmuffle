@@ -31,8 +31,8 @@ language code passed through to whisper.cpp.
       `./gradlew testDebugUnitTest`.
 - [x] CI runs `testDebugUnitTest`. Done when a failing test fails the
       build.
-- [ ] One instrumented test of share → transcript on `jfk.wav` with the
-      tiny model.
+- [x] One instrumented test of share → transcript on `jfk.wav` with the
+      tiny model. (`scripts/device-test.sh`; 9 s on the Pixel 5.)
 
 ## Track P: Transcription
 Written test-first; measured on the S25.
