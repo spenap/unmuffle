@@ -14,6 +14,13 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
+## 2026-11-03 · small stays the model; no VAD
+base q5_1 is three times faster than small q5_1 but changed 12–21% of
+the words of two real messages, mostly for the worse. whisper.cpp's VAD
+made those messages slightly slower (they have no long pauses), and on
+one with added silence it was faster but dropped a phrase; losing
+speech is worse than waiting. Numbers in `docs/measurements.md`.
+
 ## 2026-11-03 · No closed-source recognizer, not even as an option
 Android's on-device recognizer is Google's proprietary app (Speech
 Services by Google on the S25, Android System Intelligence on Pixels);

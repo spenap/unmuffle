@@ -38,10 +38,9 @@ language code passed through to whisper.cpp.
 Written test-first; measured on the S25.
 - [x] Streamed segments. Done when the transcript appears segment by
       segment while inference runs.
-- [ ] whisper.cpp VAD. Done when silence is skipped and a voice message
-      with long pauses transcribes faster, with the same text.
-- [ ] base vs small. Done when time and accuracy on the same messages are
-      recorded in `docs/` and the default model chosen from them.
+- [x] base vs small. Done when time and accuracy on the same messages are
+      recorded in `docs/` and the default model chosen from them
+      (`docs/measurements.md`: small stays).
 
 ## Track S: Settings
 - [ ] Language dialog on share, with "Remember my choice" (persisted and
@@ -56,7 +55,8 @@ Written test-first; measured on the S25.
   keyed by the audio's SHA-256 and never written to disk, so sharing the
   same message again is instant.
 - Not doing: Android's on-device recognizer (closed source; see
-  decisions.md); Galician; transcript history (transcripts are ephemeral);
+  decisions.md); whisper.cpp VAD (no faster on real messages, dropped
+  speech; see decisions.md); Galician; transcript history (transcripts are ephemeral);
   cloud transcription; live microphone transcription; speaker
   diarization; medium/large models (too big and slow on a phone); iOS;
   Compose (Views are enough for four screens).
