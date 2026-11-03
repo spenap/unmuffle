@@ -23,17 +23,23 @@ class ShareTranscriptTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private lateinit var previousModel: WhisperModel
+    private lateinit var previousLanguage: String
 
     @Before
     fun useTinyModel() {
         previousModel = SettingsRepository.getModel(context)
+        previousLanguage = SettingsRepository.getLanguage(context)
         SettingsRepository.setModel(context, WhisperModel.TINY)
+        SettingsRepository.setLanguage(context, "auto")
         val model = ModelManager.modelFile(context)
         assertTrue("$model is missing; scripts/device-test.sh pushes it", model.length() > 0)
     }
 
     @After
-    fun restoreModel() = SettingsRepository.setModel(context, previousModel)
+    fun restoreSettings() {
+        SettingsRepository.setModel(context, previousModel)
+        SettingsRepository.setLanguage(context, previousLanguage)
+    }
 
     @Test
     fun sharedVoiceMessageIsTranscribed() {
