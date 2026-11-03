@@ -74,7 +74,7 @@ APK signed with the release key as a GitHub Release, which
 | Component | Version |
 |-----------|---------|
 | whisper.cpp | v1.8.3 |
-| Whisper model | small multilingual q5_1 (~190 MB) |
+| Whisper model | small multilingual q8_0 (252 MB) |
 | Kotlin | 2.0.21 |
 | Gradle / AGP | 8.9 / 8.7.3 |
 | NDK | 27.2 (r27c) |

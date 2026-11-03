@@ -22,7 +22,7 @@
 set -euo pipefail
 bench=${BENCH_DIR:-$HOME/Projects/unmuffle-bench}
 cooldown=${COOLDOWN:-180}
-model=ggml-small-q5_1.bin
+model=ggml-small-q8_0.bin
 
 # With adbd as root (the Pixel 5), folders it creates belong to root and the
 # app can't use them: give the app's folder back to the app.

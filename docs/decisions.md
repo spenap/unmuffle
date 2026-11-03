@@ -14,6 +14,14 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
+## 2026-11-03 · small q8_0 instead of q5_1
+Supersedes the quantisation in "whisper.cpp small q5_1" (2026-02-27).
+With ggml's CPU kernels using dot products, q8_0 is about twice as fast
+as q5_1 on the S25 and a third faster on the Pixel 5, and fixed most of
+the words that differ. The cost: 252 MB instead of 181 MB, downloaded
+again by existing installs, which then delete q5_1. Numbers in
+`docs/measurements.md`.
+
 ## 2026-11-03 · small stays the model; no VAD
 base q5_1 is three times faster than small q5_1 but changed 12–21% of
 the words of two real messages, mostly for the worse. whisper.cpp's VAD
@@ -107,3 +115,5 @@ Other apps could read the clipboard on older Android.
 Local whisper.cpp over JNI is the only private option; small q5_1
 (~190 MB) transcribed Spanish accurately in 12–15 s. Model downloaded
 once from Hugging Face and checked by SHA256. Detail: `WhisperModel.kt`.
+Superseded by "small q8_0 instead of q5_1" (2026-11-03) for the
+quantisation.

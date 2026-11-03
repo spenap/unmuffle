@@ -5,7 +5,7 @@ and record decisions in `decisions.md`.
 
 ## Done (v1.0–v1.3, February–March 2026)
 Share target; MediaCodec decode (OGG/Opus, MP3) and resampling to 16 kHz
-mono; whisper.cpp small q5_1 over JNI; model download with Wi-Fi prompt and
+mono; whisper.cpp small over JNI; model download with Wi-Fi prompt and
 SHA256 check; hallucination filter; result screen with Copy and Share;
 0–100% progress; R8 shrinking; MIT licence, README, CI with signed `v*`
 releases; renamed TransChat → Unmuffle; Material 3 with dynamic colour;
@@ -45,7 +45,7 @@ Written test-first; measured on the S25.
       same text.
 - [x] Thread count. Done when the S25 uses 6 and a rule for other phones
       is measured on the Pixel 5. (All cores but two.)
-- [ ] small q8_0 replaces q5_1. Done when installs download it and remove
+- [x] small q8_0 replaces q5_1. Done when installs download it and remove
       q5_1.
 - [ ] Words appear as they are decoded (`logits_filter_callback`), not
       per 30 s window.

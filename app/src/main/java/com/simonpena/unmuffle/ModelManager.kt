@@ -15,25 +15,9 @@ private const val TAG = "ModelManager"
  * Model location: context.getExternalFilesDir(null)/models/<model.filename>
  * Never stored on shared external storage — app-private, deleted on uninstall.
  *
- * All heavy operations (SHA256 of 190MB file) must be called from a coroutine.
- *
- * Backward-compatible note: The const val constants below mirror WhisperModel.SMALL
- * metadata. They are kept for callers (DownloadViewModel, etc.) that reference them
- * directly. They will be removed in Phase 14 when those callers are updated.
+ * All heavy operations (SHA256 of the model) must be called from a coroutine.
  */
 object ModelManager {
-
-    // Backward-compatible constants — mirror WhisperModel.SMALL (see WhisperModel.kt)
-    // Do NOT remove until Phase 14 refactor of DownloadViewModel and callers.
-    const val MODEL_FILENAME = "ggml-small-q5_1.bin"
-    const val MODEL_URL =
-        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin"
-
-    // SHA256 retrieved from HuggingFace 2026-02-27 — verify matches downloaded file
-    const val MODEL_SHA256 =
-        "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb"
-
-    const val MODEL_SIZE_BYTES = 199_819_264L  // ~190 MB
 
     /**
      * Absolute path to the model file for [model] in app-private external storage.
@@ -107,6 +91,19 @@ object ModelManager {
         if (file.exists()) {
             val deleted = file.delete()
             Log.i(TAG, "Model file deleted: $deleted")
+        }
+    }
+
+    /** Files in [dir] that belong to no current model, such as a replaced quantisation. */
+    fun obsoleteFiles(dir: File): List<File> {
+        val current = WhisperModel.entries.map { it.filename }.toSet()
+        return dir.listFiles().orEmpty().filter { it.isFile && it.name !in current }.sortedBy { it.name }
+    }
+
+    /** Deletes [obsoleteFiles] from the models folder. */
+    fun deleteObsoleteModels(context: Context) {
+        for (file in obsoleteFiles(modelFile(context).parentFile!!)) {
+            Log.i(TAG, "Deleting obsolete ${file.name}: ${file.delete()}")
         }
     }
 
