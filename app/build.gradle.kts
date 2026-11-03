@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+// Version from git, so every build says exactly what it was built from.
+// versionCode must grow with each install: the commit count does.
+fun git(vararg args: String) = providers.exec { commandLine("git", *args) }.standardOutput.asText.get().trim()
+
 android {
     namespace = "com.simonpena.unmuffle"
     compileSdk = 35
@@ -12,8 +16,8 @@ android {
         applicationId = "com.simonpena.unmuffle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = git("rev-list", "--count", "HEAD").toInt()
+        versionName = git("describe", "--tags", "--always", "--dirty")
 
         ndk {
             abiFilters += listOf("arm64-v8a")  // arm64-only per CONTEXT.md locked decision
@@ -33,18 +37,15 @@ android {
         }
     }
 
+    // Tagged releases only (scripts/release.sh): signed with the release key
+    // when UNMUFFLE_KEYSTORE is set. Otherwise release builds use the debug key.
+    val keystore = System.getenv("UNMUFFLE_KEYSTORE")?.let(::file)
     signingConfigs {
-        getByName("debug") {
-            // Uses default debug keystore at ~/.android/debug.keystore
-        }
-        create("release") {
-            val keystorePath = System.getenv("SIGNING_KEYSTORE_PATH")
-            if (keystorePath != null) {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-            }
+        if (keystore != null) create("release") {
+            storeFile = keystore
+            storePassword = System.getenv("UNMUFFLE_KEYSTORE_PASSWORD")
+            keyAlias = "transchat"
+            keyPassword = System.getenv("UNMUFFLE_KEYSTORE_PASSWORD")
         }
     }
 
@@ -55,11 +56,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = if (System.getenv("SIGNING_KEYSTORE_PATH") != null) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")  // Local dev fallback
-            }
+            signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

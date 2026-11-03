@@ -53,6 +53,7 @@ For any agent (Claude Code, Codex…) and any person.
   when the user asks.
 - Commits: atomic, Conventional Commits, ending with a `Co-Authored-By:`
   line that names the agent and model.
-- Releases: a `v*` tag builds the signed release APK in CI; the keystore
-  lives only in GitHub Actions secrets.
+- Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
+  the key in `~/.config/unmuffle` (backed up in Bitwarden) and publishes a
+  GitHub Release. Release builds without the key use the debug key.
 - Never commit models, keystores, tokens or users' audio and transcripts.

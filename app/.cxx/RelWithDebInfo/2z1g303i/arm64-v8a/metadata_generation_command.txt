@@ -1,0 +1,19 @@
+                        -H/home/spena/Projects/unmuffle/app/src/main/cpp
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=26
+-DANDROID_PLATFORM=android-26
+-DANDROID_ABI=arm64-v8a
+-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a
+-DANDROID_NDK=/home/spena/Android/Sdk/ndk/27.2.12479018
+-DCMAKE_ANDROID_NDK=/home/spena/Android/Sdk/ndk/27.2.12479018
+-DCMAKE_TOOLCHAIN_FILE=/home/spena/Android/Sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/home/spena/Android/Sdk/cmake/3.22.1/bin/ninja
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/spena/Projects/unmuffle/app/build/intermediates/cxx/RelWithDebInfo/2z1g303i/obj/arm64-v8a
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/spena/Projects/unmuffle/app/build/intermediates/cxx/RelWithDebInfo/2z1g303i/obj/arm64-v8a
+-DCMAKE_BUILD_TYPE=RelWithDebInfo
+-B/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a
+-GNinja
+-DANDROID_STL=c++_shared
+                        Build command args: []
+                        Version: 2

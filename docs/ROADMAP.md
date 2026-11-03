@@ -12,10 +12,10 @@ releases; renamed TransChat → Unmuffle; Material 3 with dynamic colour;
 language code passed through to whisper.cpp.
 
 ## Track R: Releases
-- [ ] `versionCode`/`versionName` come from the tag. Done when a `v*` tag
-      builds an APK whose version matches it.
-- [ ] GitHub Releases. Done when a tag publishes the signed APK as a
-      release asset.
+- [ ] `versionCode`/`versionName` come from git (commit count,
+      `git describe`). Done when a release's APK reports its tag.
+- [ ] GitHub Releases. Done when `scripts/release.sh` publishes the signed
+      APK as a release asset.
 - [ ] Obtainium on the S25 follows the releases. Done when a new tag shows
       up as an update and installs over the previous one.
 - [ ] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`

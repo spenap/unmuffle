@@ -1,0 +1,21 @@
+# ninja log v5
+0	9	1793699451039025222	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-mkdir	a442b150888859f7
+0	9	1793699451039025222	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-mkdir	a442b150888859f7
+9	12	1793699451041025211	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-download	685f689d125b0314
+9	12	1793699451041025211	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-download	685f689d125b0314
+12	15	1793699451044025195	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-update	f452eac3491a851
+12	15	1793699451044025195	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-update	f452eac3491a851
+15	17	1793699451047025178	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-patch	706233c3c96d10b2
+15	17	1793699451047025178	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-patch	706233c3c96d10b2
+18	20	1793699451050025162	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-configure	ad3ba21aabc6b573
+18	20	1793699451050025162	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-configure	ad3ba21aabc6b573
+20	23	1793699451052025151	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-build	63389a0e0ab79e7b
+20	23	1793699451052025151	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-build	63389a0e0ab79e7b
+23	26	1793699451055025135	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-install	8d30653635d2b064
+23	26	1793699451055025135	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-install	8d30653635d2b064
+26	28	1793699451058025118	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-test	f61c333daa838461
+26	28	1793699451058025118	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-test	f61c333daa838461
+28	32	1793699451062025097	CMakeFiles/ggml-populate-complete	642c8cecc6b94278
+28	32	1793699451062025097	ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-done	642c8cecc6b94278
+28	32	1793699451062025097	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/CMakeFiles/ggml-populate-complete	642c8cecc6b94278
+28	32	1793699451062025097	/home/spena/Projects/unmuffle/app/.cxx/RelWithDebInfo/2z1g303i/arm64-v8a/_deps/ggml-subbuild/ggml-populate-prefix/src/ggml-populate-stamp/ggml-populate-done	642c8cecc6b94278
