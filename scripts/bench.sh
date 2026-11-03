@@ -24,10 +24,19 @@ bench=${BENCH_DIR:-$HOME/Projects/unmuffle-bench}
 cooldown=${COOLDOWN:-180}
 model=ggml-small-q5_1.bin
 
+# With adbd as root (the Pixel 5), folders it creates belong to root and the
+# app can't use them: give the app's folder back to the app.
+own() {
+    [ "$(adb shell whoami | tr -d '\r')" = root ] || return 0
+    uid=$(adb shell pm list packages -U "$1" | sed -n "s/^package:$1 uid://p" | tr -d '\r')
+    adb shell chown -R "$uid:ext_data_rw" "/sdcard/Android/data/$1"
+}
+
 if [ "${1:-}" = --model ]; then
     dir=/sdcard/Android/data/$2/files/models
     adb shell mkdir -p "$dir"
     adb push "$HOME/.cache/unmuffle/$model" "$dir/" >/dev/null
+    own "$2"
     echo "$model copied to $2"
     exit 0
 fi
@@ -53,10 +62,11 @@ asleep() {
 }
 
 old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
-adb shell svc power stayon usb
+adb shell settings put global stay_on_while_plugged_in 15  # AC, USB, wireless, dock
 trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
 trap 'exit 1' INT TERM
 adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 sleep 1
 asleep && { echo "Unlock the phone, then run again."; exit 1; }
 cool_to=$(thermal | awk '{ print $1 + 2 }')
@@ -74,6 +84,7 @@ done
 for pkg in "$@"; do
     adb shell mkdir -p "/sdcard/Android/data/$pkg/files/bench"
     adb push "${messages[@]}" "/sdcard/Android/data/$pkg/files/bench/" >/dev/null
+    own "$pkg"
 done
 
 out="$bench/results/$(date +%F_%H%M%S)"
@@ -101,12 +112,16 @@ for run in $(seq "$runs"); do
                 --eu android.intent.extra.STREAM "file:///sdcard/Android/data/$pkg/files/bench/$name" \
                 -n "$pkg/com.simonpena.unmuffle.ShareReceiverActivity" >/dev/null
             line=
-            for _ in $(seq 300); do
+            for waited in $(seq 300); do
                 sleep 1
                 caps=$((caps + $(freq_cap))); samples=$((samples + 1))
                 asleep && slept=yes
-                line=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | grep -E 'Transcription complete in|Resampled:' | tr -d '\r' || true)
+                log=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | tr -d '\r')
+                line=$(echo "$log" | grep -E 'Transcription complete in|Resampled:' || true)
                 echo "$line" | grep -q 'complete in' && break
+                if [ "$waited" -ge 20 ] && ! echo "$log" | grep -q 'Starting transcription'; then
+                    echo "$pkg $name: transcription didn't start within 20 s"; exit 1
+                fi
             done
             ms=$(echo "$line" | sed -n 's/.*complete in \([0-9]*\)ms.*/\1/p')
             secs=$(echo "$line" | sed -n 's/.*(\([0-9.]*\)s).*/\1/p' | head -1)
@@ -115,8 +130,10 @@ for run in $(seq "$runs"); do
             adb shell uiautomator dump /sdcard/unmuffle-bench-ui.xml >/dev/null
             adb shell cat /sdcard/unmuffle-bench-ui.xml | python3 -I -c '
 import sys, xml.etree.ElementTree as ET
-node = ET.parse(sys.stdin).find(".//node[@resource-id=\"" + sys.argv[1] + ":id/tv_transcript\"]")
+ids = [sys.argv[1] + ":id/" + i for i in ("tv_text", "tv_transcript")]  # tv_transcript before v1.6
+node = next((n for n in ET.parse(sys.stdin).iter("node") if n.get("resource-id") in ids), None)
 print(node.get("text") if node is not None else "")' "$pkg" > "$out/$run.$pkg.${name%.*}.txt"
+            [ -s "$out/$run.$pkg.${name%.*}.txt" ] || { echo "$pkg $name: no transcript on screen"; exit 1; }
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$run" "$pkg" "$version" "$name" "$secs" "$ms" \
                 "$ap" "$skin" "$status" "$((caps / samples))" "$slept" | tee -a "$out/times.tsv"
         done
