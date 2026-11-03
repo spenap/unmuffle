@@ -15,7 +15,7 @@ private const val TAG = "WhisperEngine"
  *   - transcribe() runs on Dispatchers.Default — never on Main (ANR after 5s)
  *   - release() frees native memory; call when Activity/ViewModel is destroyed
  *
- * Lifecycle: one engine per app session. The 190MB model stays resident in memory
+ * Lifecycle: one engine per app session. The model stays resident in memory
  * once loaded — reloading on every transcription call would take 2-5s per call.
  */
 class WhisperEngine {
@@ -30,7 +30,7 @@ class WhisperEngine {
      * Load the Whisper model from [absoluteFilePath].
      *
      * @param absoluteFilePath Must be an absolute path inside filesDir — e.g.
-     *   `context.filesDir.absolutePath + "/models/ggml-small-q5_1.bin"`.
+     *   `ModelManager.modelFile(context).absolutePath`.
      *   Never pass a relative path; JNI will fail silently.
      * @return true on success, false if file missing or model load failed (OOM, corrupt)
      */
@@ -88,7 +88,7 @@ class WhisperEngine {
     }
 
     /**
-     * Release native Whisper context and free ~190MB of native memory.
+     * Release native Whisper context and free the model's native memory.
      * Call from ViewModel.onCleared() or Application.onTerminate().
      */
     suspend fun release() {
