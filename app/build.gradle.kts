@@ -57,6 +57,8 @@ android {
             applicationIdSuffix = ".debug"
             manifestPlaceholders["appLabel"] = "Unmuffle debug"
             isMinifyEnabled = false
+            // Unoptimised ggml takes minutes per message: optimise it here too.
+            externalNativeBuild { cmake { arguments += "-DCMAKE_BUILD_TYPE=Release" } }
         }
         release {
             // scripts/bench.sh: a release build next to the real app, debug-signed

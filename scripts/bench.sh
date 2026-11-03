@@ -9,7 +9,7 @@
 # whether the phone slept or locked (such rows don't count). The phone
 # stays awake while plugged in for the bench; the setting is restored.
 # Compare over several runs.
-# Measure release builds only: debug builds compile whisper.cpp unoptimised.
+# Measure release builds only.
 #
 # Usage: scripts/bench.sh RUNS PACKAGE...
 #   e.g. scripts/bench.sh 3 com.simonpena.unmuffle com.simonpena.unmuffle.bench
