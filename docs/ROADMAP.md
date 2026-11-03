@@ -18,8 +18,9 @@ language code passed through to whisper.cpp.
       APK as a release asset.
 - [ ] Obtainium on the S25 follows the releases. Done when a new tag shows
       up as an update and installs over the previous one.
-- [ ] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`
-      are in `src/debug/` and absent from the release APK.
+- [x] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`
+      are in `src/debug/` and absent from the release APK
+      (`scripts/check-release-apk.sh`, run by CI).
 
 ## Track T: Tests
 - [ ] JVM unit tests for the pure parts (`HallucinationFilter`,
