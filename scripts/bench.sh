@@ -24,19 +24,23 @@ bench=${BENCH_DIR:-$HOME/Projects/unmuffle-bench}
 cooldown=${COOLDOWN:-180}
 model=ggml-small-q8_0.bin
 
-# With adbd as root (the Pixel 5), folders it creates belong to root and the
-# app can't use them: give the app's folder back to the app.
-own() {
-    [ "$(adb shell whoami | tr -d '\r')" = root ] || return 0
-    uid=$(adb shell pm list packages -U "$1" | sed -n "s/^package:$1 uid://p" | tr -d '\r')
-    adb shell chown -R "$uid:ext_data_rw" "/sdcard/Android/data/$1"
+# The app can't use folders adb creates (owned by shell or root), so the app
+# creates its own: launching it makes files/models. Folders adb made are
+# removed first. Files are then pushed into the app's folders.
+app_folders() {
+    local d=/sdcard/Android/data/$1 uid f o
+    uid=$(adb shell pm list packages -U "$1" | sed -n "s/^package:$1 uid:\([0-9]*\).*/\1/p" | tr -d '\r')
+    for f in "$d/files/models" "$d/files" "$d"; do
+        o=$(adb shell stat -c %u "$f" 2>/dev/null | tr -d '\r' || true)
+        if [ -n "$o" ] && [ "$o" != "$uid" ]; then adb shell rm -rf "$f"; fi
+    done
+    adb shell am start -W -n "$1/com.simonpena.unmuffle.MainActivity" >/dev/null
+    adb shell am force-stop "$1"
 }
 
 if [ "${1:-}" = --model ]; then
-    dir=/sdcard/Android/data/$2/files/models
-    adb shell mkdir -p "$dir"
-    adb push "$HOME/.cache/unmuffle/$model" "$dir/" >/dev/null
-    own "$2"
+    app_folders "$2"
+    adb push "$HOME/.cache/unmuffle/$model" "/sdcard/Android/data/$2/files/models/" >/dev/null
     echo "$model copied to $2"
     exit 0
 fi
@@ -61,9 +65,19 @@ asleep() {
     adb shell dumpsys activity activities | grep -q -E 'mSleeping=true|"keyguard"'
 }
 
+runs=${1:?usage: $0 RUNS PACKAGE...}; shift
+[ $# -ge 1 ] || { echo "usage: $0 RUNS PACKAGE..."; exit 1; }
+
 old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
 adb shell settings put global stay_on_while_plugged_in 15  # AC, USB, wireless, dock
-trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
+cleanup() {
+    adb shell settings put global stay_on_while_plugged_in "$old_stay_on"
+    for pkg in "$@"; do
+        adb shell "rm -rf /sdcard/Android/data/$pkg/files/bench /sdcard/Android/data/$pkg/files/bench-*"
+    done
+    adb shell rm -f /sdcard/unmuffle-bench-ui.xml
+}
+trap 'cleanup "$@"' EXIT
 trap 'exit 1' INT TERM
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
@@ -71,20 +85,18 @@ sleep 1
 asleep && { echo "Unlock the phone, then run again."; exit 1; }
 cool_to=$(thermal | awk '{ print $1 + 2 }')
 
-runs=${1:?usage: $0 RUNS PACKAGE...}; shift
-[ $# -ge 1 ] || { echo "usage: $0 RUNS PACKAGE..."; exit 1; }
-
-# The messages go in each app's own folder, which it reads without any
-# permission; the shell can't grant access to MediaStore URIs.
+# The messages go in each app's own folder (deleted on exit), which it
+# reads without any permission; the shell can't grant access to MediaStore URIs.
 messages=()
 for f in "$bench"/*.opus "$bench"/*.ogg "$bench"/*.m4a "$bench"/*.mp3 "$bench"/*.wav; do
     [ -e "$f" ] && messages+=("$f")
 done
 [ ${#messages[@]} -gt 0 ] || { echo "No voice messages in $bench"; exit 1; }
 for pkg in "$@"; do
-    adb shell mkdir -p "/sdcard/Android/data/$pkg/files/bench"
-    adb push "${messages[@]}" "/sdcard/Android/data/$pkg/files/bench/" >/dev/null
-    own "$pkg"
+    app_folders "$pkg"
+    for f in "${messages[@]}"; do
+        adb push "$f" "/sdcard/Android/data/$pkg/files/bench-$(basename "$f")" >/dev/null
+    done
 done
 
 out="$bench/results/$(date +%F_%H%M%S)"
@@ -109,7 +121,7 @@ for run in $(seq "$runs"); do
             caps=0; samples=0; slept=no
             adb logcat -c
             adb shell am start -a android.intent.action.SEND -t audio/ogg \
-                --eu android.intent.extra.STREAM "file:///sdcard/Android/data/$pkg/files/bench/$name" \
+                --eu android.intent.extra.STREAM "file:///sdcard/Android/data/$pkg/files/bench-$name" \
                 -n "$pkg/com.simonpena.unmuffle.ShareReceiverActivity" >/dev/null
             line=
             for waited in $(seq 300); do
@@ -140,6 +152,4 @@ print(node.get("text") if node is not None else "")' "$pkg" > "$out/$run.$pkg.${
         adb shell am force-stop "$pkg"
     done
 done
-adb shell rm -f /sdcard/unmuffle-bench-ui.xml
-for pkg in "$@"; do adb shell rm -rf "/sdcard/Android/data/$pkg/files/bench"; done
 echo "Results: $out"
