@@ -40,9 +40,6 @@ function(build_library target_name)
         )
     endif ()
 
-    # Required for Play Store and Pixel 9+ (16KB page size)
-    target_link_options(${target_name} PRIVATE "-Wl,-z,max-page-size=16384")
-
     FetchContent_Declare(ggml SOURCE_DIR ${WHISPER_CPP_DIR}/ggml)
     FetchContent_MakeAvailable(ggml)
     target_compile_options(ggml PRIVATE ${GGML_COMPILE_OPTIONS})
