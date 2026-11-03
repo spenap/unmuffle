@@ -12,12 +12,15 @@ releases; renamed TransChat → Unmuffle; Material 3 with dynamic colour;
 language code passed through to whisper.cpp.
 
 ## Track R: Releases
-- [ ] `versionCode`/`versionName` come from git (commit count,
+- [x] `versionCode`/`versionName` come from git (commit count,
       `git describe`). Done when a release's APK reports its tag.
-- [ ] GitHub Releases. Done when `scripts/release.sh` publishes the signed
-      APK as a release asset.
+      (v1.3.0: versionCode 125.)
+- [x] GitHub Releases. Done when `scripts/release.sh` publishes the signed
+      APK as a release asset. (v1.3.0, 2026-11-03.)
 - [ ] Obtainium on the S25 follows the releases. Done when a new tag shows
-      up as an update and installs over the previous one.
+      up as an update and installs over the previous one. (v1.3.0
+      installed through Obtainium on 2026-11-03; the first update is
+      still to come.)
 - [x] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`
       are in `src/debug/` and absent from the release APK
       (`scripts/check-release-apk.sh`, run by CI).
