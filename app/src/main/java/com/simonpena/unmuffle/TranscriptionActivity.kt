@@ -18,7 +18,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.launch
 
 /**
@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
  *
  * Launched by [ShareReceiverActivity] with the cached audio file path.
  * Observes [TranscriptionViewModel.uiState] and toggles between four
- * view groups: progress spinner, transcript result, no-speech message,
+ * view groups: progress (text so far), transcript result, no-speech message,
  * and error message.
  *
  * The ViewModel survives configuration changes (rotation). If the Activity
@@ -49,7 +49,7 @@ class TranscriptionActivity : AppCompatActivity() {
         val resultGroup = findViewById<LinearLayout>(R.id.result_group)
         val noSpeechGroup = findViewById<LinearLayout>(R.id.no_speech_group)
         val errorGroup = findViewById<LinearLayout>(R.id.error_group)
-        val progressSpinner = findViewById<CircularProgressIndicator>(R.id.progress_spinner)
+        val progressBar = findViewById<LinearProgressIndicator>(R.id.progress_bar)
         val tvStatus = findViewById<TextView>(R.id.tv_status)
         val partialScroll = findViewById<ScrollView>(R.id.partial_scroll)
         val tvPartial = findViewById<TextView>(R.id.tv_partial)
@@ -82,13 +82,13 @@ class TranscriptionActivity : AppCompatActivity() {
                             errorGroup.visibility = View.GONE
 
                             if (state.progress < 0) {
-                                // Pre-inference: indeterminate spinner
-                                progressSpinner.isIndeterminate = true
+                                // Pre-inference: indeterminate bar
+                                progressBar.isIndeterminate = true
                                 tvStatus.text = "Transcribing..."
                             } else {
                                 // During inference: determinate progress
-                                progressSpinner.isIndeterminate = false
-                                progressSpinner.setProgressCompat(state.progress, true)
+                                progressBar.isIndeterminate = false
+                                progressBar.setProgressCompat(state.progress, true)
                                 tvStatus.text = "Transcribing... ${state.progress}%"
                             }
                             if (tvPartial.text.toString() != state.partial) {

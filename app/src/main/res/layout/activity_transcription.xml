@@ -17,37 +17,22 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-    <!-- Progress group: visible during inference -->
+    <!-- Progress group: visible during inference. The text sits where the
+         result's transcript will, and the progress where its buttons will. -->
     <LinearLayout
         android:id="@+id/progress_group"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center"
-        android:padding="32dp"
+        android:padding="24dp"
         android:visibility="visible">
 
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/progress_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            app:indicatorSize="48dp"
-            android:layout_marginBottom="24dp" />
-
-        <TextView
-            android:id="@+id/tv_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Transcribing..."
-            android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-        <!-- Text decoded so far; fills the space left and scrolls -->
         <ScrollView
             android:id="@+id/partial_scroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:id="@+id/tv_partial"
@@ -56,6 +41,20 @@
                 android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         </ScrollView>
+
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Transcribing..."
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:indeterminate="true" />
 
     </LinearLayout>
 
