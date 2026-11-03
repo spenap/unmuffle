@@ -19,7 +19,7 @@ android {
         versionCode = git("rev-list", "--count", "HEAD").toInt()
         versionName = git("describe", "--tags", "--always", "--dirty")
         manifestPlaceholders["appLabel"] = "Unmuffle"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.simonpena.unmuffle.AwakeRunner"
 
         ndk {
             abiFilters += listOf("arm64-v8a")  // arm64-only per CONTEXT.md locked decision

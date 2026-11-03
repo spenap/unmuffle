@@ -58,7 +58,8 @@ Written test-first; measured on the S25.
       (Galician-accented Spanish read as Portuguese).
 
 ## Ideas and not doing
-- Ideas: F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
+- Ideas: CI runs the instrumented tests on an emulator (needs an x86_64
+  build alongside arm64); F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
   site; tapping an unsure word plays the audio from it (whisper's token
   timestamps); a transcript cache in memory for the life of the process,
   keyed by the audio's SHA-256 and never written to disk, so sharing the
