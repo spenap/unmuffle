@@ -17,10 +17,9 @@ language code passed through to whisper.cpp.
       (v1.3.0: versionCode 125.)
 - [x] GitHub Releases. Done when `scripts/release.sh` publishes the signed
       APK as a release asset. (v1.3.0, 2026-11-03.)
-- [ ] Obtainium on the S25 follows the releases. Done when a new tag shows
-      up as an update and installs over the previous one. (v1.3.0
-      installed through Obtainium on 2026-11-03; the first update is
-      still to come.)
+- [x] Obtainium on the S25 follows the releases. Done when a new tag shows
+      up as an update and installs over the previous one. (v1.5.0 over
+      v1.3.0, 2026-11-03.)
 - [x] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`
       are in `src/debug/` and absent from the release APK
       (`scripts/check-release-apk.sh`, run by CI).
@@ -38,10 +37,9 @@ language code passed through to whisper.cpp.
 Written test-first; measured on the S25.
 - [x] Streamed segments. Done when the transcript appears segment by
       segment while inference runs.
-- [ ] whisper.cpp VAD. Done when silence is skipped and a voice message
-      with long pauses transcribes faster, with the same text.
-- [ ] base vs small. Done when time and accuracy on the same messages are
-      recorded in `docs/` and the default model chosen from them.
+- [x] base vs small. Done when time and accuracy on the same messages are
+      recorded in `docs/` and the default model chosen from them
+      (`docs/measurements.md`: small stays).
 
 ## Track S: Settings
 - [ ] Language dialog on share, with "Remember my choice" (persisted and
@@ -56,7 +54,8 @@ Written test-first; measured on the S25.
   keyed by the audio's SHA-256 and never written to disk, so sharing the
   same message again is instant.
 - Not doing: Android's on-device recognizer (closed source; see
-  decisions.md); Galician; transcript history (transcripts are ephemeral);
+  decisions.md); whisper.cpp VAD (no faster on real messages, dropped
+  speech; see decisions.md); Galician; transcript history (transcripts are ephemeral);
   cloud transcription; live microphone transcription; speaker
   diarization; medium/large models (too big and slow on a phone); iOS;
   Compose (Views are enough for four screens).
