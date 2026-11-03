@@ -16,28 +16,18 @@ object SettingsRepository {
 
     private const val PREFS_NAME = "unmuffle_prefs"
     private const val KEY_LANGUAGE = "pref_language"
-    private const val KEY_LANGUAGE_REMEMBERED = "pref_language_remembered"
     private const val KEY_MODEL = "pref_model"
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** Returns the stored transcription language code, or "auto" if not set. */
+    /** The language setting: [Languages.AUTO] (default), [Languages.ASK] or a whisper code. */
     fun getLanguage(context: Context): String =
-        prefs(context).getString(KEY_LANGUAGE, "auto") ?: "auto"
+        prefs(context).getString(KEY_LANGUAGE, Languages.AUTO) ?: Languages.AUTO
 
-    /** Stores the transcription language code. Uses .apply() — non-blocking. */
+    /** Stores the language setting. Uses .apply() — non-blocking. */
     fun setLanguage(context: Context, languageCode: String) {
         prefs(context).edit().putString(KEY_LANGUAGE, languageCode).apply()
-    }
-
-    /** Returns true if the user has opted to remember their language choice. Default: false. */
-    fun isLanguageRemembered(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_LANGUAGE_REMEMBERED, false)
-
-    /** Stores the user's preference to remember (or not) the language choice. */
-    fun setLanguageRemembered(context: Context, remembered: Boolean) {
-        prefs(context).edit().putBoolean(KEY_LANGUAGE_REMEMBERED, remembered).apply()
     }
 
     /** Returns the stored WhisperModel selection, or WhisperModel.SMALL if not set. */

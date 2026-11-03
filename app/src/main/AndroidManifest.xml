@@ -55,6 +55,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
         <!-- Transcription progress and result screen -->
         <activity
             android:name=".TranscriptionActivity"

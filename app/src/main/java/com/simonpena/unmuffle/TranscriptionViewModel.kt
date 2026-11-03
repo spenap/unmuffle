@@ -86,7 +86,12 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
      *   Defaults to the stored preference from [SettingsRepository]. Callers can override
      *   by passing an explicit code — Phase 13 language dialog will do this.
      */
-    fun startTranscription(audioPath: String, languageCode: String = SettingsRepository.getLanguage(getApplication())) {
+    /** Whether [startTranscription] ran; survives rotation, unlike the language dialog. */
+    var started = false
+        private set
+
+    fun startTranscription(audioPath: String, languageCode: String) {
+        started = true
         audioFilePath = audioPath
 
         inferenceJob = viewModelScope.launch {

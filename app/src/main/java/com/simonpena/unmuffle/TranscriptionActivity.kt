@@ -72,8 +72,13 @@ class TranscriptionActivity : AppCompatActivity() {
             finish()
             return
         }
-        if (savedInstanceState == null) {
-            viewModel.startTranscription(audioFilePath)
+        if (!viewModel.started) {
+            val code = Languages.codeFor(SettingsRepository.getLanguage(this))
+            if (code != null) {
+                viewModel.startTranscription(audioFilePath, code)
+            } else {
+                LanguageDialog.ask(this, onCancel = ::finish) { viewModel.startTranscription(audioFilePath, it) }
+            }
         }
 
         val unsureColor = getColor(R.color.unsure)

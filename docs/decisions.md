@@ -14,6 +14,13 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
+## 2026-11-03 · One language setting, no dialog by default
+Settings holds the transcription language: auto-detect (default), ask
+on each share, or one language, the phone's languages listed first. A
+dialog on every share costs a tap per message; fixing the language is
+about 20% faster and avoids misdetection (Galician-accented Spanish
+read as Portuguese).
+
 ## 2026-11-03 · small q8_0 instead of q5_1
 Supersedes the quantisation in "whisper.cpp small q5_1" (2026-02-27).
 With ggml's CPU kernels using dot products, q8_0 is about twice as fast

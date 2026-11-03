@@ -34,6 +34,7 @@ internal class WhisperLib {
         external fun getTextSegment(contextPtr: Long, index: Int): String
         external fun freeContext(contextPtr: Long)
         external fun getSystemInfo(): String
+        external fun getLanguages(): Array<String>
         external fun getProgress(): Int
         // UTF-8 text of the segments decoded since the last call, one per line
         external fun takeNewSegments(): ByteArray
@@ -111,5 +112,8 @@ internal class WhisperContext private constructor(private var ptr: Long) {
         }
 
         fun getSystemInfo(): String = WhisperLib.getSystemInfo()
+
+        /** The language codes whisper transcribes, e.g. "en", "es". */
+        fun languages(): List<String> = WhisperLib.getLanguages().toList()
     }
 }

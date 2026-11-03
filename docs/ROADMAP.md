@@ -52,7 +52,7 @@ Written test-first; measured on the S25.
 - [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
 
 ## Track S: Settings
-- [ ] Settings screen: language (auto-detect by default, ask each time,
+- [x] Settings screen: language (auto-detect by default, ask each time,
       or one language, the phone's languages first) and licences.
       Fixing the language saves about 20% and avoids misdetection
       (Galician-accented Spanish read as Portuguese).
