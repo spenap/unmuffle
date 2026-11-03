@@ -21,18 +21,18 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 /**
- * Transcription progress and result screen.
+ * Transcription screen: the shared voice message as an incoming chat bubble,
+ * with a player above and the transcript below, growing as segments arrive.
+ * Under it, the progress, then the summary and the Copy and Share buttons.
  *
- * Launched by [ShareReceiverActivity] with the cached audio file path.
- * Observes [TranscriptionViewModel.uiState] and toggles between four
- * view groups: progress (text so far), transcript result, no-speech message,
- * and error message.
- *
- * The ViewModel survives configuration changes (rotation). If the Activity
- * is recreated, the existing state is observed without re-running inference.
+ * Launched by [ShareReceiverActivity] with the cached audio file path. The
+ * ViewModel survives configuration changes, so rotation neither re-runs
+ * inference nor stops the player's state.
  */
 class TranscriptionActivity : AppCompatActivity() {
 
@@ -48,29 +48,30 @@ class TranscriptionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transcription)
 
-        // Find views
-        val progressGroup = findViewById<LinearLayout>(R.id.progress_group)
-        val resultGroup = findViewById<LinearLayout>(R.id.result_group)
+        val mainGroup = findViewById<LinearLayout>(R.id.main_group)
         val noSpeechGroup = findViewById<LinearLayout>(R.id.no_speech_group)
         val errorGroup = findViewById<LinearLayout>(R.id.error_group)
-        val progressBar = findViewById<LinearProgressIndicator>(R.id.progress_bar)
+        val textScroll = findViewById<ScrollView>(R.id.text_scroll)
+        val bubble = findViewById<View>(R.id.bubble)
+        val bubbleContent = findViewById<View>(R.id.bubble_content)
+        val btnPlay = findViewById<MaterialButton>(R.id.btn_play)
+        val waveform = findViewById<WaveformView>(R.id.waveform)
+        val tvTime = findViewById<TextView>(R.id.tv_time)
+        val divider = findViewById<View>(R.id.divider)
+        val tvText = findViewById<TextView>(R.id.tv_text)
         val tvStatus = findViewById<TextView>(R.id.tv_status)
-        val partialScroll = findViewById<ScrollView>(R.id.partial_scroll)
-        val tvPartial = findViewById<TextView>(R.id.tv_partial)
-        val tvTranscript = findViewById<TextView>(R.id.tv_transcript)
+        val progressBar = findViewById<LinearProgressIndicator>(R.id.progress_bar)
         val tvSummary = findViewById<TextView>(R.id.tv_summary)
+        val buttons = findViewById<View>(R.id.buttons)
         val tvError = findViewById<TextView>(R.id.tv_error)
         val btnCopy = findViewById<MaterialButton>(R.id.btn_copy)
         val btnShare = findViewById<MaterialButton>(R.id.btn_share)
 
-        // Extract audio file path from intent
         val audioFilePath = intent.getStringExtra(EXTRA_AUDIO_PATH)
         if (audioFilePath == null) {
             finish()
             return
         }
-
-        // Start transcription only on first creation (not on config change)
         if (savedInstanceState == null) {
             viewModel.startTranscription(audioFilePath)
         }
@@ -78,18 +79,37 @@ class TranscriptionActivity : AppCompatActivity() {
         val unsureColor = getColor(R.color.unsure)
         var shownPartial: String? = null
         var shownPlaceholders = -1
+        var transcript = ""
 
-        // Observe UI state with lifecycle-aware collection
+        fun show(group: View) {
+            for (g in listOf(mainGroup, noSpeechGroup, errorGroup)) g.visibility = if (g == group) View.VISIBLE else View.GONE
+        }
+
+        fun showText(hasText: Boolean) {
+            divider.visibility = if (hasText) View.VISIBLE else View.GONE
+            tvText.visibility = if (hasText) View.VISIBLE else View.GONE
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.player.filterNotNull().collectLatest { player ->
+                        bubble.visibility = View.VISIBLE
+                        waveform.bars = viewModel.waveform
+                        btnPlay.setOnClickListener { player.toggle() }
+                        waveform.onSeek = { player.seekTo(it) }
+                        player.state.collect { s ->
+                            btnPlay.setIconResource(if (s.playing) R.drawable.ic_pause else R.drawable.ic_play)
+                            btnPlay.contentDescription = if (s.playing) "Pause" else "Play"
+                            waveform.progress = if (s.duration > 0f) s.position / s.duration else 0f
+                            tvTime.text = Waveform.time(if (s.playing || s.position > 0f) s.position else s.duration)
+                        }
+                    }
+                }
                 viewModel.uiState.collect { state ->
                     when (state) {
                         is UiState.Processing -> {
-                            progressGroup.visibility = View.VISIBLE
-                            resultGroup.visibility = View.GONE
-                            noSpeechGroup.visibility = View.GONE
-                            errorGroup.visibility = View.GONE
-
+                            show(mainGroup)
                             tvStatus.text = StreamingTranscript.status(state)
                             if (state.progress < 0) {
                                 progressBar.isIndeterminate = true
@@ -101,38 +121,40 @@ class TranscriptionActivity : AppCompatActivity() {
                             if (textChanged || shownPlaceholders != state.placeholders) {
                                 shownPartial = state.partial
                                 shownPlaceholders = state.placeholders
-                                tvPartial.text = placeholderText.build(state.partial, state.unsure, unsureColor, state.placeholders)
+                                showText(state.partial.isNotEmpty() || state.placeholders > 0)
+                                tvText.text = placeholderText.build(state.partial, state.unsure, unsureColor, state.placeholders)
                             }
-                            if (textChanged) partialScroll.post {
+                            if (textChanged) textScroll.post {
                                 // Keep the end of the real text in the top third.
-                                val layout = tvPartial.layout ?: return@post
+                                val layout = tvText.layout ?: return@post
                                 val line = layout.getLineForOffset(state.partial.length)
-                                partialScroll.smoothScrollTo(0, maxOf(0, layout.getLineTop(line) - partialScroll.height / 3))
+                                val y = bubble.top + bubbleContent.top + tvText.top + layout.getLineTop(line)
+                                textScroll.smoothScrollTo(0, maxOf(0, y - textScroll.height / 3))
                             }
-                            if (state.placeholders > 0) startTwinkle(tvPartial) else stopTwinkle()
+                            if (state.placeholders > 0) startTwinkle(tvText) else stopTwinkle()
                         }
                         is UiState.Success -> {
-                            progressGroup.visibility = View.GONE
-                            resultGroup.visibility = View.VISIBLE
-                            noSpeechGroup.visibility = View.GONE
-                            errorGroup.visibility = View.GONE
+                            show(mainGroup)
+                            // Read from the start, with the player in view.
+                            if (transcript.isEmpty()) textScroll.post { textScroll.smoothScrollTo(0, 0) }
                             stopTwinkle()
-                            tvTranscript.text = PlaceholderText.markUnsure(state.transcript, state.unsure, unsureColor)
+                            transcript = state.transcript
+                            showText(true)
+                            tvText.text = PlaceholderText.markUnsure(state.transcript, state.unsure, unsureColor)
+                            tvText.setTextIsSelectable(true)
+                            tvStatus.visibility = View.GONE
+                            progressBar.visibility = View.GONE
+                            tvSummary.visibility = View.VISIBLE
+                            buttons.visibility = View.VISIBLE
                             tvSummary.text = StreamingTranscript.summary(
                                 StreamingTranscript.countWords(state.transcript), state.seconds, state.unsure.size)
                         }
                         is UiState.NoSpeech -> {
-                            progressGroup.visibility = View.GONE
-                            resultGroup.visibility = View.GONE
-                            noSpeechGroup.visibility = View.VISIBLE
-                            errorGroup.visibility = View.GONE
+                            show(noSpeechGroup)
                             stopTwinkle()
                         }
                         is UiState.Error -> {
-                            progressGroup.visibility = View.GONE
-                            resultGroup.visibility = View.GONE
-                            noSpeechGroup.visibility = View.GONE
-                            errorGroup.visibility = View.VISIBLE
+                            show(errorGroup)
                             stopTwinkle()
                             tvError.text = state.message
                         }
@@ -147,24 +169,19 @@ class TranscriptionActivity : AppCompatActivity() {
             finish()
         }
 
-        // Copy button: copy transcript to clipboard
         btnCopy.setOnClickListener {
-            val text = tvTranscript.text?.toString() ?: return@setOnClickListener
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("transcript", text)
-            clipboard.setPrimaryClip(clip)
+            clipboard.setPrimaryClip(ClipData.newPlainText("transcript", transcript))
             // Android 13+ shows its own visual confirmation; avoid duplicate toast
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
                 Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Share button: open Android share sheet with transcript text
         btnShare.setOnClickListener {
-            val text = tvTranscript.text?.toString() ?: return@setOnClickListener
             val sendIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, text)
+                putExtra(Intent.EXTRA_TEXT, transcript)
             }
             startActivity(Intent.createChooser(sendIntent, null))
         }
@@ -192,5 +209,6 @@ class TranscriptionActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         stopTwinkle()
+        viewModel.player.value?.pause()
     }
 }

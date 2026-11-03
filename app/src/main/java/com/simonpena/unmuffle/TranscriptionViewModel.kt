@@ -1,6 +1,7 @@
 package com.simonpena.unmuffle
 
 import android.app.Application
+import android.media.AudioManager
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 private const val TAG = "TranscriptionVM"
+private const val WAVEFORM_BARS = 40
 
 /**
  * UI state for the transcription screen.
@@ -60,6 +62,14 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Processing())
     val uiState: StateFlow<UiState> = _uiState
+
+    private val _player = MutableStateFlow<PcmPlayer?>(null)
+    /** Plays the decoded audio; null until it is decoded. */
+    val player: StateFlow<PcmPlayer?> = _player
+
+    /** The audio's waveform, set before [player]. */
+    var waveform = FloatArray(0)
+        private set
 
     private val engine = WhisperEngine()
     private var inferenceJob: Job? = null
@@ -109,6 +119,11 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                     return@launch
                 }
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
+                waveform = Waveform.bars(pcm, WAVEFORM_BARS)
+                _player.value = PcmPlayer(
+                    pcm, 16000, viewModelScope,
+                    getApplication<Application>().getSystemService(AudioManager::class.java),
+                )
 
                 // Step 4: Transcribe via WhisperEngine (pass runtime language code)
                 val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
@@ -158,6 +173,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        _player.value?.release()
         super.onCleared()
 
         // Cancel any running inference
