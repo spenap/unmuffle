@@ -43,8 +43,8 @@ Written test-first; measured on the S25.
 - [ ] ggml built for fp16 and dot products, loaded only where the CPU has
       both (`asimddp`). Done when the S25 is about 24% faster with the
       same text.
-- [ ] Thread count. Done when the S25 uses 6 and a rule for other phones
-      is measured on the Pixel 5.
+- [x] Thread count. Done when the S25 uses 6 and a rule for other phones
+      is measured on the Pixel 5. (All cores but two.)
 - [ ] small q8_0 replaces q5_1. Done when installs download it and remove
       q5_1.
 - [ ] Words appear as they are decoded (`logits_filter_callback`), not
