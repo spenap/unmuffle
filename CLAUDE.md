@@ -1,1 +1,1 @@
-# Project: TransChat App
+@AGENTS.md
