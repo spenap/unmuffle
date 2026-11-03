@@ -1,6 +1,7 @@
 package com.simonpena.unmuffle
 
 import android.app.Application
+import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,8 +22,18 @@ private const val TAG = "TranscriptionVM"
  * Observed by [TranscriptionActivity] via [TranscriptionViewModel.uiState].
  */
 sealed class UiState {
-    data class Processing(val progress: Int = -1) : UiState()
-    data class Success(val transcript: String) : UiState()
+    /**
+     * [progress] is -1 before inference starts; [partial] is the text so far
+     * ([words] words); [placeholders] is the words probably still to come.
+     */
+    data class Processing(
+        val progress: Int = -1,
+        val partial: String = "",
+        val words: Int = 0,
+        val placeholders: Int = 0,
+        val wordsPerSecond: Float? = null,
+    ) : UiState()
+    data class Success(val transcript: String, val seconds: Float = 0f) : UiState()
     data class NoSpeech(val message: String) : UiState()
     data class Error(val message: String) : UiState()
 }
@@ -94,9 +105,13 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
 
                 // Step 4: Transcribe via WhisperEngine (pass runtime language code)
-                val raw = engine.transcribe(pcm, languageCode) { progress ->
-                    _uiState.value = UiState.Processing(progress)
-                }
+                val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
+                _uiState.value = streaming.state
+                val raw = engine.transcribe(
+                    pcm, languageCode,
+                    onProgress = { _uiState.value = streaming.progress(it) },
+                    onSegment = { _uiState.value = streaming.segment(it) },
+                )
                 Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
                 // Step 5: Filter hallucinations and non-speech markers
@@ -105,8 +120,9 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                     Log.i(TAG, "Filtered as non-speech")
                     _uiState.value = UiState.NoSpeech("No speech detected")
                 } else {
-                    Log.i(TAG, "Transcript: '${filtered.take(80)}'")
-                    _uiState.value = UiState.Success(filtered)
+                    val seconds = streaming.elapsedSeconds()
+                    Log.i(TAG, StreamingTranscript.summary(StreamingTranscript.countWords(filtered), seconds))
+                    _uiState.value = UiState.Success(filtered, seconds)
                 }
 
             } catch (e: CancellationException) {

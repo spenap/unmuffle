@@ -1,13 +1,16 @@
 package com.simonpena.unmuffle
 
+import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -17,7 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.launch
 
 /**
@@ -25,7 +28,7 @@ import kotlinx.coroutines.launch
  *
  * Launched by [ShareReceiverActivity] with the cached audio file path.
  * Observes [TranscriptionViewModel.uiState] and toggles between four
- * view groups: progress spinner, transcript result, no-speech message,
+ * view groups: progress (text so far), transcript result, no-speech message,
  * and error message.
  *
  * The ViewModel survives configuration changes (rotation). If the Activity
@@ -34,6 +37,8 @@ import kotlinx.coroutines.launch
 class TranscriptionActivity : AppCompatActivity() {
 
     private val viewModel: TranscriptionViewModel by viewModels()
+    private val placeholderText = PlaceholderText()
+    private var twinkle: ValueAnimator? = null
 
     companion object {
         const val EXTRA_AUDIO_PATH = "extra_audio_path"
@@ -48,9 +53,12 @@ class TranscriptionActivity : AppCompatActivity() {
         val resultGroup = findViewById<LinearLayout>(R.id.result_group)
         val noSpeechGroup = findViewById<LinearLayout>(R.id.no_speech_group)
         val errorGroup = findViewById<LinearLayout>(R.id.error_group)
-        val progressSpinner = findViewById<CircularProgressIndicator>(R.id.progress_spinner)
+        val progressBar = findViewById<LinearProgressIndicator>(R.id.progress_bar)
         val tvStatus = findViewById<TextView>(R.id.tv_status)
+        val partialScroll = findViewById<ScrollView>(R.id.partial_scroll)
+        val tvPartial = findViewById<TextView>(R.id.tv_partial)
         val tvTranscript = findViewById<TextView>(R.id.tv_transcript)
+        val tvSummary = findViewById<TextView>(R.id.tv_summary)
         val tvError = findViewById<TextView>(R.id.tv_error)
         val btnCopy = findViewById<MaterialButton>(R.id.btn_copy)
         val btnShare = findViewById<MaterialButton>(R.id.btn_share)
@@ -67,6 +75,9 @@ class TranscriptionActivity : AppCompatActivity() {
             viewModel.startTranscription(audioFilePath)
         }
 
+        var shownPartial: String? = null
+        var shownPlaceholders = -1
+
         // Observe UI state with lifecycle-aware collection
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -78,35 +89,50 @@ class TranscriptionActivity : AppCompatActivity() {
                             noSpeechGroup.visibility = View.GONE
                             errorGroup.visibility = View.GONE
 
+                            tvStatus.text = StreamingTranscript.status(state)
                             if (state.progress < 0) {
-                                // Pre-inference: indeterminate spinner
-                                progressSpinner.isIndeterminate = true
-                                tvStatus.text = "Transcribing..."
+                                progressBar.isIndeterminate = true
                             } else {
-                                // During inference: determinate progress
-                                progressSpinner.isIndeterminate = false
-                                progressSpinner.setProgressCompat(state.progress, true)
-                                tvStatus.text = "Transcribing... ${state.progress}%"
+                                progressBar.isIndeterminate = false
+                                progressBar.setProgressCompat(state.progress, true)
                             }
+                            val textChanged = shownPartial != state.partial
+                            if (textChanged || shownPlaceholders != state.placeholders) {
+                                shownPartial = state.partial
+                                shownPlaceholders = state.placeholders
+                                tvPartial.text = placeholderText.build(state.partial, state.placeholders)
+                            }
+                            if (textChanged) partialScroll.post {
+                                // Keep the end of the real text in the top third.
+                                val layout = tvPartial.layout ?: return@post
+                                val line = layout.getLineForOffset(state.partial.length)
+                                partialScroll.smoothScrollTo(0, maxOf(0, layout.getLineTop(line) - partialScroll.height / 3))
+                            }
+                            if (state.placeholders > 0) startTwinkle(tvPartial) else stopTwinkle()
                         }
                         is UiState.Success -> {
                             progressGroup.visibility = View.GONE
                             resultGroup.visibility = View.VISIBLE
                             noSpeechGroup.visibility = View.GONE
                             errorGroup.visibility = View.GONE
+                            stopTwinkle()
                             tvTranscript.text = state.transcript
+                            tvSummary.text = StreamingTranscript.summary(
+                                StreamingTranscript.countWords(state.transcript), state.seconds)
                         }
                         is UiState.NoSpeech -> {
                             progressGroup.visibility = View.GONE
                             resultGroup.visibility = View.GONE
                             noSpeechGroup.visibility = View.VISIBLE
                             errorGroup.visibility = View.GONE
+                            stopTwinkle()
                         }
                         is UiState.Error -> {
                             progressGroup.visibility = View.GONE
                             resultGroup.visibility = View.GONE
                             noSpeechGroup.visibility = View.GONE
                             errorGroup.visibility = View.VISIBLE
+                            stopTwinkle()
                             tvError.text = state.message
                         }
                     }
@@ -141,5 +167,29 @@ class TranscriptionActivity : AppCompatActivity() {
             }
             startActivity(Intent.createChooser(sendIntent, null))
         }
+    }
+
+    /** Placeholders twinkle while the screen is visible, unless animations are off. */
+    private fun startTwinkle(view: TextView) {
+        if (twinkle != null || !ValueAnimator.areAnimatorsEnabled()) return
+        twinkle = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1000
+            repeatCount = ValueAnimator.INFINITE
+            addUpdateListener {
+                placeholderText.timeMs = SystemClock.uptimeMillis()
+                view.invalidate()
+            }
+            start()
+        }
+    }
+
+    private fun stopTwinkle() {
+        twinkle?.cancel()
+        twinkle = null
+    }
+
+    override fun onStop() {
+        super.onStop()
+        stopTwinkle()
     }
 }
