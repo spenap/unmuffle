@@ -71,6 +71,10 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    // android.util.Log in JVM tests returns defaults instead of throwing.
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -80,4 +84,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.ktx)
+    testImplementation(libs.junit)
 }
