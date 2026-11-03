@@ -30,7 +30,7 @@ class ShareTranscriptTest {
         previousModel = SettingsRepository.getModel(context)
         previousLanguage = SettingsRepository.getLanguage(context)
         SettingsRepository.setModel(context, WhisperModel.TINY)
-        SettingsRepository.setLanguage(context, Languages.AUTO)
+        SettingsRepository.setLanguage(context, "auto")
         val model = ModelManager.modelFile(context)
         assertTrue("$model is missing; scripts/device-test.sh pushes it", model.length() > 0)
     }
