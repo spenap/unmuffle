@@ -20,7 +20,7 @@ import kotlin.math.sin
  *   4. Inference timing captured for release-build benchmark
  *   5. WhisperContext.getSystemInfo() shows correct .so loaded
  *
- * Access: temporarily set as launcher in AndroidManifest, or use adb:
+ * Debug builds only:
  *   adb shell am start -n com.simonpena.unmuffle/.SmokeTestActivity
  */
 class SmokeTestActivity : AppCompatActivity() {
@@ -165,7 +165,6 @@ class SmokeTestActivity : AppCompatActivity() {
                 log("\nRelease build benchmark:")
                 log("  Silence inference: ${silenceMs}ms")
                 log("  Sine inference:    ${sineMs}ms")
-                log("\nRecord these times in STATE.md before starting Phase 2.")
 
                 engine.release()
             }

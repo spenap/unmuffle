@@ -54,3 +54,6 @@ jobs:
       #    by scripts/release.sh
       - name: Build release APK
         run: ./gradlew assembleRelease
+
+      - name: Release APK has no debug-only code or assets
+        run: scripts/check-release-apk.sh
