@@ -7,6 +7,8 @@ import org.junit.Test
 class StreamingTranscriptTest {
     private var now = 0L
     private fun transcript(audioSeconds: Float = 0f) = StreamingTranscript(audioSeconds) { now }
+    private fun StreamingTranscript.segment(text: String, p: Float = 0.9f) =
+        segment(text.trim().split(" ").filter { it.isNotEmpty() }.map { Word(it, p) })
 
     @Test fun startsIndeterminateAndEmpty() {
         val s = transcript().state
@@ -80,5 +82,27 @@ class StreamingTranscriptTest {
 
     @Test fun summaryLine() {
         assertEquals("212 words in 40 s · 5.3 words/s", StreamingTranscript.summary(212, 40.2f))
+        assertEquals("212 words in 40 s · 5.3 words/s · 3 unsure", StreamingTranscript.summary(212, 40.2f, 3))
+    }
+
+    @Test fun wordsAtTheThresholdAreNotUnsure() {
+        val t = transcript()
+        t.segment(listOf(Word("sí", StreamingTranscript.UNSURE_BELOW)))
+        assertEquals(emptyList<IntRange>(), t.state.unsure)
+    }
+
+    @Test fun unsureWordsAreMarkedWhereTheyAre() {
+        val t = transcript()
+        t.segment(listOf(Word("Hola,", 0.9f), Word("despichada", 0.2f)))
+        t.segment(listOf(Word("vale", 0.25f), Word("gracias", 0.95f)))
+        assertEquals("Hola, despichada vale gracias", t.state.partial)
+        assertEquals(listOf(6 until 16, 17 until 21), t.state.unsure)
+    }
+
+    @Test fun markersSpanningWordsAreNotShown() {
+        val t = transcript()
+        t.segment(listOf(Word("Hola", 0.9f), Word("(speaking", 0.5f), Word("in", 0.5f), Word("Spanish)", 0.5f), Word("adiós", 0.2f)))
+        assertEquals("Hola adiós", t.state.partial)
+        assertEquals(listOf(5 until 10), t.state.unsure)
     }
 }

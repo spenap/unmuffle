@@ -32,8 +32,14 @@ sealed class UiState {
         val words: Int = 0,
         val placeholders: Int = 0,
         val wordsPerSecond: Float? = null,
+        val unsure: List<IntRange> = emptyList(),
     ) : UiState()
-    data class Success(val transcript: String, val seconds: Float = 0f) : UiState()
+    /** [unsure] are the character ranges of the words whisper is unsure of. */
+    data class Success(
+        val transcript: String,
+        val seconds: Float = 0f,
+        val unsure: List<IntRange> = emptyList(),
+    ) : UiState()
     data class NoSpeech(val message: String) : UiState()
     data class Error(val message: String) : UiState()
 }
@@ -120,9 +126,15 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                     Log.i(TAG, "Filtered as non-speech")
                     _uiState.value = UiState.NoSpeech("No speech detected")
                 } else {
+                    // The streamed text is the same text, without markers and with certainty.
+                    val streamed = streaming.state
                     val seconds = streaming.elapsedSeconds()
-                    Log.i(TAG, StreamingTranscript.summary(StreamingTranscript.countWords(filtered), seconds))
-                    _uiState.value = UiState.Success(filtered, seconds)
+                    Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds) + ", ${streamed.unsure.size} unsure")
+                    _uiState.value = if (streamed.partial.isNotEmpty()) {
+                        UiState.Success(streamed.partial, seconds, streamed.unsure)
+                    } else {
+                        UiState.Success(filtered, seconds)
+                    }
                 }
 
             } catch (e: CancellationException) {

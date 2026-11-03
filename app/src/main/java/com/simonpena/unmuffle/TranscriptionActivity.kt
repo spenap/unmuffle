@@ -75,6 +75,7 @@ class TranscriptionActivity : AppCompatActivity() {
             viewModel.startTranscription(audioFilePath)
         }
 
+        val unsureColor = getColor(R.color.unsure)
         var shownPartial: String? = null
         var shownPlaceholders = -1
 
@@ -100,7 +101,7 @@ class TranscriptionActivity : AppCompatActivity() {
                             if (textChanged || shownPlaceholders != state.placeholders) {
                                 shownPartial = state.partial
                                 shownPlaceholders = state.placeholders
-                                tvPartial.text = placeholderText.build(state.partial, state.placeholders)
+                                tvPartial.text = placeholderText.build(state.partial, state.unsure, unsureColor, state.placeholders)
                             }
                             if (textChanged) partialScroll.post {
                                 // Keep the end of the real text in the top third.
@@ -116,9 +117,9 @@ class TranscriptionActivity : AppCompatActivity() {
                             noSpeechGroup.visibility = View.GONE
                             errorGroup.visibility = View.GONE
                             stopTwinkle()
-                            tvTranscript.text = state.transcript
+                            tvTranscript.text = PlaceholderText.markUnsure(state.transcript, state.unsure, unsureColor)
                             tvSummary.text = StreamingTranscript.summary(
-                                StreamingTranscript.countWords(state.transcript), state.seconds)
+                                StreamingTranscript.countWords(state.transcript), state.seconds, state.unsure.size)
                         }
                         is UiState.NoSpeech -> {
                             progressGroup.visibility = View.GONE

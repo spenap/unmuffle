@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <string>
 #include <atomic>
+#include <cstdio>
 #include <mutex>
 #include <android/log.h>
 #include "whisper.cpp/include/whisper.h"
@@ -11,7 +12,7 @@
 
 struct ProgressState {
     std::atomic<int> progress{0};
-    // Text of segments decoded but not yet taken by Kotlin, one per line.
+    // Segments decoded but not yet taken by Kotlin (see whisper_new_segment_cb).
     std::mutex segments_mutex;
     std::string new_segments;
 };
@@ -31,18 +32,30 @@ static void whisper_progress_cb(
     ps->progress.store(progress, std::memory_order_relaxed);
 }
 
+// Appends each new segment as its text tokens: UTF-8 text, 0x1F, probability,
+// 0x1E; then 0x1D. Special tokens (timestamps, end of text) are left out.
 static void whisper_new_segment_cb(
-    struct whisper_context* /*ctx*/,
+    struct whisper_context* ctx,
     struct whisper_state*   state,
     int n_new,
     void* user_data)
 {
     auto* ps = static_cast<ProgressState*>(user_data);
     const int n = whisper_full_n_segments_from_state(state);
+    const whisper_token eot = whisper_token_eot(ctx);
     std::lock_guard<std::mutex> lock(ps->segments_mutex);
     for (int i = n - n_new; i < n; i++) {
-        ps->new_segments += whisper_full_get_segment_text_from_state(state, i);
-        ps->new_segments += '\n';
+        const int n_tokens = whisper_full_n_tokens_from_state(state, i);
+        for (int j = 0; j < n_tokens; j++) {
+            if (whisper_full_get_token_id_from_state(state, i, j) >= eot) continue;
+            char p[16];
+            snprintf(p, sizeof p, "%.3f", whisper_full_get_token_p_from_state(state, i, j));
+            ps->new_segments += whisper_full_get_token_text_from_state(ctx, state, i, j);
+            ps->new_segments += '\x1f';
+            ps->new_segments += p;
+            ps->new_segments += '\x1e';
+        }
+        ps->new_segments += '\x1d';
     }
 }
 
@@ -144,8 +157,9 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getProgress(
     return g_progress_state.progress.load(std::memory_order_relaxed);
 }
 
-// Segments decoded since the last call, as UTF-8, one per line. Bytes, not a
-// jstring: NewStringUTF expects modified UTF-8 and aborts on emoji.
+// Segments decoded since the last call, as whisper_new_segment_cb wrote them.
+// Bytes, not a jstring: tokens can split UTF-8 characters, and NewStringUTF
+// expects modified UTF-8 and aborts on emoji.
 JNIEXPORT jbyteArray JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_takeNewSegments(
         JNIEnv* env, jobject /*thiz*/) {

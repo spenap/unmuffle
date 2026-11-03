@@ -71,7 +71,7 @@ class WhisperEngine {
         audioData: FloatArray,
         languageCode: String = "auto",
         onProgress: (Int) -> Unit = {},
-        onSegment: (String) -> Unit = {}
+        onSegment: (List<Word>) -> Unit = {}
     ): String {
         val ctx = whisperContext
             ?: throw IllegalStateException("Model not loaded — call loadModel() first")

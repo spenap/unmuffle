@@ -79,17 +79,16 @@ internal class WhisperContext private constructor(private var ptr: Long) {
      *   Default "auto" for backward compatibility with existing callers.
      * @param onProgress Called with 0-100 progress values during inference. Invoked on
      *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
-     * @param onSegment Called with each segment's text as it is decoded, from the same
+     * @param onSegment Called with each segment's words as it is decoded, from the same
      *   thread as [onProgress], never concurrently with it.
      */
     suspend fun transcribeData(
         data: FloatArray,
         languageCode: String = "auto",
         onProgress: (Int) -> Unit = {},
-        onSegment: (String) -> Unit = {}
+        onSegment: (List<Word>) -> Unit = {}
     ): String = withContext(scope.coroutineContext) {
-        fun takeSegments() = String(WhisperLib.takeNewSegments(), Charsets.UTF_8)
-            .split('\n').filter { it.isNotEmpty() }.forEach(onSegment)
+        fun takeSegments() = TokenWords.parse(WhisperLib.takeNewSegments()).forEach(onSegment)
         // Poller runs on Default, NOT the single-thread executor (which is blocked by fullTranscribe)
         val pollerJob = launch(Dispatchers.Default) {
             while (isActive) {
