@@ -17,10 +17,9 @@ language code passed through to whisper.cpp.
       (v1.3.0: versionCode 125.)
 - [x] GitHub Releases. Done when `scripts/release.sh` publishes the signed
       APK as a release asset. (v1.3.0, 2026-11-03.)
-- [ ] Obtainium on the S25 follows the releases. Done when a new tag shows
-      up as an update and installs over the previous one. (v1.3.0
-      installed through Obtainium on 2026-11-03; the first update is
-      still to come.)
+- [x] Obtainium on the S25 follows the releases. Done when a new tag shows
+      up as an update and installs over the previous one. (v1.5.0 over
+      v1.3.0, 2026-11-03.)
 - [x] Debug-only smoke test. Done when `SmokeTestActivity` and `jfk.wav`
       are in `src/debug/` and absent from the release APK
       (`scripts/check-release-apk.sh`, run by CI).
