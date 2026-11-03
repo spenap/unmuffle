@@ -1,0 +1,83 @@
+# Decisions
+
+Lasting decisions, newest first: what was decided, why, and where the
+detail lives.
+
+- Add an entry when a decision constrains later work: a rule, a choice
+  between real alternatives, something ruled out. Not for every UI tweak;
+  commits cover those.
+- Entries aren't rewritten. A reversal is a new entry that says what it
+  supersedes and what changed our minds; the old entry only gains a
+  "Superseded by" line.
+- Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
+
+Entries before 2026-11-03 were recovered from `.planning/` (removed in
+the commit that added this file) and commits.
+
+## 2026-11-03 · Distribution through GitHub Releases and Obtainium
+Why: installs and updates on the S25 without a store; F-Droid stays an
+idea. Detail: ROADMAP.md, Track R.
+
+## 2026-11-03 · Galician dropped; the system recognizer is at most an option
+Why: whisper.cpp covers the languages in use. Android's on-device
+recognizer (Android System Intelligence) depends on Google components.
+Detail: ROADMAP.md, "Ideas and not doing".
+
+## 2026-11-03 · AGENTS.md and docs/ replace .planning/
+Why: the same conventions as Makofi, readable by any agent; the GSD
+milestone files duplicated what commits record. CLAUDE.md imports
+AGENTS.md. Detail: AGENTS.md, ROADMAP.md.
+
+## 2026-03-01 · Settings in SharedPreferences
+Why: `ShareReceiverActivity` and `MainActivity` read them synchronously
+in `onCreate`; DataStore is asynchronous. Detail: `SettingsRepository.kt`.
+
+## 2026-03-01 · Material 3, XML Views, no Compose
+`Theme.Material3.DayNight.NoActionBar` with dynamic colour and an explicit
+`MaterialToolbar` per screen. Compose would add ~4 MB for four screens.
+Detail: `res/values/themes.xml`.
+
+## 2026-03-01 · The app is Unmuffle, `com.simonpena.unmuffle`
+Formerly TransChat. JNI symbol names follow the package; rename them in
+the same commit. Detail: `whisper_jni.cpp`.
+
+## 2026-02-28 · Split CI; release signing only in CI
+Lint and debug build on every push and PR; the signed release only on a
+`v*` tag, so the signing secrets are exposed only then. Local release
+builds fall back to the debug key. Detail: `.github/workflows/build.yml`.
+
+## 2026-02-28 · whisper.cpp compiled directly, not through its CMake
+Our `CMakeLists.txt` lists the sources and sets `WHISPER_VERSION`.
+Detail: `app/src/main/cpp/CMakeLists.txt`.
+
+## 2026-02-27 · Progress by polling an atomic
+whisper.cpp's progress callback writes an atomic in C++; Kotlin polls it
+every 200 ms. Avoids JNI upcalls from the inference thread.
+Detail: `whisper_jni.cpp`, `WhisperLib.kt`.
+
+## 2026-02-27 · Surgical R8 rules
+Keep only the JNI entry points and sealed classes; 6.0 → 5.4 MB.
+Detail: `app/proguard-rules.pro`.
+
+## 2026-02-27 · Hallucinations filtered in Kotlin
+whisper parameters such as `no_timestamps` dropped real speech with the
+q5_1 model; a post-filter for markers and repetition doesn't.
+Detail: `HallucinationFilter.kt`.
+
+## 2026-02-27 · One single-thread executor for whisper.cpp
+The native context isn't thread-safe. Detail: `WhisperLib.kt`.
+
+## 2026-02-27 · Shared audio copied synchronously in onCreate
+The URI read permission ends when the activity is backgrounded.
+Detail: `AudioCopier.kt`.
+
+## 2026-02-27 · Model loaded from a file path
+Loading from a byte array ran out of memory. Detail: `WhisperLib.kt`.
+
+## 2026-02-27 · Copy and Share buttons, no automatic clipboard
+Other apps could read the clipboard on older Android.
+
+## 2026-02-27 · whisper.cpp small q5_1, arm64-v8a only
+Local whisper.cpp over JNI is the only private option; small q5_1
+(~190 MB) transcribed Spanish accurately in 12–15 s. Model downloaded
+once from Hugging Face and checked by SHA256. Detail: `WhisperModel.kt`.
