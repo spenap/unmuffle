@@ -60,7 +60,6 @@ adb shell input keyevent KEYCODE_WAKEUP
 sleep 1
 asleep && { echo "Unlock the phone, then run again."; exit 1; }
 cool_to=$(thermal | awk '{ print $1 + 2 }')
-model=ggml-small-q5_1.bin
 
 runs=${1:?usage: $0 RUNS PACKAGE...}; shift
 [ $# -ge 1 ] || { echo "usage: $0 RUNS PACKAGE..."; exit 1; }
