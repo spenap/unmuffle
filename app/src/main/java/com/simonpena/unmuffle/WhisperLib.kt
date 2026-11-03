@@ -16,31 +16,12 @@ import java.util.concurrent.Executors
  * must stay in sync with the C++ JNI name mangling. Do NOT rename this class or its
  * companion — that would break the JNI binding without a compile error.
  *
- * CPU feature detection at init time loads the best available .so:
- *   arm64 with FP16 hardware → libwhisper_v8fp16_va.so
- *   everything else           → libwhisper.so (baseline)
+ * Loading it also loads ggml's CPU backend for this phone (JNI_OnLoad).
  */
 internal class WhisperLib {
     companion object {
         init {
-            // Check for FP16 capability on arm64 to load the optimized variant
-            // Reading /proc/cpuinfo is the standard Android approach (used in official example)
-            val cpuInfo = try {
-                java.io.File("/proc/cpuinfo").readText()
-            } catch (e: Exception) {
-                ""
-            }
-            val hasFp16 = cpuInfo.contains("fphp") || cpuInfo.contains("asimdhp")
-
-            if (hasFp16) {
-                try {
-                    System.loadLibrary("whisper_v8fp16_va")
-                } catch (e: UnsatisfiedLinkError) {
-                    System.loadLibrary("whisper")  // fallback
-                }
-            } else {
-                System.loadLibrary("whisper")
-            }
+            System.loadLibrary("whisper_jni")
         }
 
         // Initialize context from absolute file path — always prefer this over byte arrays (OOM risk)
