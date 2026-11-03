@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -50,6 +51,8 @@ class TranscriptionActivity : AppCompatActivity() {
         val errorGroup = findViewById<LinearLayout>(R.id.error_group)
         val progressSpinner = findViewById<CircularProgressIndicator>(R.id.progress_spinner)
         val tvStatus = findViewById<TextView>(R.id.tv_status)
+        val partialScroll = findViewById<ScrollView>(R.id.partial_scroll)
+        val tvPartial = findViewById<TextView>(R.id.tv_partial)
         val tvTranscript = findViewById<TextView>(R.id.tv_transcript)
         val tvError = findViewById<TextView>(R.id.tv_error)
         val btnCopy = findViewById<MaterialButton>(R.id.btn_copy)
@@ -87,6 +90,10 @@ class TranscriptionActivity : AppCompatActivity() {
                                 progressSpinner.isIndeterminate = false
                                 progressSpinner.setProgressCompat(state.progress, true)
                                 tvStatus.text = "Transcribing... ${state.progress}%"
+                            }
+                            if (tvPartial.text.toString() != state.partial) {
+                                tvPartial.text = state.partial
+                                partialScroll.post { partialScroll.fullScroll(View.FOCUS_DOWN) }
                             }
                         }
                         is UiState.Success -> {

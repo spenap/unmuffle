@@ -42,6 +42,21 @@
             android:text="Transcribing..."
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
+        <!-- Text decoded so far; fills the space left and scrolls -->
+        <ScrollView
+            android:id="@+id/partial_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:id="@+id/tv_partial"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+        </ScrollView>
+
     </LinearLayout>
 
     <!-- Result group: visible after successful transcription -->
