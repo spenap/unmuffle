@@ -40,19 +40,31 @@ Written test-first; measured on the S25.
 - [x] base vs small. Done when time and accuracy on the same messages are
       recorded in `docs/` and the default model chosen from them
       (`docs/measurements.md`: small stays).
+- [ ] ggml built for fp16 and dot products, loaded only where the CPU has
+      both (`asimddp`). Done when the S25 is about 24% faster with the
+      same text.
+- [ ] Thread count. Done when the S25 uses 6 and a rule for other phones
+      is measured on the Pixel 5.
+- [ ] small q8_0 replaces q5_1. Done when installs download it and remove
+      q5_1.
+- [ ] Words appear as they are decoded (`logits_filter_callback`), not
+      per 30 s window.
+- [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
 
 ## Track S: Settings
-- [ ] Language dialog on share, with "Remember my choice" (persisted and
-      respected on later shares).
-- [ ] Settings screen: default language (always ask, or one language) and
-      model; changing model downloads it if missing.
+- [ ] Settings screen: language (auto-detect by default, ask each time,
+      or one language, the phone's languages first) and licences.
+      Fixing the language saves about 20% and avoids misdetection
+      (Galician-accented Spanish read as Portuguese).
 
 ## Ideas and not doing
 - Ideas: F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
   site; tapping an unsure word plays the audio from it (whisper's token
   timestamps); a transcript cache in memory for the life of the process,
   keyed by the audio's SHA-256 and never written to disk, so sharing the
-  same message again is instant.
+  same message again is instant; the result shows the detected language
+  and retranscribes in another; a whisper small fine-tuned on Spanish
+  (or Galician-accented Spanish).
 - Not doing: Android's on-device recognizer (closed source; see
   decisions.md); whisper.cpp VAD (no faster on real messages, dropped
   speech; see decisions.md); Galician; transcript history (transcripts are ephemeral);
