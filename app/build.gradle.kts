@@ -59,6 +59,11 @@ android {
             isMinifyEnabled = false
         }
         release {
+            // scripts/bench.sh: a release build next to the real app, debug-signed
+            if (providers.gradleProperty("bench").isPresent) {
+                applicationIdSuffix = ".bench"
+                manifestPlaceholders["appLabel"] = "Unmuffle bench"
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
