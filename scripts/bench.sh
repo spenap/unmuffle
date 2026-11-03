@@ -53,7 +53,7 @@ asleep() {
 }
 
 old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
-adb shell svc power stayon usb
+adb shell svc power stayon true  # any charger: the Pixel 5 reports AC over USB
 trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
 trap 'exit 1' INT TERM
 adb shell input keyevent KEYCODE_WAKEUP

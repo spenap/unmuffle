@@ -11,9 +11,14 @@ SHA=818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7
 CACHE=~/.cache/unmuffle/$MODEL
 DEST=/sdcard/Android/data/$APP/files/models
 
-# Fail fast: one device, awake and unlocked.
+# Fail fast: one device, awake and unlocked. The screen stays on while
+# plugged in (any charger) until the script ends.
 adb get-state >/dev/null
-adb shell dumpsys power | grep -q 'mWakefulness=Awake' || { echo "Screen is off"; exit 1; }
+old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
+adb shell svc power stayon true
+trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
+adb shell input keyevent KEYCODE_WAKEUP
+sleep 1
 if adb shell dumpsys window | grep -Eq 'mDreamingLockscreen=true|isKeyguardShowing=true|mShowingLockscreen=true'; then
     echo "Phone is locked"; exit 1
 fi
