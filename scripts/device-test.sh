@@ -15,7 +15,14 @@ DEST=/sdcard/Android/data/$APP/files/models
 # the setting is also restored here in case the test process crashes.
 adb get-state >/dev/null
 old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
-trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
+# ShareTranscriptTest switches the app to the tiny model; a crash skips its
+# reset, so the script resets it too.
+reset() {
+    adb shell settings put global stay_on_while_plugged_in "$old_stay_on"
+    adb shell am force-stop "$APP"
+    adb shell run-as "$APP" sed -i /pref_model/d shared_prefs/unmuffle_prefs.xml 2>/dev/null || true
+}
+trap reset EXIT
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
 sleep 1

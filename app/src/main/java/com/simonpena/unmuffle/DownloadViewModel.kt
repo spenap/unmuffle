@@ -64,10 +64,11 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
             DownloadManager.Request.NETWORK_WIFI
         }
 
-        val request = DownloadManager.Request(Uri.parse(ModelManager.MODEL_URL))
+        val model = SettingsRepository.getModel(context)
+        val request = DownloadManager.Request(Uri.parse(model.url))
             .setTitle("Unmuffle — Whisper Model")
-            .setDescription("Downloading transcription model (190 MB)...")
-            .setDestinationInExternalFilesDir(context, null, "models/${ModelManager.MODEL_FILENAME}")
+            .setDescription("Downloading transcription model (${model.sizeBytes / 1_048_576} MB)...")
+            .setDestinationInExternalFilesDir(context, null, "models/${model.filename}")
             .setAllowedNetworkTypes(networkTypes)
             .setNotificationVisibility(
                 DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
@@ -142,6 +143,7 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         val isValid = ModelManager.isModelReady(context)
         if (isValid) {
             Log.i(TAG, "SHA256 verified — model ready")
+            ModelManager.deleteObsoleteModels(context)
             _state.value = State.Complete
         } else {
             Log.e(TAG, "SHA256 mismatch — deleting corrupt model")

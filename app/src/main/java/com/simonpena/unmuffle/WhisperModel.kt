@@ -22,10 +22,11 @@ enum class WhisperModel(
         displayName = "Tiny (~32 MB, faster)"
     ),
     SMALL(
-        filename = "ggml-small-q5_1.bin",
-        url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
-        sha256 = "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
-        sizeBytes = 199_819_264L,  // ~190 MB
-        displayName = "Small (~190 MB, more accurate)"
+        // q8_0, not q5_1: faster on phones and more accurate (docs/measurements.md)
+        filename = "ggml-small-q8_0.bin",
+        url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q8_0.bin",
+        sha256 = "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+        sizeBytes = 264_464_607L,  // 252 MB
+        displayName = "Small (252 MB, more accurate)"
     )
 }
