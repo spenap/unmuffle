@@ -64,6 +64,8 @@ For any agent (Claude Code, Codex…) and any person.
   read the first failure, fix the environment, iterate on one test
   class, and run the full suite only to confirm.
 - Gate on a script's exit status, not its text.
+- After switching to a branch with other native libraries, delete
+  `app/.cxx`: `gradlew clean` keeps it, and stale `.so` files get packaged.
 - Run long jobs (benchmarks, model downloads) in the background and stay
   reachable.
 - The phones and speakers are shared: one agent at a time, nothing plays

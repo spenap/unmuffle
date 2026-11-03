@@ -11,8 +11,11 @@ SHA=818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7
 CACHE=~/.cache/unmuffle/$MODEL
 DEST=/sdcard/Android/data/$APP/files/models
 
-# Fail fast: one device, unlocked. AwakeRunner keeps it awake during the run.
+# Fail fast: one device, unlocked. AwakeRunner keeps it awake during the run;
+# the setting is also restored here in case the test process crashes.
 adb get-state >/dev/null
+old_stay_on=$(adb shell settings get global stay_on_while_plugged_in | tr -d '\r')
+trap 'adb shell settings put global stay_on_while_plugged_in "$old_stay_on"' EXIT
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
 sleep 1
@@ -26,11 +29,20 @@ if [ ! -f "$CACHE" ]; then
 fi
 echo "$SHA  $CACHE" | sha256sum -c --quiet
 
+# With adbd as root (the Pixel 5), folders it creates belong to root and the
+# app can't use them: give the app's folder back to the app.
+own() {
+    [ "$(adb shell whoami | tr -d '\r')" = root ] || return 0
+    uid=$(adb shell pm list packages -U "$1" | sed -n "s/^package:$1 uid://p" | tr -d '\r')
+    adb shell chown -R "$uid:ext_data_rw" "/sdcard/Android/data/$1"
+}
+
 ./gradlew -q installDebug installDebugAndroidTest
 adb shell mkdir -p "$DEST"
 if [ "$(adb shell stat -c %s "$DEST/$MODEL" 2>/dev/null | tr -d '\r')" != "$(stat -c %s "$CACHE")" ]; then
     adb push "$CACHE" "$DEST/$MODEL" >/dev/null
 fi
+own "$APP"
 
 out=$(timeout 300 adb shell am instrument -w "$APP.test/com.simonpena.unmuffle.AwakeRunner")
 echo "$out"

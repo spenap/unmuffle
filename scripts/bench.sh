@@ -24,10 +24,19 @@ bench=${BENCH_DIR:-$HOME/Projects/unmuffle-bench}
 cooldown=${COOLDOWN:-180}
 model=ggml-small-q5_1.bin
 
+# With adbd as root (the Pixel 5), folders it creates belong to root and the
+# app can't use them: give the app's folder back to the app.
+own() {
+    [ "$(adb shell whoami | tr -d '\r')" = root ] || return 0
+    uid=$(adb shell pm list packages -U "$1" | sed -n "s/^package:$1 uid://p" | tr -d '\r')
+    adb shell chown -R "$uid:ext_data_rw" "/sdcard/Android/data/$1"
+}
+
 if [ "${1:-}" = --model ]; then
     dir=/sdcard/Android/data/$2/files/models
     adb shell mkdir -p "$dir"
     adb push "$HOME/.cache/unmuffle/$model" "$dir/" >/dev/null
+    own "$2"
     echo "$model copied to $2"
     exit 0
 fi
@@ -75,6 +84,7 @@ done
 for pkg in "$@"; do
     adb shell mkdir -p "/sdcard/Android/data/$pkg/files/bench"
     adb push "${messages[@]}" "/sdcard/Android/data/$pkg/files/bench/" >/dev/null
+    own "$pkg"
 done
 
 out="$bench/results/$(date +%F_%H%M%S)"
@@ -120,8 +130,10 @@ for run in $(seq "$runs"); do
             adb shell uiautomator dump /sdcard/unmuffle-bench-ui.xml >/dev/null
             adb shell cat /sdcard/unmuffle-bench-ui.xml | python3 -I -c '
 import sys, xml.etree.ElementTree as ET
-node = ET.parse(sys.stdin).find(".//node[@resource-id=\"" + sys.argv[1] + ":id/tv_transcript\"]")
+ids = [sys.argv[1] + ":id/" + i for i in ("tv_text", "tv_transcript")]  # tv_transcript before v1.6
+node = next((n for n in ET.parse(sys.stdin).iter("node") if n.get("resource-id") in ids), None)
 print(node.get("text") if node is not None else "")' "$pkg" > "$out/$run.$pkg.${name%.*}.txt"
+            [ -s "$out/$run.$pkg.${name%.*}.txt" ] || { echo "$pkg $name: no transcript on screen"; exit 1; }
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$run" "$pkg" "$version" "$name" "$secs" "$ms" \
                 "$ap" "$skin" "$status" "$((caps / samples))" "$slept" | tee -a "$out/times.tsv"
         done
