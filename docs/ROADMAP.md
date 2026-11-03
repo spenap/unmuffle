@@ -36,7 +36,7 @@ language code passed through to whisper.cpp.
 
 ## Track P: Transcription
 Written test-first; measured on the S25.
-- [ ] Streamed segments. Done when the transcript appears segment by
+- [x] Streamed segments. Done when the transcript appears segment by
       segment while inference runs.
 - [ ] whisper.cpp VAD. Done when silence is skipped and a voice message
       with long pauses transcribes faster, with the same text.
