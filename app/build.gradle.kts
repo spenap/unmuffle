@@ -19,6 +19,7 @@ android {
         versionCode = git("rev-list", "--count", "HEAD").toInt()
         versionName = git("describe", "--tags", "--always", "--dirty")
         manifestPlaceholders["appLabel"] = "Unmuffle"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
             abiFilters += listOf("arm64-v8a")  // arm64-only per CONTEXT.md locked decision
@@ -57,6 +58,8 @@ android {
             applicationIdSuffix = ".debug"
             manifestPlaceholders["appLabel"] = "Unmuffle debug"
             isMinifyEnabled = false
+            // Unoptimised ggml takes minutes per message: optimise it here too.
+            externalNativeBuild { cmake { arguments += "-DCMAKE_BUILD_TYPE=Release" } }
         }
         release {
             // scripts/bench.sh: a release build next to the real app, debug-signed
@@ -95,4 +98,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.ktx)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
