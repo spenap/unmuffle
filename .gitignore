@@ -13,3 +13,4 @@ app/src/main/cpp/whisper.cpp/build/
 *.jks
 # Claude Code
 .claude/
+.cxx/

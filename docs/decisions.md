@@ -14,6 +14,13 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
+## 2026-11-03 · Releases signed on the laptop, not in CI
+`scripts/release.sh` signs with the key in `~/.config/unmuffle`, backed
+up in Bitwarden; CI builds with the debug key. Why: the same as Makofi,
+and the key stays out of CI. The S25 has a debug build, so Obtainium's
+first install needs an uninstall. Supersedes the 2026-02-28 decision's
+release signing. Detail: `scripts/release.sh`.
+
 ## 2026-11-03 · Distribution through GitHub Releases and Obtainium
 Why: installs and updates on the S25 without a store; F-Droid stays an
 idea. Detail: ROADMAP.md, Track R.
@@ -45,6 +52,7 @@ the same commit. Detail: `whisper_jni.cpp`.
 Lint and debug build on every push and PR; the signed release only on a
 `v*` tag, so the signing secrets are exposed only then. Local release
 builds fall back to the debug key. Detail: `.github/workflows/build.yml`.
+Superseded by 2026-11-03, "Releases signed on the laptop".
 
 ## 2026-02-28 · whisper.cpp compiled directly, not through its CMake
 Our `CMakeLists.txt` lists the sources and sets `WHISPER_VERSION`.

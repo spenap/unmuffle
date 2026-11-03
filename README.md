@@ -65,6 +65,10 @@ Or build from the command line:
 
 The debug APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 
+Releases: `scripts/release.sh vX.Y.Z` tags a green `main` and publishes an
+APK signed with the release key as a GitHub Release, which
+[Obtainium](https://github.com/ImranR98/Obtainium) can follow.
+
 ## Tech Stack
 
 | Component | Version |
