@@ -6,7 +6,7 @@
 
     <application
         android:name=".UnmuffleApplication"
-        android:label="Unmuffle"
+        android:label="${appLabel}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
@@ -37,7 +37,7 @@
         <activity
             android:name=".ShareReceiverActivity"
             android:exported="true"
-            android:label="Unmuffle"
+            android:label="${appLabel}"
             android:theme="@style/Theme.Unmuffle.Transparent">
 
             <!-- Intent filter 1: standard audio MIME types (WhatsApp, most apps) -->

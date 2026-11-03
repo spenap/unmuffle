@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Debug builds only. Start with:
-     adb shell am start -n com.simonpena.unmuffle/.SmokeTestActivity -->
+     adb shell am start -n com.simonpena.unmuffle.debug/com.simonpena.unmuffle.SmokeTestActivity -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity

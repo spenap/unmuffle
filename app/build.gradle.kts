@@ -18,6 +18,7 @@ android {
         targetSdk = 35
         versionCode = git("rev-list", "--count", "HEAD").toInt()
         versionName = git("describe", "--tags", "--always", "--dirty")
+        manifestPlaceholders["appLabel"] = "Unmuffle"
 
         ndk {
             abiFilters += listOf("arm64-v8a")  // arm64-only per CONTEXT.md locked decision
@@ -51,6 +52,9 @@ android {
 
     buildTypes {
         debug {
+            // A separate app next to the release one, with its own model.
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "Unmuffle debug"
             isMinifyEnabled = false
         }
         release {
