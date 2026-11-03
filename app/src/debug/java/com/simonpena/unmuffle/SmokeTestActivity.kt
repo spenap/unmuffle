@@ -21,7 +21,7 @@ import kotlin.math.sin
  *   5. WhisperContext.getSystemInfo() shows correct .so loaded
  *
  * Debug builds only:
- *   adb shell am start -n com.simonpena.unmuffle/.SmokeTestActivity
+ *   adb shell am start -n com.simonpena.unmuffle.debug/com.simonpena.unmuffle.SmokeTestActivity
  */
 class SmokeTestActivity : AppCompatActivity() {
 
