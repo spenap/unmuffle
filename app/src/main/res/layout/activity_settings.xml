@@ -11,32 +11,92 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationContentDescription="Back"
         app:title="Settings" />
 
-    <LinearLayout
-        android:id="@+id/language_row"
-        style="@style/Unmuffle.SettingsRow">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <TextView
-            style="@style/Unmuffle.SettingsTitle"
-            android:text="Transcription language" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/language_value"
-            style="@style/Unmuffle.SettingsValue" />
-    </LinearLayout>
+            <TextView
+                style="@style/Unmuffle.SettingsSection"
+                android:text="Transcription" />
 
-    <LinearLayout
-        android:id="@+id/licences_row"
-        style="@style/Unmuffle.SettingsRow">
+            <LinearLayout
+                android:id="@+id/language_row"
+                style="@style/Unmuffle.SettingsRow"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
 
-        <TextView
-            style="@style/Unmuffle.SettingsTitle"
-            android:text="Licences" />
+                <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_language" />
 
-        <TextView
-            style="@style/Unmuffle.SettingsValue"
-            android:text="whisper.cpp, the Whisper model and the Android libraries" />
-    </LinearLayout>
+                <LinearLayout style="@style/Unmuffle.SettingsText">
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Language" />
+                    <TextView android:id="@+id/language_value" style="@style/Unmuffle.SettingsValue" />
+                </LinearLayout>
 
+                <ImageView style="@style/Unmuffle.SettingsChevron" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="64dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="16dp"
+                android:text="Choosing a language is faster than auto-detect and avoids mix-ups."
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:dividerInsetStart="24dp"
+                app:dividerInsetEnd="24dp" />
+
+            <TextView
+                style="@style/Unmuffle.SettingsSection"
+                android:text="About" />
+
+            <LinearLayout style="@style/Unmuffle.SettingsRow">
+                <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_model" />
+                <LinearLayout style="@style/Unmuffle.SettingsText">
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Model" />
+                    <TextView android:id="@+id/model_value" style="@style/Unmuffle.SettingsValue" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/licences_row"
+                style="@style/Unmuffle.SettingsRow"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_licences" />
+
+                <LinearLayout style="@style/Unmuffle.SettingsText">
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Licences" />
+                    <TextView style="@style/Unmuffle.SettingsValue" android:text="whisper.cpp, the Whisper model, Android libraries" />
+                </LinearLayout>
+
+                <ImageView style="@style/Unmuffle.SettingsChevron" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/Unmuffle.SettingsRow">
+                <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_info" />
+                <LinearLayout style="@style/Unmuffle.SettingsText">
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Version" />
+                    <TextView android:id="@+id/version_value" style="@style/Unmuffle.SettingsValue" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

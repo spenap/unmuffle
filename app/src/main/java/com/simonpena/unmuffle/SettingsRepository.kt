@@ -21,7 +21,7 @@ object SettingsRepository {
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** The language setting: [Languages.AUTO] (default), [Languages.ASK] or a whisper code. */
+    /** The language setting: [Languages.AUTO] (default) or a whisper code. */
     fun getLanguage(context: Context): String =
         prefs(context).getString(KEY_LANGUAGE, Languages.AUTO) ?: Languages.AUTO
 

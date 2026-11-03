@@ -1,19 +1,11 @@
 package com.simonpena.unmuffle
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LanguagesTest {
     private val names = mapOf("en" to "English", "es" to "Spanish", "gl" to "Galician",
         "pt" to "Portuguese", "de" to "German", "he" to "Hebrew")
-
-    @Test
-    fun askMeansNoCodeYet() {
-        assertNull(Languages.codeFor(Languages.ASK))
-        assertEquals("auto", Languages.codeFor(Languages.AUTO))
-        assertEquals("es", Languages.codeFor("es"))
-    }
 
     @Test
     fun phoneLanguagesFirstThenByName() {
@@ -28,5 +20,17 @@ class LanguagesTest {
     @Test
     fun oldJavaCodesMatchWhisper() {
         assertEquals(listOf("he", "en"), Languages.ordered(listOf("en", "he"), listOf("iw"), { names.getValue(it) }))
+    }
+
+    @Test
+    fun redoOffersThePhoneLanguagesNotUsed() {
+        assertEquals(listOf("gl", "es", "en"), Languages.redoOptions(listOf("gl", "es", "en", "de"), used = "pt"))
+        assertEquals(listOf("gl", "en"), Languages.redoOptions(listOf("gl", "es", "en"), used = "es"))
+    }
+
+    @Test
+    fun resultLineSaysWhetherDetected() {
+        assertEquals("Detected: Português. Not right?", Languages.resultLine("Português", detected = true))
+        assertEquals("Transcribed in Español", Languages.resultLine("Español", detected = false))
     }
 }

@@ -109,6 +109,31 @@
             android:paddingHorizontal="24dp"
             android:paddingBottom="24dp">
 
+            <LinearLayout
+                android:id="@+id/language_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_language"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_language"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/redo_chips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/tv_status"
                 android:layout_width="wrap_content"

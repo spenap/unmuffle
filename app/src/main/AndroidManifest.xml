@@ -59,6 +59,11 @@
             android:name=".SettingsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".LanguagePickerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Transcription progress and result screen -->
         <activity
             android:name=".TranscriptionActivity"

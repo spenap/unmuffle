@@ -20,15 +20,45 @@
         <item name="cornerSizeTopLeft">4dp</item>
     </style>
 
+    <style name="Unmuffle.SettingsSection" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingHorizontal">24dp</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textAppearance">?attr/textAppearanceTitleSmall</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
     <style name="Unmuffle.SettingsRow" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:orientation">vertical</item>
+        <item name="android:minHeight">72dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
         <item name="android:paddingHorizontal">24dp</item>
-        <item name="android:paddingVertical">16dp</item>
-        <item name="android:background">?attr/selectableItemBackground</item>
-        <item name="android:clickable">true</item>
-        <item name="android:focusable">true</item>
+        <item name="android:paddingVertical">12dp</item>
+    </style>
+
+    <style name="Unmuffle.SettingsIcon" parent="">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <style name="Unmuffle.SettingsText" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="Unmuffle.SettingsChevron" parent="">
+        <item name="android:layout_width">20dp</item>
+        <item name="android:layout_height">20dp</item>
+        <item name="android:src">@drawable/ic_chevron</item>
+        <item name="android:importantForAccessibility">no</item>
     </style>
 
     <style name="Unmuffle.SettingsTitle" parent="">

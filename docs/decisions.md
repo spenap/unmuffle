@@ -14,12 +14,13 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
-## 2026-11-03 · One language setting, no dialog by default
-Settings holds the transcription language: auto-detect (default), ask
-on each share, or one language, the phone's languages listed first. A
-dialog on every share costs a tap per message; fixing the language is
-about 20% faster and avoids misdetection (Galician-accented Spanish
-read as Portuguese).
+## 2026-11-03 · A language setting and a redo, no asking
+Settings holds the transcription language: auto-detect (default) or one
+language. Fixing it is about 20% faster and avoids misdetection
+(Galician-accented Spanish read as Portuguese). There is no "ask each
+time": the transcript shows its language, and a wrong guess is one tap
+to transcribe again in another. Designs: the "Unmuffle settings" canvas
+(A, C, G).
 
 ## 2026-11-03 · small q8_0 instead of q5_1
 Supersedes the quantisation in "whisper.cpp small q5_1" (2026-02-27).

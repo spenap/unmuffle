@@ -87,6 +87,9 @@ class WhisperEngine {
         }
     }
 
+    /** The last transcription's language code: the one given, or the one detected. */
+    suspend fun language(): String = whisperContext?.language() ?: Languages.AUTO
+
     /**
      * Release native Whisper context and free the model's native memory.
      * Call from ViewModel.onCleared() or Application.onTerminate().

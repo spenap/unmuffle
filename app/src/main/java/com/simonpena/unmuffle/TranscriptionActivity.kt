@@ -1,6 +1,7 @@
 package com.simonpena.unmuffle
 
 import android.animation.ValueAnimator
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -14,12 +15,15 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -73,13 +77,11 @@ class TranscriptionActivity : AppCompatActivity() {
             return
         }
         if (!viewModel.started) {
-            val code = Languages.codeFor(SettingsRepository.getLanguage(this))
-            if (code != null) {
-                viewModel.startTranscription(audioFilePath, code)
-            } else {
-                LanguageDialog.ask(this, onCancel = ::finish) { viewModel.startTranscription(audioFilePath, it) }
-            }
+            viewModel.startTranscription(audioFilePath, SettingsRepository.getLanguage(this))
         }
+        val languageGroup = findViewById<View>(R.id.language_group)
+        val tvLanguage = findViewById<TextView>(R.id.tv_language)
+        val redoChips = findViewById<ChipGroup>(R.id.redo_chips)
 
         val unsureColor = getColor(R.color.unsure)
         var shownPartial: String? = null
@@ -114,6 +116,7 @@ class TranscriptionActivity : AppCompatActivity() {
                 viewModel.uiState.collect { state ->
                     when (state) {
                         is UiState.Processing -> {
+                            languageGroup.visibility = View.GONE
                             show(mainGroup)
                             tvStatus.text = StreamingTranscript.status(state)
                             if (state.progress < 0) {
@@ -140,6 +143,7 @@ class TranscriptionActivity : AppCompatActivity() {
                         }
                         is UiState.Success -> {
                             show(mainGroup)
+                            showLanguage(state, languageGroup, tvLanguage, redoChips)
                             // Read from the start, with the player in view.
                             if (transcript.isEmpty()) textScroll.post { textScroll.smoothScrollTo(0, 0) }
                             stopTwinkle()
@@ -215,5 +219,27 @@ class TranscriptionActivity : AppCompatActivity() {
         super.onStop()
         stopTwinkle()
         viewModel.player.value?.pause()
+    }
+
+    private val pickRedoLanguage = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val code = result.data?.getStringExtra(LanguagePickerActivity.EXTRA_CODE)
+        if (result.resultCode == Activity.RESULT_OK && code != null) viewModel.retranscribe(code)
+    }
+
+    /** The transcript's language, and chips to transcribe again in another. */
+    private fun showLanguage(state: UiState.Success, group: View, line: TextView, chips: ChipGroup) {
+        group.visibility = View.VISIBLE
+        line.text = Languages.resultLine(Languages.nativeName(state.language), state.detected)
+        chips.removeAllViews()
+        fun chip(label: String, onClick: () -> Unit) = chips.addView(Chip(this).apply {
+            text = label
+            setOnClickListener { onClick() }
+        })
+        for (code in Languages.redoOptions(Languages.phone(), state.language)) {
+            chip("Redo in ${Languages.nativeName(code)}") { viewModel.retranscribe(code) }
+        }
+        chip("Other language") {
+            pickRedoLanguage.launch(LanguagePickerActivity.intent(this, state.language, withAuto = false))
+        }
     }
 }
