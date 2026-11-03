@@ -36,11 +36,16 @@ sealed class UiState {
         val wordsPerSecond: Float? = null,
         val unsure: List<IntRange> = emptyList(),
     ) : UiState()
-    /** [unsure] are the character ranges of the words whisper is unsure of. */
+    /**
+     * [unsure] are the character ranges of the words whisper is unsure of;
+     * [language] the code it transcribed in, [detected] if whisper chose it.
+     */
     data class Success(
         val transcript: String,
         val seconds: Float = 0f,
         val unsure: List<IntRange> = emptyList(),
+        val language: String = Languages.AUTO,
+        val detected: Boolean = false,
     ) : UiState()
     data class NoSpeech(val message: String) : UiState()
     data class Error(val message: String) : UiState()
@@ -75,89 +80,101 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     private var inferenceJob: Job? = null
     private var audioFilePath: String? = null
 
+    /** The decoded audio, kept to transcribe again in another language. */
+    private var pcm: FloatArray? = null
+
+    /** Whether [startTranscription] ran; survives rotation. */
+    var started = false
+        private set
+
     /**
-     * Start the transcription pipeline for the audio file at [audioPath].
-     *
-     * Pipeline: load model -> decode audio -> resample to 16kHz -> transcribe -> filter.
-     *
-     * Call once from Activity.onCreate() guarded by savedInstanceState == null.
-     *
-     * @param languageCode ISO 639-1 language code (e.g. "en", "es") or "auto" for auto-detection.
-     *   Defaults to the stored preference from [SettingsRepository]. Callers can override
-     *   by passing an explicit code — Phase 13 language dialog will do this.
+     * Load the model, decode [audioPath] to 16 kHz mono and transcribe it in
+     * [languageCode] ("auto" to detect it). Call once.
      */
-    fun startTranscription(audioPath: String, languageCode: String = SettingsRepository.getLanguage(getApplication())) {
+    fun startTranscription(audioPath: String, languageCode: String) {
+        started = true
         audioFilePath = audioPath
 
         inferenceJob = viewModelScope.launch {
             try {
-                // Step 1: Load model
                 val modelPath = ModelManager.modelFile(getApplication()).absolutePath
                 Log.i(TAG, "Loading model from $modelPath")
-                val loaded = engine.loadModel(modelPath)
-                if (!loaded) {
+                if (!engine.loadModel(modelPath)) {
                     _uiState.value = UiState.Error("Could not load model")
                     return@launch
                 }
 
-                // Step 2: Decode audio on background thread
-                val decoded = withContext(Dispatchers.Default) {
-                    AudioDecoder.decode(audioPath)
-                }
+                val decoded = withContext(Dispatchers.Default) { AudioDecoder.decode(audioPath) }
                 if (decoded == null) {
                     _uiState.value = UiState.Error("Could not decode audio")
                     return@launch
                 }
                 Log.i(TAG, "Decoded: ${decoded.samples.size} samples, ${decoded.sampleRate}Hz, ${decoded.channels}ch")
 
-                // Step 3: Resample to 16kHz mono float32
-                val pcm = withContext(Dispatchers.Default) {
-                    PcmResampler.toWhisperFormat(decoded)
-                }
+                val pcm = withContext(Dispatchers.Default) { PcmResampler.toWhisperFormat(decoded) }
                 if (pcm == null) {
                     _uiState.value = UiState.Error("Could not resample audio")
                     return@launch
                 }
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
+                this@TranscriptionViewModel.pcm = pcm
                 waveform = Waveform.bars(pcm, WAVEFORM_BARS)
                 _player.value = PcmPlayer(
                     pcm, 16000, viewModelScope,
                     getApplication<Application>().getSystemService(AudioManager::class.java),
                 )
-
-                // Step 4: Transcribe via WhisperEngine (pass runtime language code)
-                val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
-                _uiState.value = streaming.state
-                val raw = engine.transcribe(
-                    pcm, languageCode,
-                    onProgress = { _uiState.value = streaming.progress(it) },
-                    onSegment = { _uiState.value = streaming.segment(it) },
-                )
-                Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
-
-                // Step 5: Filter hallucinations and non-speech markers
-                val filtered = HallucinationFilter.filter(raw)
-                if (filtered == null) {
-                    Log.i(TAG, "Filtered as non-speech")
-                    _uiState.value = UiState.NoSpeech("No speech detected")
-                } else {
-                    // The streamed text is the same text, without markers and with certainty.
-                    val streamed = streaming.state
-                    val seconds = streaming.elapsedSeconds()
-                    Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds) + ", ${streamed.unsure.size} unsure")
-                    _uiState.value = if (streamed.partial.isNotEmpty()) {
-                        UiState.Success(streamed.partial, seconds, streamed.unsure)
-                    } else {
-                        UiState.Success(filtered, seconds)
-                    }
-                }
-
+                transcribe(pcm, languageCode)
             } catch (e: CancellationException) {
-                throw e // Rethrow so coroutine cancellation propagates
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Transcription failed: ${e.message}", e)
                 _uiState.value = UiState.Error("Transcription failed: ${e.message}")
             }
+        }
+    }
+
+    /** Transcribes the same audio again in [languageCode]. */
+    fun retranscribe(languageCode: String) {
+        val pcm = pcm ?: return
+        if (inferenceJob?.isActive == true) return
+        inferenceJob = viewModelScope.launch {
+            try {
+                transcribe(pcm, languageCode)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Transcription failed: ${e.message}", e)
+                _uiState.value = UiState.Error("Transcription failed: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun transcribe(pcm: FloatArray, languageCode: String) {
+        val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
+        _uiState.value = streaming.state
+        val raw = engine.transcribe(
+            pcm, languageCode,
+            onProgress = { _uiState.value = streaming.progress(it) },
+            onSegment = { _uiState.value = streaming.segment(it) },
+        )
+        Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
+
+        val filtered = HallucinationFilter.filter(raw)
+        if (filtered == null) {
+            Log.i(TAG, "Filtered as non-speech")
+            _uiState.value = UiState.NoSpeech("No speech detected")
+            return
+        }
+        // The streamed text is the same text, without markers and with certainty.
+        val streamed = streaming.state
+        val seconds = streaming.elapsedSeconds()
+        val language = engine.language()
+        val detected = languageCode == Languages.AUTO
+        Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds) + ", ${streamed.unsure.size} unsure, $language")
+        _uiState.value = if (streamed.partial.isNotEmpty()) {
+            UiState.Success(streamed.partial, seconds, streamed.unsure, language, detected)
+        } else {
+            UiState.Success(filtered, seconds, language = language, detected = detected)
         }
     }
 

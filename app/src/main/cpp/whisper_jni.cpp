@@ -153,6 +153,24 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getSystemInfo(
     return env->NewStringUTF(whisper_print_system_info());
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getLanguage(
+        JNIEnv *env, jobject /* thiz */, jlong context_ptr) {
+    auto *ctx = reinterpret_cast<struct whisper_context *>(context_ptr);
+    return env->NewStringUTF(whisper_lang_str(whisper_full_lang_id(ctx)));
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getLanguages(
+        JNIEnv *env, jobject /* thiz */) {
+    int n = whisper_lang_max_id() + 1;
+    jobjectArray codes = env->NewObjectArray(n, env->FindClass("java/lang/String"), nullptr);
+    for (int i = 0; i < n; i++) {
+        env->SetObjectArrayElement(codes, i, env->NewStringUTF(whisper_lang_str(i)));
+    }
+    return codes;
+}
+
 JNIEXPORT jint JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getProgress(
         JNIEnv* /*env*/, jobject /*thiz*/) {

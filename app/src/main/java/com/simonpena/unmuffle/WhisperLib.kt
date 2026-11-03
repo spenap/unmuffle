@@ -34,6 +34,9 @@ internal class WhisperLib {
         external fun getTextSegment(contextPtr: Long, index: Int): String
         external fun freeContext(contextPtr: Long)
         external fun getSystemInfo(): String
+        external fun getLanguages(): Array<String>
+        // The language of the last transcription: the one given, or the one detected
+        external fun getLanguage(contextPtr: Long): String
         external fun getProgress(): Int
         // UTF-8 text of the segments decoded since the last call, one per line
         external fun takeNewSegments(): ByteArray
@@ -93,6 +96,9 @@ internal class WhisperContext private constructor(private var ptr: Long) {
         }.trim()
     }
 
+    /** The last transcription's language code: the one given, or the one detected. */
+    suspend fun language(): String = withContext(scope.coroutineContext) { WhisperLib.getLanguage(ptr) }
+
     /** Release native memory. Call when the engine is no longer needed. */
     suspend fun release() = withContext(scope.coroutineContext) {
         WhisperLib.freeContext(ptr)
@@ -111,5 +117,8 @@ internal class WhisperContext private constructor(private var ptr: Long) {
         }
 
         fun getSystemInfo(): String = WhisperLib.getSystemInfo()
+
+        /** The language codes whisper transcribes, e.g. "en", "es". */
+        fun languages(): List<String> = WhisperLib.getLanguages().toList()
     }
 }

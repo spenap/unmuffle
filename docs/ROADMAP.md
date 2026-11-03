@@ -52,10 +52,11 @@ Written test-first; measured on the S25.
 - [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
 
 ## Track S: Settings
-- [ ] Settings screen: language (auto-detect by default, ask each time,
-      or one language, the phone's languages first) and licences.
-      Fixing the language saves about 20% and avoids misdetection
-      (Galician-accented Spanish read as Portuguese).
+- [x] Settings screen: language (auto-detect by default, or one, from a
+      searchable list with the phone's languages first), model, licences,
+      version.
+- [x] The transcript shows its language (detected or chosen) and can be
+      transcribed again in another.
 
 ## Ideas and not doing
 - Ideas: CI runs the instrumented tests on an emulator (needs an x86_64
@@ -63,8 +64,7 @@ Written test-first; measured on the S25.
   site; tapping an unsure word plays the audio from it (whisper's token
   timestamps); a transcript cache in memory for the life of the process,
   keyed by the audio's SHA-256 and never written to disk, so sharing the
-  same message again is instant; the result shows the detected language
-  and retranscribes in another; a whisper small fine-tuned on Spanish
+  same message again is instant; a whisper small fine-tuned on Spanish
   (or Galician-accented Spanish).
 - Not doing: Android's on-device recognizer (closed source; see
   decisions.md); whisper.cpp VAD (no faster on real messages, dropped
