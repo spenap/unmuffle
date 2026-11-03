@@ -51,8 +51,9 @@ Written test-first; measured on the S25.
 
 ## Ideas and not doing
 - Ideas: F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
-  site; Android's on-device recognizer as an optional mode.
-- Not doing: Galician; transcript history (transcripts are ephemeral);
+  site.
+- Not doing: Android's on-device recognizer (closed source; see
+  decisions.md); Galician; transcript history (transcripts are ephemeral);
   cloud transcription; live microphone transcription; speaker
   diarization; medium/large models (too big and slow on a phone); iOS;
   Compose (Views are enough for four screens).

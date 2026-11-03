@@ -14,6 +14,16 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
+## 2026-11-03 · No closed-source recognizer, not even as an option
+Android's on-device recognizer is Google's proprietary app (Speech
+Services by Google on the S25, Android System Intelligence on Pixels);
+AOSP ships none. Privacy that can't be audited isn't privacy, so
+transcription stays on whisper.cpp. It may be benchmarked for reference.
+A fork that wants another backend replaces `WhisperEngine`; keep the
+rest of the app independent of it. Supersedes the 2026-11-03 decision
+"Galician dropped; the system recognizer is at most an option" on the
+recognizer.
+
 ## 2026-11-03 · Releases signed on the laptop, not in CI
 `scripts/release.sh` signs with the key in `~/.config/unmuffle`, backed
 up in Bitwarden; CI builds with the debug key. Why: the same as Makofi,
@@ -29,6 +39,7 @@ idea. Detail: ROADMAP.md, Track R.
 Why: whisper.cpp covers the languages in use. Android's on-device
 recognizer (Android System Intelligence) depends on Google components.
 Detail: ROADMAP.md, "Ideas and not doing".
+Superseded on the recognizer by 2026-11-03, "No closed-source recognizer".
 
 ## 2026-11-03 · AGENTS.md and docs/ replace .planning/
 Why: the same conventions as Makofi, readable by any agent; the GSD
