@@ -53,6 +53,11 @@ For any agent (Claude Code, Codex…) and any person.
   when the user asks.
 - Commits: atomic, Conventional Commits, ending with a `Co-Authored-By:`
   line that names the agent and model.
+- Fail fast. Before an expensive run (device tests, benchmarks, a CI
+  round trip), check its assumptions in seconds: the right build is
+  installed, the device is awake and unlocked, each command succeeded,
+  the first log line appears. Reproduce CI failures locally rather than
+  iterating through pushes. Give every wait a timeout.
 - Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
   the key in `~/.config/unmuffle` (backed up in Bitwarden) and publishes a
   GitHub Release. Release builds without the key use the debug key.
