@@ -23,10 +23,10 @@ language code passed through to whisper.cpp.
       (`scripts/check-release-apk.sh`, run by CI).
 
 ## Track T: Tests
-- [ ] JVM unit tests for the pure parts (`HallucinationFilter`,
-      `PcmResampler`, `WavWriter`). Done when they run in
+- [x] JVM unit tests for the pure parts (`HallucinationFilter`,
+      `PcmResampler`). Done when they run in
       `./gradlew testDebugUnitTest`.
-- [ ] CI runs `testDebugUnitTest`. Done when a failing test fails the
+- [x] CI runs `testDebugUnitTest`. Done when a failing test fails the
       build.
 - [ ] One instrumented test of share → transcript on `jfk.wav` with the
       tiny model.
