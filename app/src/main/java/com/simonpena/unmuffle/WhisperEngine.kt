@@ -71,7 +71,8 @@ class WhisperEngine {
         audioData: FloatArray,
         languageCode: String = "auto",
         onProgress: (Int) -> Unit = {},
-        onSegment: (List<Word>) -> Unit = {}
+        onSegment: (List<Word>) -> Unit = {},
+        onDecoding: (List<Word>) -> Unit = {},
     ): String {
         val ctx = whisperContext
             ?: throw IllegalStateException("Model not loaded — call loadModel() first")
@@ -80,7 +81,7 @@ class WhisperEngine {
         Log.i(TAG, "Starting transcription of ${audioData.size} samples (${audioData.size / 16000.0f}s) lang=$languageCode")
 
         return withContext(Dispatchers.Default) {
-            val result = ctx.transcribeData(audioData, languageCode, onProgress, onSegment)
+            val result = ctx.transcribeData(audioData, languageCode, onProgress, onSegment, onDecoding)
             val durationMs = System.currentTimeMillis() - startMs
             Log.i(TAG, "Transcription complete in ${durationMs}ms, result: '${result.take(80)}'")
             result

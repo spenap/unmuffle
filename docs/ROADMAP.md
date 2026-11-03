@@ -47,7 +47,7 @@ Written test-first; measured on the S25.
       is measured on the Pixel 5. (All cores but two.)
 - [x] small q8_0 replaces q5_1. Done when installs download it and remove
       q5_1.
-- [ ] Words appear as they are decoded (`logits_filter_callback`), not
+- [x] Words appear as they are decoded (`logits_filter_callback`), not
       per 30 s window.
 - [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
 

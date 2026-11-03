@@ -40,6 +40,8 @@ internal class WhisperLib {
         external fun getProgress(): Int
         // UTF-8 text of the segments decoded since the last call, one per line
         external fun takeNewSegments(): ByteArray
+        // The tokens being decoded, framed like segments, or null if unchanged since version[0]
+        external fun takeDecoding(version: LongArray): ByteArray?
     }
 }
 
@@ -65,14 +67,21 @@ internal class WhisperContext private constructor(private var ptr: Long) {
      *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
      * @param onSegment Called with each segment's words as it is decoded, from the same
      *   thread as [onProgress], never concurrently with it.
+     * @param onDecoding Called with the words being decoded after the last segment,
+     *   when they change; the next segment replaces them.
      */
     suspend fun transcribeData(
         data: FloatArray,
         languageCode: String = "auto",
         onProgress: (Int) -> Unit = {},
-        onSegment: (List<Word>) -> Unit = {}
+        onSegment: (List<Word>) -> Unit = {},
+        onDecoding: (List<Word>) -> Unit = {},
     ): String = withContext(scope.coroutineContext) {
-        fun takeSegments() = TokenWords.parse(WhisperLib.takeNewSegments()).forEach(onSegment)
+        val version = longArrayOf(-1)
+        fun takeSegments() {
+            TokenWords.parse(WhisperLib.takeNewSegments()).forEach(onSegment)
+            WhisperLib.takeDecoding(version)?.let { onDecoding(TokenWords.parse(it).flatten()) }
+        }
         // Poller runs on Default, NOT the single-thread executor (which is blocked by fullTranscribe)
         val pollerJob = launch(Dispatchers.Default) {
             while (isActive) {

@@ -6,7 +6,8 @@ import kotlin.math.roundToInt
 
 /**
  * The transcription screen's state while whisper.cpp runs: progress, the
- * segments decoded so far (without non-speech markers), how many words are
+ * segments decoded so far and the words being decoded after them (without
+ * non-speech markers), how many words are
  * probably still to come, and words transcribed per second. The final
  * transcript still goes through [HallucinationFilter].
  *
@@ -22,6 +23,7 @@ class StreamingTranscript(
     private val text = StringBuilder()
     private var words = 0
     private val unsure = mutableListOf<IntRange>()
+    private var decoding: List<Word> = emptyList()
 
     var state = UiState.Processing(placeholders = remaining(-1))
         private set
@@ -33,38 +35,60 @@ class StreamingTranscript(
 
     /** Appends a segment's words, without non-speech markers such as "[BLANK_AUDIO]" or "(music)". */
     fun segment(segment: List<Word>): UiState.Processing {
+        decoding = emptyList()
+        for (word in speech(segment)) {
+            if (text.isNotEmpty()) text.append(' ')
+            if (word.p < UNSURE_BELOW) unsure += text.length until text.length + word.text.length
+            text.append(word.text)
+            words++
+        }
+        return show()
+    }
+
+    /** Shows the words being decoded after the segments; the next segment replaces them. */
+    fun decoding(words: List<Word>): UiState.Processing {
+        decoding = speech(words)
+        return show()
+    }
+
+    private fun show(): UiState.Processing {
+        val shown = StringBuilder(text)
+        val shownUnsure = unsure.toMutableList()
+        for (word in decoding) {
+            if (shown.isNotEmpty()) shown.append(' ')
+            if (word.p < UNSURE_BELOW) shownUnsure += shown.length until shown.length + word.text.length
+            shown.append(word.text)
+        }
+        state = state.copy(
+            partial = shown.toString(), words = shownWords(), unsure = shownUnsure,
+            placeholders = remaining(state.progress), wordsPerSecond = rate(),
+        )
+        return state
+    }
+
+    private fun shownWords() = words + decoding.size
+
+    private fun speech(words: List<Word>): List<Word> {
         var inMarker = false
-        val speech = segment.filter { word ->
+        return words.filter { word ->
             if (word.text.startsWith('[') || word.text.startsWith('(')) inMarker = true
             val keep = !inMarker
             if (word.text.endsWith(']') || word.text.endsWith(')')) inMarker = false
             keep
         }
-        if (speech.isEmpty()) return state
-        for (word in speech) {
-            if (text.isNotEmpty()) text.append(' ')
-            if (word.p < UNSURE_BELOW) unsure += text.length until text.length + word.text.length
-            text.append(word.text)
-        }
-        words += speech.size
-        state = state.copy(
-            partial = text.toString(), words = words, unsure = unsure.toList(),
-            placeholders = remaining(state.progress), wordsPerSecond = rate(),
-        )
-        return state
     }
 
     fun elapsedSeconds(): Float = (clock() - startMs) / 1000f
 
     private fun rate(): Float? {
         val seconds = elapsedSeconds()
-        return if (words == 0 || seconds <= 0f) null else words / seconds
+        return if (shownWords() == 0 || seconds <= 0f) null else shownWords() / seconds
     }
 
     private fun remaining(percent: Int): Int = when {
         percent >= 100 -> 0
-        words > 0 && percent > 0 -> (words * (100 - percent) / percent.toFloat()).roundToInt()
-        else -> max(0, (audioSeconds * (100 - max(percent, 0)) / 100 * SPEECH_WORDS_PER_SECOND).roundToInt() - words)
+        shownWords() > 0 && percent > 0 -> (shownWords() * (100 - percent) / percent.toFloat()).roundToInt()
+        else -> max(0, (audioSeconds * (100 - max(percent, 0)) / 100 * SPEECH_WORDS_PER_SECOND).roundToInt() - shownWords())
     }
 
     companion object {

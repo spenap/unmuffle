@@ -17,6 +17,10 @@ struct ProgressState {
     // Segments decoded but not yet taken by Kotlin (see whisper_new_segment_cb).
     std::mutex segments_mutex;
     std::string new_segments;
+    // The tokens of the segment being decoded, framed like a segment, and a
+    // counter of their changes (see whisper_logits_cb).
+    std::string decoding;
+    long decoding_version = 0;
 };
 
 // File-scoped — safe because WhisperContext serializes all access
@@ -46,6 +50,8 @@ static void whisper_new_segment_cb(
     const int n = whisper_full_n_segments_from_state(state);
     const whisper_token eot = whisper_token_eot(ctx);
     std::lock_guard<std::mutex> lock(ps->segments_mutex);
+    ps->decoding.clear();
+    ps->decoding_version++;
     for (int i = n - n_new; i < n; i++) {
         const int n_tokens = whisper_full_n_tokens_from_state(state, i);
         for (int j = 0; j < n_tokens; j++) {
@@ -58,6 +64,37 @@ static void whisper_new_segment_cb(
             ps->new_segments += '\x1e';
         }
         ps->new_segments += '\x1d';
+    }
+}
+
+// Called before each decoding step with the tokens decoded so far in this
+// window: keeps them, framed as in whisper_new_segment_cb, until segments
+// replace them.
+static void whisper_logits_cb(
+    struct whisper_context* ctx,
+    struct whisper_state*   /*state*/,
+    const whisper_token_data* tokens,
+    int n_tokens,
+    float* /*logits*/,
+    void* user_data)
+{
+    auto* ps = static_cast<ProgressState*>(user_data);
+    const whisper_token eot = whisper_token_eot(ctx);
+    std::string framed;
+    for (int i = 0; i < n_tokens; i++) {
+        if (tokens[i].id >= eot) continue;
+        char p[16];
+        snprintf(p, sizeof p, "%.3f", tokens[i].p);
+        framed += whisper_token_to_str(ctx, tokens[i].id);
+        framed += '\x1f';
+        framed += p;
+        framed += '\x1e';
+    }
+    framed += '\x1d';
+    std::lock_guard<std::mutex> lock(ps->segments_mutex);
+    if (framed != ps->decoding) {
+        ps->decoding.swap(framed);
+        ps->decoding_version++;
     }
 }
 
@@ -107,11 +144,15 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
     {
         std::lock_guard<std::mutex> lock(g_progress_state.segments_mutex);
         g_progress_state.new_segments.clear();
+        g_progress_state.decoding.clear();
+        g_progress_state.decoding_version++;
     }
     params.progress_callback              = whisper_progress_cb;
     params.progress_callback_user_data    = &g_progress_state;
     params.new_segment_callback           = whisper_new_segment_cb;
     params.new_segment_callback_user_data = &g_progress_state;
+    params.logits_filter_callback           = whisper_logits_cb;
+    params.logits_filter_callback_user_data = &g_progress_state;
 
     LOGI("Starting transcription with %d threads on %d samples, lang=%s", numThreads, (int)audioDataLength, lang);
     int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
@@ -190,6 +231,26 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_takeNewSegments(
     }
     jbyteArray bytes = env->NewByteArray((jsize)taken.size());
     env->SetByteArrayRegion(bytes, 0, (jsize)taken.size(), (const jbyte*)taken.data());
+    return bytes;
+}
+
+// The tokens being decoded (see whisper_logits_cb), or null if unchanged
+// since the version given; the new version is stored in version[0].
+JNIEXPORT jbyteArray JNICALL
+Java_com_simonpena_unmuffle_WhisperLib_00024Companion_takeDecoding(
+        JNIEnv* env, jobject /*thiz*/, jlongArray version) {
+    jlong seen;
+    env->GetLongArrayRegion(version, 0, 1, &seen);
+    std::string copy;
+    {
+        std::lock_guard<std::mutex> lock(g_progress_state.segments_mutex);
+        if (g_progress_state.decoding_version == seen) return nullptr;
+        copy = g_progress_state.decoding;
+        jlong now = g_progress_state.decoding_version;
+        env->SetLongArrayRegion(version, 0, 1, &now);
+    }
+    jbyteArray bytes = env->NewByteArray((jsize)copy.size());
+    env->SetByteArrayRegion(bytes, 0, (jsize)copy.size(), (const jbyte*)copy.data());
     return bytes;
 }
 

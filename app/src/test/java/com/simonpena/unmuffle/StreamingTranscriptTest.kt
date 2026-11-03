@@ -7,8 +7,9 @@ import org.junit.Test
 class StreamingTranscriptTest {
     private var now = 0L
     private fun transcript(audioSeconds: Float = 0f) = StreamingTranscript(audioSeconds) { now }
-    private fun StreamingTranscript.segment(text: String, p: Float = 0.9f) =
-        segment(text.trim().split(" ").filter { it.isNotEmpty() }.map { Word(it, p) })
+    private fun words(text: String, p: Float = 0.9f) = text.trim().split(" ").filter { it.isNotEmpty() }.map { Word(it, p) }
+    private fun StreamingTranscript.segment(text: String, p: Float = 0.9f) = segment(words(text, p))
+    private fun StreamingTranscript.decoding(text: String, p: Float = 0.9f) = decoding(words(text, p))
 
     @Test fun startsIndeterminateAndEmpty() {
         val s = transcript().state
@@ -102,6 +103,41 @@ class StreamingTranscriptTest {
     @Test fun markersSpanningWordsAreNotShown() {
         val t = transcript()
         t.segment(listOf(Word("Hola", 0.9f), Word("(speaking", 0.5f), Word("in", 0.5f), Word("Spanish)", 0.5f), Word("adiós", 0.2f)))
+        assertEquals("Hola adiós", t.state.partial)
+        assertEquals(listOf(5 until 10), t.state.unsure)
+    }
+
+    @Test fun wordsBeingDecodedFollowTheSegments() {
+        val t = transcript()
+        t.segment(" Hola,")
+        t.decoding(" ¿qué")
+        assertEquals("Hola, ¿qué", t.state.partial)
+        t.decoding(" ¿qué tal?")
+        assertEquals("Hola, ¿qué tal?", t.state.partial)
+        assertEquals(3, t.state.words)
+    }
+
+    @Test fun aSegmentReplacesTheWordsBeingDecoded() {
+        val t = transcript()
+        t.decoding(" Hola, ¿qué")
+        t.segment(" Hola, ¿qué tal?")
+        assertEquals("Hola, ¿qué tal?", t.state.partial)
+        t.decoding(" Bien")
+        assertEquals("Hola, ¿qué tal? Bien", t.state.partial)
+    }
+
+    @Test fun decodingCanTakeWordsBack() {
+        val t = transcript()
+        t.decoding(" Hola qué")
+        t.decoding(" Hola")
+        assertEquals("Hola", t.state.partial)
+        assertEquals(1, t.state.words)
+    }
+
+    @Test fun wordsBeingDecodedHideMarkersAndShowDoubt() {
+        val t = transcript()
+        t.segment(" Hola")
+        t.decoding(listOf(Word("[BLANK_AUDIO]", 0.9f), Word("adiós", 0.2f)))
         assertEquals("Hola adiós", t.state.partial)
         assertEquals(listOf(5 until 10), t.state.unsure)
     }

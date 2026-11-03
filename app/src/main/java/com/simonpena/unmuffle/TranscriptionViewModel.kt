@@ -156,6 +156,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
             pcm, languageCode,
             onProgress = { _uiState.value = streaming.progress(it) },
             onSegment = { _uiState.value = streaming.segment(it) },
+            onDecoding = { _uiState.value = streaming.decoding(it) },
         )
         Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
