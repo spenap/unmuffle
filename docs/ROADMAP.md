@@ -51,7 +51,10 @@ Written test-first; measured on the S25.
 
 ## Ideas and not doing
 - Ideas: F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
-  site.
+  site; tapping an unsure word plays the audio from it (whisper's token
+  timestamps); a transcript cache in memory for the life of the process,
+  keyed by the audio's SHA-256 and never written to disk, so sharing the
+  same message again is instant.
 - Not doing: Android's on-device recognizer (closed source; see
   decisions.md); Galician; transcript history (transcripts are ephemeral);
   cloud transcription; live microphone transcription; speaker
