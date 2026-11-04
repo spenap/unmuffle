@@ -18,32 +18,6 @@ import java.io.File
 private const val TAG = "TranscriptionVM"
 private const val WAVEFORM_BARS = 40
 
-/** What the transcription screen shows. */
-sealed class UiState {
-    /**
-     * [progress] is -1 before inference starts; [partial] is the text so far
-     * ([words] words); [placeholders] is the words probably still to come.
-     */
-    data class Processing(
-        val progress: Int = -1,
-        val partial: String = "",
-        val words: Int = 0,
-        val placeholders: Int = 0,
-        val unsure: List<IntRange> = emptyList(),
-    ) : UiState()
-    /**
-     * [unsure] are the character ranges of the words whisper is unsure of;
-     * [language] the code it transcribed in, [detected] if whisper chose it.
-     */
-    data class Success(
-        val transcript: String,
-        val unsure: List<IntRange> = emptyList(),
-        val language: String = Languages.AUTO,
-        val detected: Boolean = false,
-    ) : UiState()
-    data class NoSpeech(val message: String) : UiState()
-    data class Error(val message: String) : UiState()
-}
 
 /**
  * Loads the model, decodes the shared audio and transcribes it, surviving
@@ -137,51 +111,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun transcribe(pcm: FloatArray, languageCode: String) {
         val whisper = whisper ?: return
-        val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
-        _uiState.value = streaming.state
-        val startMs = SystemClock.elapsedRealtime()
-        var shown = false
-        val onSegment = { words: List<Word> ->
-            _uiState.value = streaming.segment(words)
-            if (!shown && streaming.state.words > 0) {
-                shown = true
-                Log.i(TAG, "First words after ${SystemClock.elapsedRealtime() - startMs} ms")
-            }
-        }
-        val cut = FirstChunk.cut(pcm, languageCode)
-        if (cut != null) {
-            whisper.transcribe(
-                pcm.copyOfRange(0, cut), languageCode, audioCtx = FirstChunk.audioCtx(cut), onSegment = onSegment,
-            )
-            Log.i(TAG, "Preview in ${SystemClock.elapsedRealtime() - startMs} ms")
-        }
-        var replacing = cut != null
-        whisper.transcribe(
-            pcm, languageCode,
-            onProgress = { _uiState.value = streaming.progress(it) },
-            onSegment = { words ->
-                if (replacing) {
-                    streaming.startOver()
-                    replacing = false
-                    Log.i(TAG, "Preview replaced after ${SystemClock.elapsedRealtime() - startMs} ms")
-                }
-                onSegment(words)
-            },
-        )
-        if (replacing) streaming.startOver() // the whole message had no segments
-        Log.i(TAG, "Transcribed in ${SystemClock.elapsedRealtime() - startMs} ms")
-
-        val streamed = streaming.state
-        if (!HallucinationFilter.isSpeech(streamed.partial)) {
-            Log.i(TAG, "No speech")
-            _uiState.value = UiState.NoSpeech("No speech detected")
-            return
-        }
-        val seconds = streaming.elapsedSeconds()
-        val language = whisper.language()
-        val detected = languageCode == Languages.AUTO
-        Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds, streamed.unsure.size) + " · $language")
-        _uiState.value = UiState.Success(streamed.partial, streamed.unsure, language, detected)
+        Transcription(whisper).run(pcm, languageCode) { _uiState.value = it }
     }
 
     /** Stops waiting for the transcription; whisper itself runs to the end in the background. */
