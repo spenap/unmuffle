@@ -8,7 +8,11 @@ Audio never leaves the device.
 - Decisions: `docs/decisions.md`, newest first. Add an entry for each
   lasting decision (why, and where the detail lives); a reversal is a new
   entry that supersedes the old one, never a rewrite.
-- `.planning/` (the earlier GSD milestones) is gone; git history keeps it.
+- How the code fits together: `docs/architecture.md`.
+- Docs by how often they change: the README holds what rarely changes
+  (what the app is, how it works, privacy, building); versions, sizes and
+  speeds live in `docs/`. A change updates the docs and screenshots that
+  reference what it changed, in the same PR.
 
 ## Layout (one repo, single `app` module)
 - `app/src/main/java/com/simonpena/unmuffle/`: Kotlin, XML Views,
@@ -27,8 +31,10 @@ Audio never leaves the device.
 
 ## Principles
 - Private: audio and transcripts stay on the phone; transcripts are never
-  written to disk. Network is used only to download a model, from a fixed
-  URL, checked by SHA256. No analytics, accounts or Google Play Services.
+  written to disk or logs. Network is used only to download a model, from
+  a fixed URL, checked by SHA256; INTERNET is the only permission
+  (`scripts/check-release-apk.sh`). No analytics, accounts or Google Play
+  Services.
 - Write docs, comments and commit messages concisely: state what holds,
   not the reasoning that got there or every case it excludes.
 - New ideas go to ROADMAP.md, "Ideas and not doing", until there is
