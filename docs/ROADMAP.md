@@ -77,7 +77,7 @@ pass, bench text and times as before) and there is less code.
       context, not global.
 - [x] The transcription pipeline tested on the JVM with a fake
       recognizer; `TranscriptionActivity` one function per state.
-- [ ] Docs: README for what rarely changes; `docs/architecture.md`; fresh
+- [x] Docs: README for what rarely changes; `docs/architecture.md`; fresh
       screenshots; AGENTS.md: a change updates the docs and screenshots
       that reference it.
 
