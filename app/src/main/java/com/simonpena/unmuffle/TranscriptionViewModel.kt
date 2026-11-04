@@ -62,7 +62,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     var waveform = FloatArray(0)
         private set
 
-    private val engine = WhisperEngine()
+    private var whisper: Whisper? = null
     private var inferenceJob: Job? = null
     private var audioFilePath: String? = null
 
@@ -84,8 +84,8 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
         inferenceJob = viewModelScope.launch {
             try {
                 val modelPath = ModelManager.modelFile(getApplication()).absolutePath
-                Log.i(TAG, "Loading model from $modelPath")
-                if (!engine.loadModel(modelPath)) {
+                whisper = Whisper.load(modelPath)
+                if (whisper == null) {
                     _uiState.value = UiState.Error("Could not load model")
                     return@launch
                 }
@@ -136,6 +136,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun transcribe(pcm: FloatArray, languageCode: String) {
+        val whisper = whisper ?: return
         val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
         _uiState.value = streaming.state
         val startMs = SystemClock.elapsedRealtime()
@@ -149,13 +150,13 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
         }
         val cut = FirstChunk.cut(pcm, languageCode)
         if (cut != null) {
-            engine.transcribe(
+            whisper.transcribe(
                 pcm.copyOfRange(0, cut), languageCode, audioCtx = FirstChunk.audioCtx(cut), onSegment = onSegment,
             )
             Log.i(TAG, "Preview in ${SystemClock.elapsedRealtime() - startMs} ms")
         }
         var replacing = cut != null
-        val raw = engine.transcribe(
+        whisper.transcribe(
             pcm, languageCode,
             onProgress = { _uiState.value = streaming.progress(it) },
             onSegment = { words ->
@@ -167,25 +168,20 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 onSegment(words)
             },
         )
+        if (replacing) streaming.startOver() // the whole message had no segments
         Log.i(TAG, "Transcribed in ${SystemClock.elapsedRealtime() - startMs} ms")
 
-        val filtered = HallucinationFilter.filter(raw)
-        if (filtered == null) {
-            Log.i(TAG, "Filtered as non-speech")
+        val streamed = streaming.state
+        if (!HallucinationFilter.isSpeech(streamed.partial)) {
+            Log.i(TAG, "No speech")
             _uiState.value = UiState.NoSpeech("No speech detected")
             return
         }
-        // The streamed text is the same text, without markers and with certainty.
-        val streamed = streaming.state
         val seconds = streaming.elapsedSeconds()
-        val language = engine.language()
+        val language = whisper.language()
         val detected = languageCode == Languages.AUTO
         Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds, streamed.unsure.size) + " · $language")
-        _uiState.value = if (streamed.partial.isNotEmpty()) {
-            UiState.Success(streamed.partial, streamed.unsure, language, detected)
-        } else {
-            UiState.Success(filtered, language = language, detected = detected)
-        }
+        _uiState.value = UiState.Success(streamed.partial, streamed.unsure, language, detected)
     }
 
     /** Stops waiting for the transcription; whisper itself runs to the end in the background. */
@@ -197,7 +193,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
         _player.value?.release()
         super.onCleared()
         inferenceJob?.cancel()
+        whisper?.close()
         audioFilePath?.let { Log.i(TAG, "Cached audio deleted: ${File(it).delete()}") }
-        // The model stays loaded until the process ends: viewModelScope is already cancelled here.
     }
 }
