@@ -44,6 +44,23 @@ Opus decoder, which leaves pauses silent; Android and libopus fill them
 with comfort noise, and whisper's words change with it. Decode with
 `ffmpeg -c:a libopus` to match the app.
 
+S25, by phase (82 s message, `es`, release build, two shares; whisper's
+own timings, logcat tag `whisper`):
+
+| Phase | Time |
+|---|---|
+| Share → model loaded (process start, 264 MB model) | 0.32–0.39 s |
+| Copy, decode, resample | 0.20–0.21 s |
+| Preview: mel / encoder / decoder | 0.01 / 0.37–0.40 / 0.26 s |
+| **Share → first words** | **1.2–1.3 s** |
+| Whole message: encoder (4 windows) | 6.8–7.2 s |
+| Whole message: decoder, prompt | 2.5 s, 0.9–1.0 s |
+| Whole message, total | 10.4–10.9 s |
+
+No language detection with a language set. `bench.sh`, v1.7.0 against
+this build (two runs, text identical): done in 7.6–8.9 / 10.6–11.8 s
+against 8.9 / 11.8–12.1 s; v1.7.0 shows nothing until done.
+
 ## 2026-11-03 · Speed: build flags, q8_0, language, threads
 Greedy decoding (`-bs 1`, as the app), 4 threads unless stated. Two runs
 per cell; on the S25 each starts at AP ≤ 40 °C with the screen on.

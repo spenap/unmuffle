@@ -48,11 +48,21 @@ static void on_new_segment(whisper_context * ctx, whisper_state * state, int n_n
     }
 }
 
+// whisper's and ggml's logs to logcat: the model, the backend, the timings.
+// Not debug logs, which can hold tokens.
+static void on_log(ggml_log_level level, const char * text, void *) {
+    if (level < GGML_LOG_LEVEL_INFO || level == GGML_LOG_LEVEL_CONT) return;
+    const int priority = level == GGML_LOG_LEVEL_ERROR ? ANDROID_LOG_ERROR
+                       : level == GGML_LOG_LEVEL_WARN ? ANDROID_LOG_WARN : ANDROID_LOG_INFO;
+    __android_log_print(priority, "whisper", "%s", text);
+}
+
 extern "C" {
 
 // A session for the model at modelPath; 0 if it doesn't load
 JNIEXPORT jlong JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(JNIEnv * env, jobject, jstring modelPath) {
+    whisper_log_set(on_log, nullptr);
     const char * path = env->GetStringUTFChars(modelPath, nullptr);
     whisper_context * ctx = whisper_init_from_file_with_params(path, whisper_context_default_params());
     env->ReleaseStringUTFChars(modelPath, path);
@@ -92,7 +102,9 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
     jfloat * samples = env->GetFloatArrayElements(audio, nullptr);
     const jsize n = env->GetArrayLength(audio);
     LOGI("Transcribing %d samples, %d threads, lang=%s, audio_ctx=%d", (int)n, (int)threads, lang, (int)audioCtx);
+    whisper_reset_timings(s->ctx);
     const int ret = whisper_full(s->ctx, params, samples, n);
+    whisper_print_timings(s->ctx);  // mel, encoder, decoder: logcat tag "whisper"
     env->ReleaseFloatArrayElements(audio, samples, JNI_ABORT);
     env->ReleaseStringUTFChars(language, lang);  // whisper reads it until whisper_full returns
     if (ret != 0) LOGE("whisper_full failed: %d", ret);

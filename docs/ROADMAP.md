@@ -47,12 +47,14 @@ Written test-first; measured on the S25.
       is measured on the Pixel 5. (All cores but two.)
 - [x] small q8_0 replaces q5_1. Done when installs download it and remove
       q5_1.
-- [ ] Time to first word. Done when share → first word on the S25 is
+- [x] Time to first word. Done when share → first word on the S25 is
       recorded by phase (model load, audio decode, language detection,
       encoder, decoder) in `docs/measurements.md`, and a shorter first
       chunk and detection on the first seconds are measured and kept if
       faster with the same text.
 - [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
+- [ ] Locking the phone pauses a transcription (S25: no progress for
+      20 s with the screen locked). Keep transcribing in the background.
 
 ## Track S: Settings
 - [x] Settings screen: language (auto-detect by default, or one, from a
