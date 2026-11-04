@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 /**
  * Transcription screen: the shared voice message as an incoming chat bubble,
  * with a player above and the transcript below, growing as segments arrive.
- * Under it, the progress, then the summary and the Copy and Share buttons.
+ * Under it, the progress, then the Copy and Share buttons.
  *
  * Launched by [ShareReceiverActivity] with the cached audio file path. The
  * ViewModel survives configuration changes, so rotation neither re-runs
@@ -66,7 +66,6 @@ class TranscriptionActivity : AppCompatActivity() {
         val tvText = findViewById<TextView>(R.id.tv_text)
         val tvStatus = findViewById<TextView>(R.id.tv_status)
         val progressBar = findViewById<LinearProgressIndicator>(R.id.progress_bar)
-        val tvSummary = findViewById<TextView>(R.id.tv_summary)
         val buttons = findViewById<View>(R.id.buttons)
         val tvError = findViewById<TextView>(R.id.tv_error)
         val btnCopy = findViewById<MaterialButton>(R.id.btn_copy)
@@ -119,7 +118,9 @@ class TranscriptionActivity : AppCompatActivity() {
                         is UiState.Processing -> {
                             languageGroup.visibility = View.GONE
                             show(mainGroup)
-                            tvStatus.text = StreamingTranscript.status(state)
+                            tvStatus.visibility = View.VISIBLE
+                            progressBar.visibility = View.VISIBLE
+                            buttons.visibility = View.GONE
                             if (state.progress < 0) {
                                 progressBar.isIndeterminate = true
                             } else {
@@ -154,10 +155,7 @@ class TranscriptionActivity : AppCompatActivity() {
                             tvText.setTextIsSelectable(true)
                             tvStatus.visibility = View.GONE
                             progressBar.visibility = View.GONE
-                            tvSummary.visibility = View.VISIBLE
                             buttons.visibility = View.VISIBLE
-                            tvSummary.text = StreamingTranscript.summary(
-                                StreamingTranscript.countWords(state.transcript), state.seconds, state.unsure.size)
                         }
                         is UiState.NoSpeech -> {
                             show(noSpeechGroup)

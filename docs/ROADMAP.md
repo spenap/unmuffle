@@ -70,7 +70,7 @@ pass, bench text and times as before) and there is less code.
 - [x] Privacy: no transcript text in logs; no backup; cached audio swept
       at start; clipboard marked sensitive; no cellular dialog, so only
       the INTERNET permission remains.
-- [ ] Trims: the stats line leaves the screen (kept in logcat); one Home
+- [x] Trims: the stats line leaves the screen (kept in logcat); one Home
       screen instead of the launcher, download and ready screens.
 - [ ] One transcript path: the streamed segments, filtered once.
 - [ ] One whisper class over the JNI declarations; native state per
