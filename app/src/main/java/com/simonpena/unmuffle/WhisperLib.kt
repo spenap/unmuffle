@@ -48,7 +48,7 @@ internal class WhisperLib {
  * Wraps a native whisper_context pointer. Single-threaded executor prevents concurrent
  * access — whisper.cpp is NOT thread-safe and crashes on concurrent calls.
  *
- * Use WhisperEngine (Plan 02) rather than this class directly.
+ * Use WhisperEngine rather than this class directly.
  */
 internal class WhisperContext private constructor(private var ptr: Long) {
     // Dedicated single-thread executor — whisper.cpp context must not be accessed concurrently

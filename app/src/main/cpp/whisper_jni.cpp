@@ -63,7 +63,7 @@ static void whisper_new_segment_cb(
 
 extern "C" {
 
-// Initialize from absolute file path — always use this, never byte array (OOM on 190MB)
+// Loads the model from its file; null on failure
 JNIEXPORT jlong JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(
         JNIEnv *env, jobject /* thiz */, jstring modelPathStr) {
@@ -80,7 +80,7 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(
     return (jlong)(intptr_t)ctx;
 }
 
-// Run transcription — blocking, call from background thread only (15-60s on mid-range)
+// Transcribes the audio; blocks until done
 JNIEXPORT void JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint numThreads,

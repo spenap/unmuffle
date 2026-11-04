@@ -10,20 +10,12 @@ import java.security.MessageDigest
 private const val TAG = "ModelManager"
 
 /**
- * Manages the Whisper model file stored in app private storage.
- *
- * Model location: context.getExternalFilesDir(null)/models/<model.filename>
- * Never stored on shared external storage — app-private, deleted on uninstall.
- *
- * All heavy operations (SHA256 of the model) must be called from a coroutine.
+ * The model files, in the app's external files folder (models/), where
+ * DownloadManager can write them; removed on uninstall.
  */
 object ModelManager {
 
-    /**
-     * Absolute path to the model file for [model] in app-private external storage.
-     * Uses getExternalFilesDir so DownloadManager (a separate system process) can write to it.
-     * Still app-private and deleted on uninstall.
-     */
+    /** [model]'s file. */
     fun modelFile(context: Context, model: WhisperModel): File {
         val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
         val modelsDir = File(baseDir, "models")
@@ -31,25 +23,11 @@ object ModelManager {
         return File(modelsDir, model.filename)
     }
 
-    /**
-     * Absolute path to the currently-selected model file.
-     * Reads model selection from [SettingsRepository] — defaults to WhisperModel.SMALL.
-     */
+    /** The selected model's file. */
     fun modelFile(context: Context): File =
         modelFile(context, SettingsRepository.getModel(context))
 
-    /**
-     * Returns true if the model file exists at the expected path.
-     * Does NOT verify the SHA256 — call [isModelReady] for full verification.
-     */
-    fun modelExists(context: Context): Boolean = modelFile(context).exists()
-
-    /**
-     * Full model readiness check for [model]: file exists AND SHA256 matches.
-     * Runs the SHA256 digest on a potentially large file — call from a coroutine on Dispatchers.IO.
-     *
-     * @return true if the model is present and has the correct checksum
-     */
+    /** Whether [model]'s file is there and its SHA-256 matches. */
     suspend fun isModelReady(context: Context, model: WhisperModel): Boolean =
         withContext(Dispatchers.IO) {
             val file = modelFile(context, model)
@@ -62,30 +40,19 @@ object ModelManager {
             match
         }
 
-    /**
-     * Full readiness check for the currently-selected model.
-     * Reads model selection from [SettingsRepository].
-     */
+    /** [isModelReady] for the selected model. */
     suspend fun isModelReady(context: Context): Boolean =
         isModelReady(context, SettingsRepository.getModel(context))
 
-    /**
-     * Quick existence-only check for [model] (no SHA256). Use where low latency is needed.
-     */
+    /** Whether [model]'s file is there, without checking its SHA-256. */
     fun isModelPresentFast(context: Context, model: WhisperModel): Boolean =
         modelFile(context, model).let { it.exists() && it.length() > 0L }
 
-    /**
-     * Quick existence-only check for the currently-selected model (no SHA256).
-     * Reads model selection from [SettingsRepository].
-     */
+    /** [isModelPresentFast] for the selected model. */
     fun isModelPresentFast(context: Context): Boolean =
         isModelPresentFast(context, SettingsRepository.getModel(context))
 
-    /**
-     * Delete the model file (e.g. on failed or corrupt download before retry).
-     * Safe to call even if the file does not exist.
-     */
+    /** Deletes the selected model's file, if there. */
     fun deleteModel(context: Context) {
         val file = modelFile(context)
         if (file.exists()) {
@@ -107,8 +74,7 @@ object ModelManager {
         }
     }
 
-    /** Compute SHA256 hex digest of [file]. Reads in 8KB chunks. */
-    suspend fun computeSha256(file: File): String = withContext(Dispatchers.IO) {
+    private suspend fun computeSha256(file: File): String = withContext(Dispatchers.IO) {
         val md = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered(8192).use { input ->
             val buffer = ByteArray(8192)

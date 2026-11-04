@@ -1,5 +1,6 @@
 package com.simonpena.unmuffle
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
@@ -23,12 +24,13 @@ class ShareTranscriptTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private lateinit var previousModel: WhisperModel
-    private lateinit var previousLanguage: String
+    private val prefs = context.getSharedPreferences("unmuffle_prefs", Context.MODE_PRIVATE)
+    private var previousLanguage: String? = null
 
     @Before
     fun useTinyModel() {
         previousModel = SettingsRepository.getModel(context)
-        previousLanguage = SettingsRepository.getLanguage(context)
+        previousLanguage = prefs.getString("pref_language", null)
         SettingsRepository.setModel(context, WhisperModel.TINY)
         SettingsRepository.setLanguage(context, "auto")
         val model = ModelManager.modelFile(context)
@@ -38,13 +40,13 @@ class ShareTranscriptTest {
     @After
     fun restoreSettings() {
         SettingsRepository.setModel(context, previousModel)
-        SettingsRepository.setLanguage(context, previousLanguage)
+        prefs.edit().putString("pref_language", previousLanguage).commit()  // null removes it
     }
 
     @Test
     fun sharedVoiceMessageIsTranscribed() {
         val wav = File(context.cacheDir, "jfk.wav")
-        context.assets.open("jfk.wav").use { input -> wav.outputStream().use { input.copyTo(it) } }
+        instrumentation.context.assets.open("jfk.wav").use { input -> wav.outputStream().use { input.copyTo(it) } }
         val share = Intent(Intent.ACTION_SEND)
             .setClassName(context, ShareReceiverActivity::class.java.name)
             .setType("audio/wav")
