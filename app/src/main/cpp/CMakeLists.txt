@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.22)
 project(unmuffle)
 set(CMAKE_CXX_STANDARD 17)
 
+# No repo or NDK paths in the libraries, for reproducible builds
+get_filename_component(REPO_DIR "${CMAKE_SOURCE_DIR}/../../../.." ABSOLUTE)
+add_compile_options("-ffile-prefix-map=${REPO_DIR}=." "-ffile-prefix-map=${ANDROID_NDK}=/ndk")
+
 # whisper.cpp with ggml's CPU backend built once per ARM level; at run time
 # ggml loads the best one this phone supports (WhisperLib loads them).
 set(BUILD_SHARED_LIBS ON)

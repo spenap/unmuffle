@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 // Version from git, so every build says exactly what it was built from.
@@ -9,13 +8,13 @@ fun git(vararg args: String) = providers.exec { commandLine("git", *args) }.stan
 
 android {
     namespace = "com.simonpena.unmuffle"
-    compileSdk = 35
+    compileSdk = 37
     ndkVersion = "27.2.12479018"  // NDK r27c — 16KB page size support
 
     defaultConfig {
         applicationId = "com.simonpena.unmuffle"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = git("rev-list", "--count", "HEAD").toInt()
         versionName = git("describe", "--tags", "--always", "--dirty")
         manifestPlaceholders["appLabel"] = "Unmuffle"
@@ -32,10 +31,6 @@ android {
                 // -O3 in every build: debug builds unoptimised take minutes, and
                 // release builds default to -O2.
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
-                // No build folder or NDK paths in the libraries, for reproducible builds
-                val noPaths = listOf("-ffile-prefix-map=${rootDir.path}=.", "-ffile-prefix-map=${ndkDirectory.path}=/ndk")
-                cFlags += noPaths
-                cppFlags += noPaths
             }
         }
     }
@@ -96,9 +91,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     // android.util.Log in JVM tests returns defaults instead of throwing.
     testOptions {
         unitTests.isReturnDefaultValues = true
@@ -116,4 +108,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
+}
+
+kotlin {
+    compilerOptions { jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11 }
 }
