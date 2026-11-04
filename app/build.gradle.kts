@@ -32,8 +32,8 @@ android {
                 // -O3 in every build: debug builds unoptimised take minutes, and
                 // release builds default to -O2.
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
-                // No build folder paths in the libraries, for reproducible builds
-                val noPaths = "-ffile-prefix-map=${rootDir.path}=."
+                // No build folder or NDK paths in the libraries, for reproducible builds
+                val noPaths = listOf("-ffile-prefix-map=${rootDir.path}=.", "-ffile-prefix-map=${ndkDirectory.path}=/ndk")
                 cFlags += noPaths
                 cppFlags += noPaths
             }
