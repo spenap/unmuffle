@@ -3,7 +3,7 @@
     <style name="Theme.Unmuffle" parent="Theme.Material3.DayNight.NoActionBar">
     </style>
 
-    <!-- Transparent theme for headless activities (share receiver, router) -->
+    <!-- Transparent theme for headless activities (share receiver) -->
     <style name="Theme.Unmuffle.Transparent" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>

@@ -71,7 +71,7 @@ pass, bench text and times as before) and there is less code.
       at start; clipboard marked sensitive; no cellular dialog, so only
       the INTERNET permission remains.
 - [ ] Trims: the stats line leaves the screen (kept in logcat); one Home
-      screen instead of the launcher, download and ready screens (if agreed).
+      screen instead of the launcher, download and ready screens.
 - [ ] One transcript path: the streamed segments, filtered once.
 - [ ] One whisper class over the JNI declarations; native state per
       context, not global.
