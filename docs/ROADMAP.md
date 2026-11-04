@@ -90,7 +90,7 @@ Proof for privacy-minded users, run privately until the repo is public.
 - [ ] Reproducible builds: a script rebuilds a tag and compares it with
       the release.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
-- [ ] The model from a file: "Use a model file" on Home (the system file
+- [x] The model from a file: "Use a model file" on Home (the system file
       picker, no permission; the same SHA-256 check). If the download is
       still at 0 bytes after a few seconds, Home offers it ("The download
       hasn't started. Pick a model file instead?") while the download

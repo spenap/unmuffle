@@ -35,7 +35,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val model = SettingsRepository.getModel(this)
         findViewById<TextView>(R.id.model_value).text =
-            "Whisper ${model.name.lowercase()} · ${model.sizeBytes / 1_048_576} MB · on this phone"
+            "Whisper ${model.name.lowercase()} · ${megabytes(model.sizeBytes)} MB · on this phone"
         findViewById<TextView>(R.id.version_value).text =
             "${packageManager.getPackageInfo(packageName, 0).versionName} · works offline"
 

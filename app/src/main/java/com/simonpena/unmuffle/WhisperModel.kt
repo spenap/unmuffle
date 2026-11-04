@@ -21,3 +21,6 @@ enum class WhisperModel(
         sizeBytes = 264_464_607L,
     )
 }
+
+/** Whole megabytes in [bytes], decimal, as Android shows file sizes. */
+fun megabytes(bytes: Long): Long = maxOf(0L, bytes) / 1_000_000
