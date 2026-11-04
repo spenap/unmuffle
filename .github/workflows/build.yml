@@ -41,28 +41,33 @@ jobs:
           restore-keys: |
             gradle-
 
-      # 5. Make gradlew executable
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      # 5. Compiled C++ kept between runs: whisper.cpp and ggml's 8 CPU
+      #    backends rarely change. CMake reads the launcher from the
+      #    environment; the app's build files don't know about ccache.
+      - name: Install ccache
+        run: sudo apt-get install -y -qq ccache
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.run_id }}
+          restore-keys: |
+            ccache-
 
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
-
-      - name: Instrumented tests build
-        run: ./gradlew assembleDebugAndroidTest
-
-      # 6. Run Android lint
-      - name: Run lint
-        run: ./gradlew lintDebug
-
-      # 7. Build debug APK
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
-
-      # 8. Release APK, signed with the debug key; releases are signed locally
-      #    by scripts/release.sh
-      - name: Build release APK
-        run: ./gradlew assembleRelease
+      # 6. Unit tests, lint, the instrumented tests and both APKs in one
+      #    Gradle run. The release APK is signed with the debug key; releases
+      #    are signed locally by scripts/release.sh.
+      - name: Test and build
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_NOHASHDIR: "true"
+          CCACHE_COMPILERCHECK: string:ndk-27.2.12479018
+          CCACHE_MAXSIZE: 500M
+        run: |
+          export CCACHE_DIR=$HOME/.ccache
+          ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease
+          ccache --show-stats
 
       - name: Release APK has no debug-only code or assets
         run: scripts/check-release-apk.sh
