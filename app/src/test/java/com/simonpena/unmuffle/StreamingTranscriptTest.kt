@@ -24,6 +24,17 @@ class StreamingTranscriptTest {
         assertEquals(3, t.state.words)
     }
 
+    @Test fun aPreviewIsReplaced() {
+        val t = transcript()
+        t.segment(" Hola", p = 0.1f)
+        t.startOver()
+        t.segment(" Hola,")
+        t.segment(" ¿qué tal?")
+        assertEquals("Hola, ¿qué tal?", t.state.partial)
+        assertEquals(3, t.state.words)
+        assertEquals(emptyList<IntRange>(), t.state.unsure)
+    }
+
     @Test fun progressKeepsTheText() {
         val t = transcript()
         t.segment(" Hola")

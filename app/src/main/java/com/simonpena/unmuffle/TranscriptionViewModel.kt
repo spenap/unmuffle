@@ -152,11 +152,36 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun transcribe(pcm: FloatArray, languageCode: String) {
         val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
         _uiState.value = streaming.state
+        val startMs = SystemClock.elapsedRealtime()
+        var shown = false
+        val onSegment = { words: List<Word> ->
+            _uiState.value = streaming.segment(words)
+            if (!shown && streaming.state.words > 0) {
+                shown = true
+                Log.i(TAG, "First words after ${SystemClock.elapsedRealtime() - startMs} ms")
+            }
+        }
+        val cut = FirstChunk.cut(pcm, languageCode)
+        if (cut != null) {
+            engine.transcribe(
+                pcm.copyOfRange(0, cut), languageCode, audioCtx = FirstChunk.audioCtx(cut), onSegment = onSegment,
+            )
+            Log.i(TAG, "Preview in ${SystemClock.elapsedRealtime() - startMs} ms")
+        }
+        var replacing = cut != null
         val raw = engine.transcribe(
             pcm, languageCode,
             onProgress = { _uiState.value = streaming.progress(it) },
-            onSegment = { _uiState.value = streaming.segment(it) },
+            onSegment = { words ->
+                if (replacing) {
+                    streaming.startOver()
+                    replacing = false
+                    Log.i(TAG, "Preview replaced after ${SystemClock.elapsedRealtime() - startMs} ms")
+                }
+                onSegment(words)
+            },
         )
+        Log.i(TAG, "Transcribed in ${SystemClock.elapsedRealtime() - startMs} ms")
         Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
         val filtered = HallucinationFilter.filter(raw)

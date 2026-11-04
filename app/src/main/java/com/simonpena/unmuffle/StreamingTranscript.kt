@@ -54,6 +54,15 @@ class StreamingTranscript(
         return state
     }
 
+    /** Clears the text so far: a preview, replaced by the segments that follow. */
+    fun startOver(): UiState.Processing {
+        text.setLength(0)
+        words = 0
+        unsure.clear()
+        state = state.copy(partial = "", words = 0, unsure = emptyList())
+        return state
+    }
+
     fun elapsedSeconds(): Float = (clock() - startMs) / 1000f
 
     private fun rate(): Float? {

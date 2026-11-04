@@ -84,7 +84,7 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(
 JNIEXPORT void JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
         JNIEnv *env, jobject /* thiz */, jlong contextPtr, jint numThreads,
-        jfloatArray audioData, jstring languageCode) {
+        jfloatArray audioData, jstring languageCode, jint audioCtx) {
     auto *ctx = (struct whisper_context *)(intptr_t)contextPtr;
     jfloat *audioDataArr = env->GetFloatArrayElements(audioData, nullptr);
     jsize audioDataLength = env->GetArrayLength(audioData);
@@ -101,6 +101,7 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
     params.no_context       = true;          // each clip is independent
     params.single_segment   = false;         // let whisper segment naturally via timestamps
     params.language         = lang;          // runtime language code (e.g. "auto", "en", "es")
+    params.audio_ctx        = audioCtx;      // encoder window in frames; 0 for the full 30 s
 
     // Reset and register progress and segment callbacks
     g_progress_state.progress.store(0, std::memory_order_relaxed);
@@ -113,7 +114,7 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_fullTranscribe(
     params.new_segment_callback           = whisper_new_segment_cb;
     params.new_segment_callback_user_data = &g_progress_state;
 
-    LOGI("Starting transcription with %d threads on %d samples, lang=%s", numThreads, (int)audioDataLength, lang);
+    LOGI("Starting transcription with %d threads on %d samples, lang=%s, audio_ctx=%d", numThreads, (int)audioDataLength, lang, (int)audioCtx);
     int ret = whisper_full(ctx, params, audioDataArr, (int)audioDataLength);
     // Release AFTER whisper_full() — params.language pointer must remain valid during inference
     env->ReleaseStringUTFChars(languageCode, lang);

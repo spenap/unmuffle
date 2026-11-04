@@ -27,8 +27,9 @@ internal class WhisperLib {
         // Initialize context from absolute file path — always prefer this over byte arrays (OOM risk)
         external fun initContext(modelPath: String): Long
 
-        // Run full transcription — blocking, must be called from a non-main thread
-        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray, languageCode: String)
+        // Run full transcription — blocking, must be called from a non-main thread.
+        // audioCtx: the encoder window in frames, 0 for whisper's full 30 s
+        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray, languageCode: String, audioCtx: Int)
 
         external fun getTextSegmentCount(contextPtr: Long): Int
         external fun getTextSegment(contextPtr: Long, index: Int): String
@@ -65,10 +66,12 @@ internal class WhisperContext private constructor(private var ptr: Long) {
      *   Dispatchers.Default, NOT the main thread. Default no-op for backward compatibility.
      * @param onSegment Called with each segment's words as it is decoded, from the same
      *   thread as [onProgress], never concurrently with it.
+     * @param audioCtx The encoder window in frames; 0 for whisper's full 30 s.
      */
     suspend fun transcribeData(
         data: FloatArray,
         languageCode: String = "auto",
+        audioCtx: Int = 0,
         onProgress: (Int) -> Unit = {},
         onSegment: (List<Word>) -> Unit = {}
     ): String = withContext(scope.coroutineContext) {
@@ -82,7 +85,7 @@ internal class WhisperContext private constructor(private var ptr: Long) {
             }
         }
         try {
-            WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data, languageCode)
+            WhisperLib.fullTranscribe(ptr, WhisperCpuConfig.preferredThreadCount, data, languageCode, audioCtx)
         } finally {
             pollerJob.cancelAndJoin()
         }

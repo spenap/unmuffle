@@ -5,6 +5,45 @@ words), kept outside the repo. whisper.cpp v1.8.3 `whisper-cli`.
 "Changed" counts words that differ from the first row, ignoring case and
 punctuation.
 
+## 2026-11-04 · Time to first word
+Pixel 5, q8_0, 6 threads, `-l es` unless stated. "First" is the first
+segment, as the app shows it.
+
+Spike, `whisper.cpp` directly (first / total):
+
+| Run | 70 s | 82 s |
+|---|---|---|
+| auto | 28.3 / 63.4 s | 30.9 / 68.9 s |
+| `es` | 15.4 / 50.7 | 16.9 / 53.4 |
+| `es`, first ~10 s alone (`audio_ctx` fitted), then the rest | 3.5 / 56.7 | 4.1 / 59.5 |
+| no temperature fallback | 16.4 / 53.6 | 16.8 / 53.2 |
+| initial prompt | 16.2 / 53.3 | 18.4 / 56.7 |
+| no timestamps | 17.2 / 51.6 | 17.0 / 52.4 |
+| q5_K | 20.0 / 65.5 | 23.3 / 74.2 |
+| q4_K | 16.4 / 54.1 | 16.9 / 68.5 |
+| q4_0 | 15.2 / 47.9 | 16.6 / 65.8 |
+
+Detecting the language on the first seconds still costs ~4 s, and read
+the 82 s message as Galician.
+
+Splitting the message changed words (on the 82 s one, whisper stopped
+1.6 s before the end and lost the last words). A preview instead: the
+first ~10 s alone, then the whole message as before, replacing it. The
+app (`bench.sh`, two runs each, share → first words / done):
+
+| Build | 70 s | 82 s |
+|---|---|---|
+| whole message | 25.4 / 75.4, 24.0 / 71.9 s | 22.4 / 91.8, 23.8 / 94.2 s |
+| preview | 4.8 / 78.0, 4.4 / 75.7 | 5.8 / 95.2, 5.3 / 96.4 |
+
+Text identical to the whole message's. The preview is replaced 28–31 s
+in.
+
+The text above, outside the app, is from audio decoded by ffmpeg's own
+Opus decoder, which leaves pauses silent; Android and libopus fill them
+with comfort noise, and whisper's words change with it. Decode with
+`ffmpeg -c:a libopus` to match the app.
+
 ## 2026-11-03 · Speed: build flags, q8_0, language, threads
 Greedy decoding (`-bs 1`, as the app), 4 threads unless stated. Two runs
 per cell; on the S25 each starts at AP ≤ 40 °C with the screen on.

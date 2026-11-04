@@ -101,7 +101,7 @@ done
 
 out="$bench/results/$(date +%F_%H%M%S)"
 mkdir -p "$out"
-printf 'run\tpackage\tversion\tmessage\taudio_s\ttranscribe_ms\tap_c\tskin_c\tstatus\tfreq_cap_pct\tslept\n' | tee "$out/times.tsv"
+printf 'run\tpackage\tversion\tmessage\taudio_s\ttranscribe_ms\tfirst_words_ms\tap_c\tskin_c\tstatus\tfreq_cap_pct\tslept\n' | tee "$out/times.tsv"
 packages=("$@")
 for run in $(seq "$runs"); do
     order=("${packages[@]}")
@@ -129,13 +129,16 @@ for run in $(seq "$runs"); do
                 caps=$((caps + $(freq_cap))); samples=$((samples + 1))
                 asleep && slept=yes
                 log=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | tr -d '\r')
-                line=$(echo "$log" | grep -E 'Transcription complete in|Resampled:' || true)
-                echo "$line" | grep -q 'complete in' && break
+                line=$(echo "$log" | grep -E 'Transcription complete in|Transcribed in|First words after|Resampled:|Raw transcript' || true)
+                echo "$line" | grep -q 'Raw transcript' && break
                 if [ "$waited" -ge 20 ] && ! echo "$log" | grep -q 'Starting transcription'; then
                     echo "$pkg $name: transcription didn't start within 20 s"; exit 1
                 fi
             done
-            ms=$(echo "$line" | sed -n 's/.*complete in \([0-9]*\)ms.*/\1/p')
+            # The whole transcription (v1.8+), else whisper's one run
+            ms=$(echo "$line" | sed -n 's/.*Transcribed in \([0-9]*\) ms.*/\1/p')
+            [ -n "$ms" ] || ms=$(echo "$line" | sed -n 's/.*complete in \([0-9]*\)ms.*/\1/p')
+            first=$(echo "$line" | sed -n 's/.*First words after \([0-9]*\) ms.*/\1/p')
             secs=$(echo "$line" | sed -n 's/.*(\([0-9.]*\)s).*/\1/p' | head -1)
             [ -n "$ms" ] || { echo "$pkg $name: no result after 300 s"; exit 1; }
             sleep 1
@@ -146,7 +149,7 @@ ids = [sys.argv[1] + ":id/" + i for i in ("tv_text", "tv_transcript")]  # tv_tra
 node = next((n for n in ET.parse(sys.stdin).iter("node") if n.get("resource-id") in ids), None)
 print(node.get("text") if node is not None else "")' "$pkg" > "$out/$run.$pkg.${name%.*}.txt"
             [ -s "$out/$run.$pkg.${name%.*}.txt" ] || { echo "$pkg $name: no transcript on screen"; exit 1; }
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$run" "$pkg" "$version" "$name" "$secs" "$ms" \
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$run" "$pkg" "$version" "$name" "$secs" "$ms" "${first:--}" \
                 "$ap" "$skin" "$status" "$((caps / samples))" "$slept" | tee -a "$out/times.tsv"
         done
         adb shell am force-stop "$pkg"

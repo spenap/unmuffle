@@ -13,6 +13,9 @@ object Languages {
         return first + (supported - first.toSet()).sortedBy(name)
     }
 
+    /** The default setting: the phone's first language whisper supports, else auto-detect. */
+    fun defaultFor(phone: List<String>): String = phone.firstOrNull() ?: AUTO
+
     /** The phone's languages to offer for transcribing again, without the one [used]. */
     fun redoOptions(phoneFirst: List<String>, used: String, max: Int = 3): List<String> =
         phoneFirst.filter { it != used }.take(max)

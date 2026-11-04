@@ -33,4 +33,10 @@ class LanguagesTest {
         assertEquals("Detected: Português. Not right?", Languages.resultLine("Português", detected = true))
         assertEquals("Transcribed in Español", Languages.resultLine("Español", detected = false))
     }
+
+    @Test
+    fun defaultIsThePhonesFirstLanguage() {
+        assertEquals("gl", Languages.defaultFor(listOf("gl", "es")))
+        assertEquals(Languages.AUTO, Languages.defaultFor(emptyList()))
+    }
 }

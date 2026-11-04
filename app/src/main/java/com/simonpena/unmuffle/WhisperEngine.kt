@@ -64,6 +64,7 @@ class WhisperEngine {
      *   Default "auto" for backward compatibility with existing callers (e.g. SmokeTestActivity).
      * @param onProgress Called with 0-100 progress values during inference. Default no-op.
      * @param onSegment Called with each segment's text as it is decoded. Default no-op.
+     * @param audioCtx The encoder window in frames; 0 for whisper's full 30 s.
      * @throws IllegalStateException if [loadModel] has not been called successfully
      * @return Transcript text, or empty string if no speech detected (no_speech_thold applied)
      */
@@ -71,7 +72,8 @@ class WhisperEngine {
         audioData: FloatArray,
         languageCode: String = "auto",
         onProgress: (Int) -> Unit = {},
-        onSegment: (List<Word>) -> Unit = {}
+        onSegment: (List<Word>) -> Unit = {},
+        audioCtx: Int = 0,
     ): String {
         val ctx = whisperContext
             ?: throw IllegalStateException("Model not loaded — call loadModel() first")
@@ -80,7 +82,7 @@ class WhisperEngine {
         Log.i(TAG, "Starting transcription of ${audioData.size} samples (${audioData.size / 16000.0f}s) lang=$languageCode")
 
         return withContext(Dispatchers.Default) {
-            val result = ctx.transcribeData(audioData, languageCode, onProgress, onSegment)
+            val result = ctx.transcribeData(audioData, languageCode, audioCtx, onProgress, onSegment)
             val durationMs = System.currentTimeMillis() - startMs
             Log.i(TAG, "Transcription complete in ${durationMs}ms, result: '${result.take(80)}'")
             result

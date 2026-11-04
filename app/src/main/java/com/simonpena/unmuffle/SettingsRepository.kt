@@ -21,9 +21,9 @@ object SettingsRepository {
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** The language setting: [Languages.AUTO] (default) or a whisper code. */
+    /** The language setting: [Languages.AUTO] or a whisper code; by default the phone's language. */
     fun getLanguage(context: Context): String =
-        prefs(context).getString(KEY_LANGUAGE, Languages.AUTO) ?: Languages.AUTO
+        prefs(context).getString(KEY_LANGUAGE, null) ?: Languages.defaultFor(Languages.phone())
 
     /** Stores the language setting. Uses .apply() — non-blocking. */
     fun setLanguage(context: Context, languageCode: String) {
