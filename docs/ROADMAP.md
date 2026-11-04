@@ -90,6 +90,18 @@ Proof for privacy-minded users, run privately until the repo is public.
 - [ ] Reproducible builds: a script rebuilds a tag and compares it with
       the release.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
+- [ ] The model from a file: "Use a model file" on Home (the system file
+      picker, no permission; the same SHA-256 check). If the download is
+      still at 0 bytes after a few seconds, Home offers it ("The download
+      hasn't started. Pick a model file instead?") while the download
+      keeps waiting. With LineageOS's per-app
+      network access off, DownloadManager keeps the download pending
+      (status 190) forever, with no prompt or failure (Pixel 5,
+      LineageOS 24, 2026-11-04). Mockup first.
+- [ ] The model from a model APK (the model as an uncompressed asset, its
+      own release; the app copies it out and checks it). Only if F-Droid
+      accepts a ~250 MB APK.
+- [ ] Then decide on a build without the INTERNET permission.
 - [ ] No implicit local-network access: Android grants
       `ACCESS_LOCAL_NETWORK` ("Nearby devices" in app info) to apps with
       INTERNET that target an older SDK. Target the SDK that stops it.
