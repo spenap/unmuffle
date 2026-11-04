@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- Art stays inside the 66 dp safe zone: circle r=33 at (54,54). -->
+  <path d="M30 41C33 29 39 29 42 41S51 50 54 41S60 36 63 41H78" fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF"/>
+  <path d="M30 57H78M30 71H62" fill="none" stroke-width="7" stroke-linecap="round" stroke="#FFFFFF"/>
+</svg>

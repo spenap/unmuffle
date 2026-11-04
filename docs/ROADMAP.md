@@ -90,6 +90,9 @@ Proof for privacy-minded users, run privately until the repo is public.
 - [ ] Reproducible builds: a script rebuilds a tag and compares it with
       the release.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
+- [ ] No implicit local-network access: Android grants
+      `ACCESS_LOCAL_NETWORK` ("Nearby devices" in app info) to apps with
+      INTERNET that target an older SDK. Target the SDK that stops it.
 
 ## Ideas and not doing
 - Ideas: words appear as they are decoded (branch `feat/word-streaming`,
