@@ -91,8 +91,10 @@ Proof for privacy-minded users, run privately until the repo is public.
       the release.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
 - [ ] The model from a file: "Use a model file" on Home (the system file
-      picker, no permission; the same SHA-256 check). Offered prominently
-      when the download stays at 0 bytes: with LineageOS's per-app
+      picker, no permission; the same SHA-256 check). If the download is
+      still at 0 bytes after a few seconds, Home offers it ("The download
+      hasn't started. Pick a model file instead?") while the download
+      keeps waiting. With LineageOS's per-app
       network access off, DownloadManager keeps the download pending
       (status 190) forever, with no prompt or failure (Pixel 5,
       LineageOS 24, 2026-11-04). Mockup first.
