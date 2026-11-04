@@ -105,9 +105,10 @@ Proof for privacy-minded users, run privately until the repo is public.
       own release; the app copies it out and checks it). Only if F-Droid
       accepts a ~250 MB APK.
 - [ ] Then decide on a build without the INTERNET permission.
-- [ ] No implicit local-network access: Android grants
+- [x] No implicit local-network access: Android 17 grants
       `ACCESS_LOCAL_NETWORK` ("Nearby devices" in app info) to apps with
-      INTERNET that target an older SDK. Target the SDK that stops it.
+      INTERNET that target an older SDK. The app targets SDK 37 (Pixel 5,
+      Android 17: no longer granted).
 
 ## Ideas and not doing
 - Ideas: words appear as they are decoded (branch `feat/word-streaming`,
