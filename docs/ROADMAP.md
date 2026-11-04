@@ -90,9 +90,9 @@ Proof for privacy-minded users, run privately until the repo is public.
 - [ ] Exodus and MobSF scans of the release APK, locally and in CI on
       release tags (reports as private artifacts). Exodus:
       `scripts/exodus-scan.sh`, no trackers (`docs/audit.md`).
-- [ ] Reproducible builds: `scripts/repro-check.sh <tag>` rebuilds a tag
+- [x] Reproducible builds: `scripts/repro-check.sh <tag>` rebuilds a tag
       from a fresh clone and compares it with the release, signature
-      aside. Releases from v1.8.0 on. CI's release APK (an artifact)
+      aside. Releases from v1.8.0 on (v1.8.0 checked). CI's release APK (an artifact)
       matches a build on this laptop.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
 - [x] The model from a file: "Use a model file" on Home (the system file
