@@ -18,11 +18,7 @@ import java.io.File
 private const val TAG = "TranscriptionVM"
 private const val WAVEFORM_BARS = 40
 
-/**
- * UI state for the transcription screen.
- *
- * Observed by [TranscriptionActivity] via [TranscriptionViewModel.uiState].
- */
+/** What the transcription screen shows. */
 sealed class UiState {
     /**
      * [progress] is -1 before inference starts; [partial] is the text so far
@@ -52,16 +48,8 @@ sealed class UiState {
 }
 
 /**
- * Manages the full transcription pipeline: model load, audio decode,
- * resample, Whisper inference, and hallucination filtering.
- *
- * Threading: The entire decode + transcribe pipeline runs on Dispatchers.Default.
- * WhisperEngine.loadModel() and WhisperEngine.transcribe() also use
- * Dispatchers.Default internally -- nested dispatching is fine with coroutines.
- *
- * Lifecycle: The ViewModel survives configuration changes. If the Activity
- * is recreated (rotation), the existing uiState is observed without re-running
- * inference. The ViewModel cleans up the cached audio file in [onCleared].
+ * Loads the model, decodes the shared audio and transcribes it, surviving
+ * rotation. Owns the cached audio file and deletes it when cleared.
  */
 class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -203,13 +191,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * Cancel the inference job.
-     *
-     * Note: The whisper.cpp JNI call is blocking and not cooperatively cancellable.
-     * The coroutine will be marked cancelled but the native call completes in the
-     * background. This is a known MVP limitation (see RESEARCH.md).
-     */
+    /** Stops waiting for the transcription; whisper itself runs to the end in the background. */
     fun cancelInference() {
         inferenceJob?.cancel()
     }
@@ -217,32 +199,8 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         _player.value?.release()
         super.onCleared()
-
-        // Cancel any running inference
         inferenceJob?.cancel()
-
-        // Delete cached audio file (ownership transferred from ShareReceiverActivity)
-        audioFilePath?.let { path ->
-            val file = File(path)
-            if (file.exists()) {
-                val deleted = file.delete()
-                Log.i(TAG, "Cached audio file deleted: $deleted ($path)")
-            }
-        }
-
-        // Clean up verification WAV files from Phase 2 debugging
-        val audioDir = File(getApplication<Application>().cacheDir, "audio")
-        if (audioDir.exists()) {
-            audioDir.listFiles()?.filter { it.name.startsWith("verify_") }?.forEach { file ->
-                val deleted = file.delete()
-                Log.i(TAG, "Verification WAV deleted: $deleted (${file.name})")
-            }
-        }
-
-        // Engine cleanup: viewModelScope is cancelled in super.onCleared(),
-        // so we cannot launch a coroutine to call engine.release().
-        // The native memory will be freed when the process exits.
-        // This is acceptable for the single-use activity pattern.
-        Log.i(TAG, "ViewModel cleared")
+        audioFilePath?.let { Log.i(TAG, "Cached audio deleted: ${File(it).delete()}") }
+        // The model stays loaded until the process ends: viewModelScope is already cancelled here.
     }
 }

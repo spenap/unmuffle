@@ -1,16 +1,8 @@
 package com.simonpena.unmuffle
 
 /**
- * Post-processing filter for Whisper inference output.
- *
- * Detects non-speech markers ([BLANK_AUDIO], [MUSIC], etc.) and repetitive
- * hallucination patterns (same words repeated many times) that the q5_1
- * quantized model sometimes produces on silence or noise.
- *
- * This is a pure Kotlin post-processing filter -- it does NOT modify any
- * whisper.cpp params. The default whisper params with timestamp-based
- * segmentation are kept because no_timestamps=true caused the q5_1 model
- * to filter real speech (documented in STATE.md).
+ * Tells whisper's output on silence or noise from speech: only non-speech
+ * markers ([BLANK_AUDIO], (music)…), or a few words repeated over and over.
  */
 object HallucinationFilter {
 
@@ -27,12 +19,7 @@ object HallucinationFilter {
     // Regex for markers in square brackets or parentheses that contain no speech
     internal val MARKER_REGEX = Regex("""\[[\w\s_]+\]|\([\w\s_]+\)""")
 
-    /**
-     * Filter whisper output, returning null if no meaningful speech was detected.
-     *
-     * @param raw Raw transcript from WhisperEngine.transcribe()
-     * @return Cleaned transcript text, or null if input is non-speech
-     */
+    /** The trimmed transcript, or null if it isn't speech. */
     fun filter(raw: String): String? {
         val trimmed = raw.trim()
         if (trimmed.isBlank()) return null

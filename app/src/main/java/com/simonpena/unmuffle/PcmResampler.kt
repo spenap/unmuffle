@@ -5,23 +5,15 @@ import android.util.Log
 private const val TAG = "PcmResampler"
 
 /**
- * Resamples decoded PCM audio to the format expected by whisper.cpp:
- * 16kHz, mono, float32 normalized to [-1.0, 1.0].
- *
- * Pipeline: stereo-to-mono (if needed) -> resample (if needed) -> int16-to-float32.
- *
- * Uses linear interpolation for resampling, which handles any input rate
- * (48kHz, 44.1kHz, etc.) with a single code path.
+ * Converts decoded audio to what whisper takes: 16 kHz mono float in
+ * [-1, 1]. Resamples by linear interpolation, without a low-pass filter:
+ * voice messages carry almost nothing above 8 kHz.
  */
 object PcmResampler {
 
     private const val WHISPER_SAMPLE_RATE = 16000
 
-    /**
-     * Convert [decoded] audio to 16kHz mono float32 for Whisper.
-     *
-     * @return FloatArray of normalized samples, or null if input is empty.
-     */
+    /** [decoded] as 16 kHz mono float, or null if it is empty. */
     fun toWhisperFormat(decoded: DecodedAudio): FloatArray? {
         if (decoded.samples.isEmpty()) {
             Log.w(TAG, "Input samples are empty")
@@ -31,17 +23,14 @@ object PcmResampler {
         val inputSamples = decoded.samples.size
         var samples = decoded.samples
 
-        // Step 1: Mix stereo to mono if needed
         if (decoded.channels == 2) {
             samples = stereoToMono(samples)
         }
 
-        // Step 2: Resample to 16kHz if needed
         if (decoded.sampleRate != WHISPER_SAMPLE_RATE) {
             samples = resample(samples, decoded.sampleRate, WHISPER_SAMPLE_RATE)
         }
 
-        // Step 3: Convert int16 to float32 normalized to [-1.0, 1.0]
         val floats = shortToFloat(samples)
 
         val durationSeconds = floats.size / WHISPER_SAMPLE_RATE.toFloat()
@@ -54,9 +43,6 @@ object PcmResampler {
         return floats
     }
 
-    /**
-     * Mix interleaved stereo int16 samples to mono by averaging L/R pairs.
-     */
     private fun stereoToMono(stereo: ShortArray): ShortArray {
         val mono = ShortArray(stereo.size / 2)
         for (i in mono.indices) {
@@ -65,12 +51,6 @@ object PcmResampler {
         return mono
     }
 
-    /**
-     * Resample audio from [fromRate] to [toRate] using linear interpolation.
-     *
-     * Handles any input rate: 48kHz->16kHz (ratio 3.0), 44.1kHz->16kHz
-     * (ratio ~2.756), and all other rates.
-     */
     private fun resample(samples: ShortArray, fromRate: Int, toRate: Int): ShortArray {
         if (fromRate == toRate) return samples
 
@@ -90,9 +70,6 @@ object PcmResampler {
         return output
     }
 
-    /**
-     * Convert int16 PCM to float32 normalized to [-1.0, 1.0].
-     */
     private fun shortToFloat(shorts: ShortArray): FloatArray {
         return FloatArray(shorts.size) { shorts[it].toFloat() / 32768.0f }
     }

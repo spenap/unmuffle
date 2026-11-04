@@ -9,53 +9,13 @@ import java.nio.ByteOrder
 
 private const val TAG = "AudioDecoder"
 
-/**
- * Decoded PCM output from [AudioDecoder].
- *
- * @property samples Interleaved int16 PCM at the native decoder output rate.
- * @property sampleRate Output sample rate (e.g. 48000 for Opus).
- * @property channels Number of audio channels (1 = mono, 2 = stereo).
- */
-data class DecodedAudio(
-    val samples: ShortArray,
-    val sampleRate: Int,
-    val channels: Int
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is DecodedAudio) return false
-        return samples.contentEquals(other.samples) &&
-            sampleRate == other.sampleRate &&
-            channels == other.channels
-    }
+/** Interleaved int16 PCM at the decoder's rate (48 kHz for Opus). */
+class DecodedAudio(val samples: ShortArray, val sampleRate: Int, val channels: Int)
 
-    override fun hashCode(): Int {
-        var result = samples.contentHashCode()
-        result = 31 * result + sampleRate
-        result = 31 * result + channels
-        return result
-    }
-}
-
-/**
- * Decodes compressed audio files (OGG/Opus, MP3, etc.) to raw PCM using
- * platform MediaExtractor + MediaCodec.
- *
- * Uses the synchronous polling pattern: feed input buffers from MediaExtractor,
- * drain output buffers into a byte list, then convert to ShortArray.
- *
- * The Opus decoder always outputs at 48kHz regardless of the original recording
- * sample rate. Callers must check [DecodedAudio.sampleRate] and resample if needed.
- */
+/** Decodes an audio file's first audio track (Opus, AAC, MP3…) with the platform's MediaCodec. */
 object AudioDecoder {
 
-    /**
-     * Decode the audio file at [filePath] to raw PCM.
-     *
-     * @param filePath Absolute path to an audio file (OGG/Opus, MP3, etc.)
-     * @return [DecodedAudio] with int16 samples at the decoder's native rate,
-     *         or null if no audio track found or decode fails.
-     */
+    /** The decoded audio, or null if the file has no audio track or decoding fails. */
     fun decode(filePath: String): DecodedAudio? {
         var extractor: MediaExtractor? = null
         var codec: MediaCodec? = null
@@ -64,7 +24,6 @@ object AudioDecoder {
             extractor = MediaExtractor()
             extractor.setDataSource(filePath)
 
-            // Find the first audio track
             var audioTrackIndex = -1
             var audioFormat: MediaFormat? = null
             for (i in 0 until extractor.trackCount) {
@@ -86,7 +45,6 @@ object AudioDecoder {
             val mime = audioFormat.getString(MediaFormat.KEY_MIME) ?: return null
             Log.i(TAG, "Audio track: mime=$mime, format=$audioFormat")
 
-            // Create and configure decoder
             codec = MediaCodec.createDecoderByType(mime)
             codec.configure(audioFormat, null, null, 0)
             codec.start()
@@ -96,19 +54,17 @@ object AudioDecoder {
             var outputDone = false
             val pcmChunks = mutableListOf<ByteArray>()
 
-            // Defaults -- updated when INFO_OUTPUT_FORMAT_CHANGED fires
+            // The decoder's output format can differ from the track's
             var outputSampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             var outputChannels = audioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
 
             while (!outputDone) {
-                // Feed input buffers from extractor
                 if (!inputDone) {
                     val inputIndex = codec.dequeueInputBuffer(10_000)
                     if (inputIndex >= 0) {
                         val inputBuffer = codec.getInputBuffer(inputIndex)!!
                         val sampleSize = extractor.readSampleData(inputBuffer, 0)
                         if (sampleSize < 0) {
-                            // End of stream -- signal decoder
                             codec.queueInputBuffer(
                                 inputIndex, 0, 0, 0,
                                 MediaCodec.BUFFER_FLAG_END_OF_STREAM
@@ -122,22 +78,13 @@ object AudioDecoder {
                     }
                 }
 
-                // Drain output buffers
                 val outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000)
                 when {
                     outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
-                        // CRITICAL: read actual output format from decoder
                         val outFormat = codec.outputFormat
                         outputSampleRate = outFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
                         outputChannels = outFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
                         Log.i(TAG, "Output format changed: ${outputSampleRate}Hz, ${outputChannels}ch")
-                    }
-                    outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {
-                        // Timeout -- continue loop
-                    }
-                    @Suppress("DEPRECATION")
-                    outputIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED -> {
-                        // Deprecated since API 21 -- no-op
                     }
                     outputIndex >= 0 -> {
                         if (bufferInfo.size > 0) {
@@ -161,7 +108,6 @@ object AudioDecoder {
             extractor.release()
             extractor = null
 
-            // Concatenate all byte chunks
             val totalSize = pcmChunks.sumOf { it.size }
             if (totalSize == 0) {
                 Log.w(TAG, "Decode produced zero bytes for $filePath")
@@ -175,7 +121,6 @@ object AudioDecoder {
                 offset += chunk.size
             }
 
-            // Convert to ShortArray: read pairs of bytes as little-endian int16
             val shorts = ShortArray(totalBytes.size / 2)
             ByteBuffer.wrap(totalBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
 

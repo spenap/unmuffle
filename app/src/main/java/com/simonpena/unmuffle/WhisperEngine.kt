@@ -7,8 +7,7 @@ import kotlinx.coroutines.withContext
 private const val TAG = "WhisperEngine"
 
 /**
- * Public API for Whisper inference. Used by TranscriptionViewModel (Phase 3) and
- * the smoke test Activity (Plan 04).
+ * Whisper inference for the app.
  *
  * Threading contract:
  *   - loadModel() must be called from a coroutine (it does IO and JNI work)
@@ -21,10 +20,6 @@ private const val TAG = "WhisperEngine"
 class WhisperEngine {
 
     private var whisperContext: WhisperContext? = null
-
-    /** True if the model has been loaded and the native context is ready. */
-    val isModelLoaded: Boolean
-        get() = whisperContext != null
 
     /**
      * Load the Whisper model from [absoluteFilePath].
@@ -61,7 +56,6 @@ class WhisperEngine {
      * Transcribe [audioData] (16kHz mono float32 PCM) and return the transcript string.
      *
      * @param languageCode ISO 639-1 language code (e.g. "en", "es") or "auto" for auto-detection.
-     *   Default "auto" for backward compatibility with existing callers (e.g. SmokeTestActivity).
      * @param onProgress Called with 0-100 progress values during inference. Default no-op.
      * @param onSegment Called with each segment's text as it is decoded. Default no-op.
      * @param audioCtx The encoder window in frames; 0 for whisper's full 30 s.

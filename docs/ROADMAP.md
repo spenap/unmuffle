@@ -61,18 +61,35 @@ Written test-first; measured on the S25.
 - [x] The transcript shows its language (detected or chosen) and can be
       transcribed again in another.
 
-## Track C: Cleanup
-Next after time to first word. Done when behaviour is unchanged (unit and
-device tests pass) and there is less code.
-- [ ] Comments state what holds: no references to the old planning phases,
-      RESEARCH.md or MVP notes; no long rationale.
-- [ ] One clear job per whisper layer (`WhisperLib`, `WhisperContext`,
-      `WhisperEngine`); the native progress state is no longer a global.
-- [ ] `TranscriptionActivity.onCreate` split per state; the
-      view model's pipeline steps testable on the JVM.
-- [ ] Remove what no longer earns its place: `SmokeTestActivity` (the
-      instrumented tests cover it), dead code such as the verification WAV
-      cleanup.
+## Track C: Trim
+A smaller, simpler app its owner can read. Done for each item when
+behaviour is unchanged apart from the trims named (unit and device tests
+pass, bench text and times as before) and there is less code.
+- [x] Remove what no longer earns its place (`SmokeTestActivity`,
+      `WavWriter`, dead code); comments state what holds.
+- [ ] Privacy: no transcript text in logs; no backup; cached audio swept
+      at start; clipboard marked sensitive; no cellular dialog, so only
+      the INTERNET permission remains.
+- [ ] Trims: the stats line leaves the screen (kept in logcat); one Home
+      screen instead of the launcher, download and ready screens (if agreed).
+- [ ] One transcript path: the streamed segments, filtered once.
+- [ ] One whisper class over the JNI declarations; native state per
+      context, not global.
+- [ ] The transcription pipeline tested on the JVM with a fake
+      recognizer; `TranscriptionActivity` one function per state.
+- [ ] Docs: README for what rarely changes; `docs/architecture.md`; fresh
+      screenshots; AGENTS.md: a change updates the docs and screenshots
+      that reference it.
+
+## Track A: Audit
+Proof for privacy-minded users, run privately until the repo is public.
+- [ ] Project page in `docs/site/`: the flow with screenshots, what the
+      app never does, each permission and dependency.
+- [ ] Exodus and MobSF scans of the release APK, locally and in CI on
+      release tags (reports as private artifacts).
+- [ ] Reproducible builds: a script rebuilds a tag and compares it with
+      the release.
+- [ ] F-Droid metadata and a local `fdroid build`; submit when public.
 
 ## Ideas and not doing
 - Ideas: words appear as they are decoded (branch `feat/word-streaming`,

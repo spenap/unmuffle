@@ -10,11 +10,9 @@ import java.io.File
 private const val TAG = "AudioCopier"
 
 /**
- * Stateless utility that copies audio bytes from a content URI to cacheDir/audio/.
- *
- * Runs synchronously on the main thread. A 25 MB copy takes ~50-200 ms,
- * well within the 5 s ANR threshold. Do NOT move to Dispatchers.IO —
- * the content URI permission expires as soon as the caller backgrounds.
+ * Copies shared audio to cacheDir/audio/, up to 25 MB. Runs on the main
+ * thread (a 25 MB copy takes under 200 ms): the permission to read the URI
+ * ends when the sending app leaves.
  */
 object AudioCopier {
 
@@ -27,13 +25,8 @@ object AudioCopier {
         data object CopyFailed : CopyResult()
     }
 
-    /**
-     * Query the file size from the content provider.
-     *
-     * @return the size in bytes, or -1L if the size cannot be determined
-     *         (cursor null, empty, or SIZE column missing — common with Telegram).
-     */
-    fun queryFileSize(contentResolver: ContentResolver, uri: Uri): Long {
+    /** The size the provider reports, or -1 if it doesn't (often Telegram). */
+    private fun queryFileSize(contentResolver: ContentResolver, uri: Uri): Long {
         return try {
             contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
                 ?.use { cursor ->
@@ -54,16 +47,10 @@ object AudioCopier {
         }
     }
 
-    /**
-     * Copy audio bytes from [uri] to cacheDir/audio/share_{timestamp}.bin.
-     *
-     * Must be called synchronously in onCreate before any coroutine launch —
-     * the content URI permission expires when the calling app is backgrounded.
-     */
+    /** Copies [uri] to cacheDir/audio/share_<time>.bin. */
     fun copyToCache(context: Context, uri: Uri): CopyResult {
         val sizeBytes = queryFileSize(context.contentResolver, uri)
 
-        // Reject before copying if size is known and exceeds limit
         if (sizeBytes > MAX_FILE_SIZE_BYTES) {
             Log.w(TAG, "File too large: $sizeBytes bytes (limit: $MAX_FILE_SIZE_BYTES)")
             return CopyResult.TooLarge(sizeBytes)
@@ -80,7 +67,7 @@ object AudioCopier {
 
             val bytesCopied = inputStream.use { input ->
                 destFile.outputStream().use { output ->
-                    input.copyTo(output) // default 8 KB buffer
+                    input.copyTo(output)
                 }
             }
 
@@ -90,7 +77,6 @@ object AudioCopier {
                 return CopyResult.NoContent
             }
 
-            // Post-copy size check when provider didn't report size upfront
             if (sizeBytes == -1L && bytesCopied > MAX_FILE_SIZE_BYTES) {
                 destFile.delete()
                 Log.w(TAG, "Post-copy size exceeds limit: $bytesCopied bytes")

@@ -43,7 +43,7 @@ class DownloadActivity : AppCompatActivity() {
         if (viewModel.isOnCellularOnly()) {
             AlertDialog.Builder(this)
                 .setTitle("Using Cellular Data")
-                .setMessage("The transcription model is ${WhisperModel.SMALL.sizeBytes / 1_048_576} MB. Download on cellular data?")
+                .setMessage("The transcription model is ${SettingsRepository.getModel(this).sizeBytes / 1_048_576} MB. Download on cellular data?")
                 .setPositiveButton("Download anyway") { _, _ -> viewModel.startDownload(allowCellular = true) }
                 .setNegativeButton("Wait for WiFi") { _, _ -> }
                 .show()
@@ -56,7 +56,7 @@ class DownloadActivity : AppCompatActivity() {
         when (state) {
             is DownloadViewModel.State.Idle -> {
                 btnDownload.isEnabled = true
-                btnDownload.text = "Download (${WhisperModel.SMALL.sizeBytes / 1_048_576} MB)"
+                btnDownload.text = "Download (${SettingsRepository.getModel(this).sizeBytes / 1_048_576} MB)"
                 progressBar.visibility = View.GONE
                 tvProgress.visibility = View.GONE
                 tvStatus.visibility = View.GONE
