@@ -86,7 +86,8 @@ Proof for privacy-minded users, run privately until the repo is public.
 - [ ] Project page in `docs/site/`: the flow with screenshots, what the
       app never does, each permission and dependency.
 - [ ] Exodus and MobSF scans of the release APK, locally and in CI on
-      release tags (reports as private artifacts).
+      release tags (reports as private artifacts). Exodus:
+      `scripts/exodus-scan.sh`, no trackers (`docs/audit.md`).
 - [ ] Reproducible builds: a script rebuilds a tag and compares it with
       the release.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
