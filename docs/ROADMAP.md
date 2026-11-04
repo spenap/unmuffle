@@ -83,7 +83,10 @@ device tests pass) and there is less code.
   timestamps); a transcript cache in memory for the life of the process,
   keyed by the audio's SHA-256 and never written to disk, so sharing the
   same message again is instant; a whisper small fine-tuned on Spanish
-  (or Galician-accented Spanish).
+  (or Galician-accented Spanish); silencing comfort noise in pauses
+  (whisper's words change with it; better or worse needs more
+  messages); showing when the audio runs on past the transcript
+  (whisper's last segment ends early).
 - Not doing: Android's on-device recognizer (closed source; see
   decisions.md); whisper.cpp VAD (no faster on real messages, dropped
   speech; see decisions.md); Galician; transcript history (transcripts are ephemeral);

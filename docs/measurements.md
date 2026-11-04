@@ -26,15 +26,23 @@ Spike, `whisper.cpp` directly (first / total):
 Detecting the language on the first seconds still costs ~4 s, and read
 the 82 s message as Galician.
 
-The app (`bench.sh`, two runs each, share → first words / done):
+Splitting the message changed words (on the 82 s one, whisper stopped
+1.6 s before the end and lost the last words). A preview instead: the
+first ~10 s alone, then the whole message as before, replacing it. The
+app (`bench.sh`, two runs each, share → first words / done):
 
 | Build | 70 s | 82 s |
 |---|---|---|
-| whole message | 25.0 / 74.9, 23.8 / 71.2 s | 23.4 / 93.7, 24.4 / 92.4 s |
-| first chunk | 4.8 / 72.2, 4.8 / 75.3 | 5.5 / 73.6, 5.7 / 73.8 |
+| whole message | 25.4 / 75.4, 24.0 / 71.9 s | 22.4 / 91.8, 23.8 / 94.2 s |
+| preview | 4.8 / 78.0, 4.4 / 75.7 | 5.8 / 95.2, 5.3 / 96.4 |
 
-Changed words: 5 of 193 and 38 of 224, the same in both runs; about as
-many better ("vibe coding", "Obtainium") as worse, mostly after the cut.
+Text identical to the whole message's. The preview is replaced 28–31 s
+in.
+
+The text above, outside the app, is from audio decoded by ffmpeg's own
+Opus decoder, which leaves pauses silent; Android and libopus fill them
+with comfort noise, and whisper's words change with it. Decode with
+`ffmpeg -c:a libopus` to match the app.
 
 ## 2026-11-03 · Speed: build flags, q8_0, language, threads
 Greedy decoding (`-bs 1`, as the app), 4 threads unless stated. Two runs

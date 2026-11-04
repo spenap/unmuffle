@@ -29,13 +29,4 @@ class FirstChunkTest {
         assertEquals(564, FirstChunk.audioCtx(10 * 16000))
         assertEquals(0, FirstChunk.audioCtx(40 * 16000))
     }
-
-    @Test
-    fun progressCoversBothParts() {
-        val cut = 10 * 16000
-        val total = 40 * 16000
-        assertEquals(13, FirstChunk.progress(first = true, percent = 50, cut, total))
-        assertEquals(63, FirstChunk.progress(first = false, percent = 50, cut, total))
-        assertEquals(100, FirstChunk.progress(first = false, percent = 100, cut, total))
-    }
 }

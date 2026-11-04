@@ -1,11 +1,10 @@
 package com.simonpena.unmuffle
 
-import kotlin.math.roundToInt
-
 /**
  * With a language set, the first ~10 s are transcribed alone with a window
- * that fits them, so the first words come sooner; then the rest. Auto-detect
- * keeps the whole window.
+ * that fits them, as a preview: the first words come sooner. The whole
+ * message is then transcribed as without it, and replaces the preview.
+ * Auto-detect has no preview.
  */
 object FirstChunk {
     private const val RATE = 16000
@@ -36,10 +35,4 @@ object FirstChunk {
     /** The encoder window for [samples], with some margin; 0 for whisper's full window. */
     fun audioCtx(samples: Int): Int =
         (samples.toLong() * FRAMES_PER_SECOND / RATE + 64).toInt().let { if (it >= MAX_FRAMES) 0 else it }
-
-    /** Overall progress from one part's [percent], the parts split at [cut] of [total] samples. */
-    fun progress(first: Boolean, percent: Int, cut: Int, total: Int): Int {
-        val share = cut.toDouble() / total
-        return if (first) (percent * share).roundToInt() else (share * 100 + percent * (1 - share)).roundToInt()
-    }
 }

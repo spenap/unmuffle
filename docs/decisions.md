@@ -14,14 +14,16 @@ detail lives.
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
 
-## 2026-11-04 · The phone's language by default; a short first chunk
+## 2026-11-04 · The phone's language by default; a preview
 Supersedes the default in "A language setting and a redo, no asking".
 The language setting defaults to the phone's first language whisper
 supports (auto-detect without one). With a language set, the first
-~10 s, cut at a pause, are transcribed alone with a fitted window: the
-first words come in ~5 s instead of ~24 s on the Pixel 5, at the same
-total time; some words change. Auto-detect keeps whisper's full window.
-Numbers in `docs/measurements.md`.
+~10 s, cut at a pause, are transcribed alone with a fitted window as a
+preview; the whole message is then transcribed as before and replaces
+it. First words in ~5 s instead of ~24 s on the Pixel 5, for ~3 s more
+in total and the same text. Transcribing the parts separately was as
+fast but changed words and once lost the end. Auto-detect has no
+preview. Numbers in `docs/measurements.md`.
 
 ## 2026-11-03 · A language setting and a redo, no asking
 Settings holds the transcription language: auto-detect (default) or one
@@ -30,8 +32,8 @@ language. Fixing it is about 20% faster and avoids misdetection
 time": the transcript shows its language, and a wrong guess is one tap
 to transcribe again in another. Designs: the "Unmuffle settings" canvas
 (A, C, G).
-Superseded (the default) by "The phone's language by default; a short
-first chunk".
+Superseded (the default) by "The phone's language by default; a
+preview".
 
 ## 2026-11-03 · small q8_0 instead of q5_1
 Supersedes the quantisation in "whisper.cpp small q5_1" (2026-02-27).
