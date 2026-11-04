@@ -9,7 +9,8 @@ it on your phone with [whisper.cpp](https://github.com/ggml-org/whisper.cpp).
 | <img src="docs/screenshots/home.png" width="200"/> | <img src="docs/screenshots/transcribing.png" width="200"/> | <img src="docs/screenshots/transcript.png" width="200"/> |
 
 ## How it works
-1. The first time, Unmuffle downloads the Whisper model and checks it.
+1. The first time, Unmuffle downloads the Whisper model, or takes it from
+   a file you pick, and checks it.
 2. You share a voice message to Unmuffle.
 3. The words appear as they are transcribed, under a player for the audio.
    Words Whisper is unsure of are marked.

@@ -9,6 +9,9 @@ class ModelManagerTest {
     @get:Rule val dir = TemporaryFolder()
 
     @Test
+    fun sizesAreInDecimalMegabytesAsAndroidShowsThem() = assertEquals(264, megabytes(WhisperModel.SMALL.sizeBytes))
+
+    @Test
     fun smallIsQ8() = assertEquals("ggml-small-q8_0.bin", WhisperModel.SMALL.filename)
 
     @Test

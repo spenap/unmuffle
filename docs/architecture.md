@@ -18,7 +18,7 @@ text so far.
 
 ## Files
 Screens
-- `MainActivity`: Home: the model download, then how to share.
+- `MainActivity`: Home: getting the model (download or file), then how to share.
 - `ShareReceiverActivity`: the share target; copies the audio, opens the transcript.
 - `TranscriptionActivity`: the player, the text as it grows, the result.
 - `SettingsActivity`, `LanguagePickerActivity`: the language; model, licences, version.
@@ -40,6 +40,7 @@ Audio
 
 Model and settings
 - `WhisperModel`, `ModelManager`, `DownloadViewModel`: the model files, download and check.
+- `ModelFile`: copying and checking a picked model file; when a download has stalled.
 - `SettingsRepository`, `Languages`: the language setting and language names.
 - `PlaceholderText`: the twinkling blocks for words still to come.
 
