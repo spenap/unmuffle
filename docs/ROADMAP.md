@@ -90,7 +90,8 @@ Proof for privacy-minded users, run privately until the repo is public.
       `scripts/exodus-scan.sh`, no trackers (`docs/audit.md`).
 - [ ] Reproducible builds: `scripts/repro-check.sh <tag>` rebuilds a tag
       from a fresh clone and compares it with the release, signature
-      aside. Releases from v1.8.0 on; not yet checked across machines.
+      aside. Releases from v1.8.0 on. CI's release APK (an artifact)
+      matches a build on this laptop.
 - [ ] F-Droid metadata and a local `fdroid build`; submit when public.
 - [x] The model from a file: "Use a model file" on Home (the system file
       picker, no permission; the same SHA-256 check). If the download is

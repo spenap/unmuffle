@@ -63,3 +63,10 @@ jobs:
 
       - name: Release APK has no debug-only code or assets
         run: scripts/check-release-apk.sh
+
+      # For scripts/repro-check.sh: compare a local build with this one
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
