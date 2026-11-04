@@ -47,6 +47,14 @@ object AudioCopier {
         }
     }
 
+    /** Where shared audio is copied. */
+    fun dir(context: Context) = File(context.cacheDir, "audio")
+
+    /** Deletes the audio in [dir], left by a transcription that didn't finish. */
+    fun clear(dir: File) {
+        dir.listFiles()?.forEach { it.delete() }
+    }
+
     /** Copies [uri] to cacheDir/audio/share_<time>.bin. */
     fun copyToCache(context: Context, uri: Uri): CopyResult {
         val sizeBytes = queryFileSize(context.contentResolver, uri)
@@ -56,7 +64,7 @@ object AudioCopier {
             return CopyResult.TooLarge(sizeBytes)
         }
 
-        val audioDir = File(context.cacheDir, "audio")
+        val audioDir = dir(context)
         audioDir.mkdirs()
 
         val destFile = File(audioDir, "share_${System.currentTimeMillis()}.bin")

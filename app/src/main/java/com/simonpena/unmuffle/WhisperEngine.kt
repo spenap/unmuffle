@@ -78,7 +78,7 @@ class WhisperEngine {
         return withContext(Dispatchers.Default) {
             val result = ctx.transcribeData(audioData, languageCode, audioCtx, onProgress, onSegment)
             val durationMs = System.currentTimeMillis() - startMs
-            Log.i(TAG, "Transcription complete in ${durationMs}ms, result: '${result.take(80)}'")
+            Log.i(TAG, "Transcription complete in ${durationMs}ms, ${result.length} characters")
             result
         }
     }

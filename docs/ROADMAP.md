@@ -67,7 +67,7 @@ behaviour is unchanged apart from the trims named (unit and device tests
 pass, bench text and times as before) and there is less code.
 - [x] Remove what no longer earns its place (`SmokeTestActivity`,
       `WavWriter`, dead code); comments state what holds.
-- [ ] Privacy: no transcript text in logs; no backup; cached audio swept
+- [x] Privacy: no transcript text in logs; no backup; cached audio swept
       at start; clipboard marked sensitive; no cellular dialog, so only
       the INTERNET permission remains.
 - [ ] Trims: the stats line leaves the screen (kept in logcat); one Home

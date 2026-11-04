@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.os.SystemClock
 import android.view.View
 import android.widget.LinearLayout
@@ -180,7 +181,10 @@ class TranscriptionActivity : AppCompatActivity() {
 
         btnCopy.setOnClickListener {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("transcript", transcript))
+            val clip = ClipData.newPlainText("transcript", transcript)
+            // Kept out of the clipboard preview and suggestions
+            clip.description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+            clipboard.setPrimaryClip(clip)
             // Android 13+ shows its own visual confirmation; avoid duplicate toast
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
                 Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
