@@ -40,15 +40,18 @@ Written test-first; measured on the S25.
 - [x] base vs small. Done when time and accuracy on the same messages are
       recorded in `docs/` and the default model chosen from them
       (`docs/measurements.md`: small stays).
-- [ ] ggml built for fp16 and dot products, loaded only where the CPU has
+- [x] ggml built for fp16 and dot products, loaded only where the CPU has
       both (`asimddp`). Done when the S25 is about 24% faster with the
       same text.
 - [x] Thread count. Done when the S25 uses 6 and a rule for other phones
       is measured on the Pixel 5. (All cores but two.)
 - [x] small q8_0 replaces q5_1. Done when installs download it and remove
       q5_1.
-- [ ] Words appear as they are decoded (`logits_filter_callback`), not
-      per 30 s window.
+- [ ] Time to first word. Done when share → first word on the S25 is
+      recorded by phase (model load, audio decode, language detection,
+      encoder, decoder) in `docs/measurements.md`, and a shorter first
+      chunk and detection on the first seconds are measured and kept if
+      faster with the same text.
 - [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
 
 ## Track S: Settings
@@ -58,8 +61,23 @@ Written test-first; measured on the S25.
 - [x] The transcript shows its language (detected or chosen) and can be
       transcribed again in another.
 
+## Track C: Cleanup
+Next after time to first word. Done when behaviour is unchanged (unit and
+device tests pass) and there is less code.
+- [ ] Comments state what holds: no references to the old planning phases,
+      RESEARCH.md or MVP notes; no long rationale.
+- [ ] One clear job per whisper layer (`WhisperLib`, `WhisperContext`,
+      `WhisperEngine`); the native progress state is no longer a global.
+- [ ] `TranscriptionActivity.onCreate` split per state; the
+      view model's pipeline steps testable on the JVM.
+- [ ] Remove what no longer earns its place: `SmokeTestActivity` (the
+      instrumented tests cover it), dead code such as the verification WAV
+      cleanup.
+
 ## Ideas and not doing
-- Ideas: CI runs the instrumented tests on an emulator (needs an x86_64
+- Ideas: words appear as they are decoded (branch `feat/word-streaming`,
+  #28: the first word only ~4 s sooner on the Pixel 5); CI runs the
+  instrumented tests on an emulator (needs an x86_64
   build alongside arm64); F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
   site; tapping an unsure word plays the audio from it (whisper's token
   timestamps); a transcript cache in memory for the life of the process,
