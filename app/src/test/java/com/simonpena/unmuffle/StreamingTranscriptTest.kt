@@ -75,22 +75,6 @@ class StreamingTranscriptTest {
         assertEquals(0, t.progress(100).placeholders)
     }
 
-    @Test fun wordsPerSecondCountsFromTheStart() {
-        val t = transcript(60f)
-        assertNull(t.state.wordsPerSecond)
-        now = 10_000
-        t.segment(" " + List(40) { "palabra" }.joinToString(" "))
-        assertEquals(4f, t.state.wordsPerSecond!!, 0.001f)
-    }
-
-    @Test fun statusLines() {
-        assertEquals("Transcribing...", StreamingTranscript.status(UiState.Processing()))
-        assertEquals("Transcribing... about 182 words",
-            StreamingTranscript.status(UiState.Processing(progress = 0, placeholders = 182)))
-        assertEquals("Transcribing... 40 words · 4.0 words/s",
-            StreamingTranscript.status(UiState.Processing(progress = 50, words = 40, wordsPerSecond = 4f)))
-    }
-
     @Test fun summaryLine() {
         assertEquals("212 words in 40 s · 5.3 words/s", StreamingTranscript.summary(212, 40.2f))
         assertEquals("212 words in 40 s · 5.3 words/s · 3 unsure", StreamingTranscript.summary(212, 40.2f, 3))

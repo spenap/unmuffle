@@ -70,7 +70,7 @@ class ShareTranscriptTest {
                         shown(R.id.error_group) ->
                             "Error: " + activity.findViewById<TextView>(R.id.tv_error).text
                         shown(R.id.no_speech_group) -> "No speech found"
-                        shown(R.id.tv_summary) -> ""
+                        shown(R.id.buttons) -> ""
                         else -> null
                     }
                 }

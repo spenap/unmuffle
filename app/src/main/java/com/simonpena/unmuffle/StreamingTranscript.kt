@@ -6,8 +6,8 @@ import kotlin.math.roundToInt
 
 /**
  * The transcription screen's state while whisper.cpp runs: progress, the
- * segments decoded so far (without non-speech markers), how many words are
- * probably still to come, and words transcribed per second. The final
+ * segments decoded so far (without non-speech markers) and how many words
+ * are probably still to come. The final
  * transcript still goes through [HallucinationFilter].
  *
  * Words to come start at [audioSeconds] × [SPEECH_WORDS_PER_SECOND], then
@@ -27,7 +27,7 @@ class StreamingTranscript(
         private set
 
     fun progress(percent: Int): UiState.Processing {
-        state = state.copy(progress = percent, placeholders = remaining(percent), wordsPerSecond = rate())
+        state = state.copy(progress = percent, placeholders = remaining(percent))
         return state
     }
 
@@ -49,7 +49,7 @@ class StreamingTranscript(
         words += speech.size
         state = state.copy(
             partial = text.toString(), words = words, unsure = unsure.toList(),
-            placeholders = remaining(state.progress), wordsPerSecond = rate(),
+            placeholders = remaining(state.progress),
         )
         return state
     }
@@ -64,11 +64,6 @@ class StreamingTranscript(
     }
 
     fun elapsedSeconds(): Float = (clock() - startMs) / 1000f
-
-    private fun rate(): Float? {
-        val seconds = elapsedSeconds()
-        return if (words == 0 || seconds <= 0f) null else words / seconds
-    }
 
     private fun remaining(percent: Int): Int = when {
         percent >= 100 -> 0
@@ -87,17 +82,7 @@ class StreamingTranscript(
          */
         const val UNSURE_BELOW = 0.3f
 
-        private val WHITESPACE = Regex("\\s+")
-
-        fun countWords(text: String): Int = text.trim().let { if (it.isEmpty()) 0 else it.split(WHITESPACE).size }
-
-        fun status(state: UiState.Processing): String = when {
-            state.progress < 0 -> "Transcribing..."
-            state.wordsPerSecond == null ->
-                if (state.placeholders > 0) "Transcribing... about ${state.placeholders} words" else "Transcribing..."
-            else -> "Transcribing... ${state.words} words · ${oneDecimal(state.wordsPerSecond)} words/s"
-        }
-
+        /** For the log: words, seconds, words per second and unsure words. */
         fun summary(words: Int, seconds: Float, unsure: Int = 0): String =
             "$words words in ${seconds.roundToInt()} s · ${oneDecimal(words / max(seconds, 0.001f))} words/s" +
                 if (unsure > 0) " · $unsure unsure" else ""

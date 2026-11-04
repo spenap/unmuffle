@@ -17,7 +17,7 @@ class ShareReceiverActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         if (!ModelManager.isModelPresentFast(this)) {
             Toast.makeText(this, "Model needed", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, DownloadActivity::class.java))
+            startActivity(Intent(this, MainActivity::class.java))
             finish()
             return
         }

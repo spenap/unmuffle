@@ -29,7 +29,6 @@ sealed class UiState {
         val partial: String = "",
         val words: Int = 0,
         val placeholders: Int = 0,
-        val wordsPerSecond: Float? = null,
         val unsure: List<IntRange> = emptyList(),
     ) : UiState()
     /**
@@ -38,7 +37,6 @@ sealed class UiState {
      */
     data class Success(
         val transcript: String,
-        val seconds: Float = 0f,
         val unsure: List<IntRange> = emptyList(),
         val language: String = Languages.AUTO,
         val detected: Boolean = false,
@@ -182,11 +180,11 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
         val seconds = streaming.elapsedSeconds()
         val language = engine.language()
         val detected = languageCode == Languages.AUTO
-        Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds) + ", ${streamed.unsure.size} unsure, $language")
+        Log.i(TAG, StreamingTranscript.summary(streamed.words, seconds, streamed.unsure.size) + " · $language")
         _uiState.value = if (streamed.partial.isNotEmpty()) {
-            UiState.Success(streamed.partial, seconds, streamed.unsure, language, detected)
+            UiState.Success(streamed.partial, streamed.unsure, language, detected)
         } else {
-            UiState.Success(filtered, seconds, language = language, detected = detected)
+            UiState.Success(filtered, language = language, detected = detected)
         }
     }
 
