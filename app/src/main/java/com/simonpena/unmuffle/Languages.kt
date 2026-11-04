@@ -39,7 +39,7 @@ object Languages {
     /** The language's name in English, e.g. "Spanish". */
     fun englishName(code: String): String = Locale.forLanguageTag(code).getDisplayLanguage(Locale.ENGLISH)
 
-    private val supported by lazy { WhisperContext.languages() }
+    private val supported by lazy { Whisper.languages() }
 
     private fun phoneCodes(): List<String> =
         LocaleList.getDefault().let { list -> (0 until list.size()).map { list[it].language } }

@@ -17,7 +17,7 @@ class CpuBackendTest {
     @Test
     fun usesDotProductAndFp16WhereAvailable() {
         assumeTrue("asimddp" in features && "asimdhp" in features)
-        val info = WhisperContext.getSystemInfo()
+        val info = Whisper.systemInfo()
         assertTrue(info, "DOTPROD = 1" in info)
         assertTrue(info, "FP16_VA = 1" in info)
     }

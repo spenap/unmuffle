@@ -128,7 +128,7 @@ for run in $(seq "$runs"); do
                 sleep 1
                 caps=$((caps + $(freq_cap))); samples=$((samples + 1))
                 asleep && slept=yes
-                log=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I | tr -d '\r')
+                log=$(adb logcat -d -s WhisperEngine:I TranscriptionVM:I Whisper:I Transcription:I | tr -d '\r')
                 line=$(echo "$log" | grep -E 'Transcription complete in|Transcribed in|First words after|Resampled:' || true)
                 echo "$log" | grep -qE 'Transcribed in|Raw transcript' && break  # Raw transcript: before v1.8
                 if [ "$waited" -ge 20 ] && ! echo "$log" | grep -q 'Starting transcription'; then

@@ -72,8 +72,8 @@ pass, bench text and times as before) and there is less code.
       the INTERNET permission remains.
 - [x] Trims: the stats line leaves the screen (kept in logcat); one Home
       screen instead of the launcher, download and ready screens.
-- [ ] One transcript path: the streamed segments, filtered once.
-- [ ] One whisper class over the JNI declarations; native state per
+- [x] One transcript path: the streamed segments, filtered once.
+- [x] One whisper class over the JNI declarations; native state per
       context, not global.
 - [ ] The transcription pipeline tested on the JVM with a fake
       recognizer; `TranscriptionActivity` one function per state.
