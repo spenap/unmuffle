@@ -44,6 +44,8 @@ jobs:
       # 5. Compiled C++ kept between runs: whisper.cpp and ggml's 8 CPU
       #    backends rarely change. CMake reads the launcher from the
       #    environment; the app's build files don't know about ccache.
+      #    No CCACHE_BASEDIR: it makes source paths relative, which
+      #    -ffile-prefix-map then misses, and the APK differs.
       - name: Install ccache
         run: sudo apt-get install -y -qq ccache
       - uses: actions/cache@v4
@@ -60,8 +62,6 @@ jobs:
         env:
           CMAKE_C_COMPILER_LAUNCHER: ccache
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
-          CCACHE_BASEDIR: ${{ github.workspace }}
-          CCACHE_NOHASHDIR: "true"
           CCACHE_COMPILERCHECK: string:ndk-27.2.12479018
           CCACHE_MAXSIZE: 500M
         run: |
