@@ -152,11 +152,31 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun transcribe(pcm: FloatArray, languageCode: String) {
         val streaming = StreamingTranscript(pcm.size / 16000f, SystemClock::elapsedRealtime)
         _uiState.value = streaming.state
-        val raw = engine.transcribe(
-            pcm, languageCode,
-            onProgress = { _uiState.value = streaming.progress(it) },
-            onSegment = { _uiState.value = streaming.segment(it) },
-        )
+        val startMs = SystemClock.elapsedRealtime()
+        val onSegment = { words: List<Word> ->
+            val before = streaming.state.words
+            _uiState.value = streaming.segment(words)
+            if (before == 0 && streaming.state.words > 0) {
+                Log.i(TAG, "First words after ${SystemClock.elapsedRealtime() - startMs} ms")
+            }
+        }
+        val cut = FirstChunk.cut(pcm, languageCode)
+        val raw = if (cut == null) {
+            engine.transcribe(pcm, languageCode, onProgress = { _uiState.value = streaming.progress(it) }, onSegment = onSegment)
+        } else {
+            val first = engine.transcribe(
+                pcm.copyOfRange(0, cut), languageCode,
+                onProgress = { _uiState.value = streaming.progress(FirstChunk.progress(true, it, cut, pcm.size)) },
+                onSegment = onSegment, audioCtx = FirstChunk.audioCtx(cut),
+            )
+            val rest = engine.transcribe(
+                pcm.copyOfRange(cut, pcm.size), languageCode,
+                onProgress = { _uiState.value = streaming.progress(FirstChunk.progress(false, it, cut, pcm.size)) },
+                onSegment = onSegment,
+            )
+            "$first $rest"
+        }
+        Log.i(TAG, "Transcribed in ${SystemClock.elapsedRealtime() - startMs} ms")
         Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
         val filtered = HallucinationFilter.filter(raw)
