@@ -170,7 +170,6 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
             },
         )
         Log.i(TAG, "Transcribed in ${SystemClock.elapsedRealtime() - startMs} ms")
-        Log.i(TAG, "Raw transcript: '${raw.take(80)}'")
 
         val filtered = HallucinationFilter.filter(raw)
         if (filtered == null) {

@@ -3,8 +3,6 @@ package com.simonpena.unmuffle
 import android.app.Application
 import android.app.DownloadManager
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -34,21 +32,8 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<State>(State.Idle)
     val state: StateFlow<State> = _state
 
-    /** True if device is on a cellular-only connection (no WiFi). */
-    fun isOnCellularOnly(): Boolean {
-        val cm = getApplication<Application>()
-            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
-                !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-    }
-
-    /**
-     * Enqueue the model download via Android DownloadManager.
-     *
-     * @param allowCellular Set to true if user confirmed the cellular warning dialog.
-     */
-    fun startDownload(allowCellular: Boolean = false) {
+    /** Downloads the selected model with DownloadManager, on any network. */
+    fun startDownload() {
         val context = getApplication<Application>()
         val destFile = ModelManager.modelFile(context)
 
@@ -58,18 +43,11 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         val downloadManager =
             context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
-        val networkTypes = if (allowCellular) {
-            DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE
-        } else {
-            DownloadManager.Request.NETWORK_WIFI
-        }
-
         val model = SettingsRepository.getModel(context)
         val request = DownloadManager.Request(Uri.parse(model.url))
             .setTitle("Unmuffle — Whisper Model")
             .setDescription("Downloading transcription model (${model.sizeBytes / 1_048_576} MB)...")
             .setDestinationInExternalFilesDir(context, null, "models/${model.filename}")
-            .setAllowedNetworkTypes(networkTypes)
             .setNotificationVisibility(
                 DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
             )
@@ -83,12 +61,12 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Retry download after failure — resets state to Idle then starts again. */
-    fun retryDownload(allowCellular: Boolean = false) {
+    /** Starts again after a failure. */
+    fun retryDownload() {
         val context = getApplication<Application>()
         ModelManager.deleteModel(context)
         _state.value = State.Idle
-        startDownload(allowCellular)
+        startDownload()
     }
 
     private suspend fun pollDownloadProgress(

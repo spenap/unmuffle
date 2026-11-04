@@ -7,7 +7,6 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -32,23 +31,10 @@ class DownloadActivity : AppCompatActivity() {
         btnDownload = findViewById(R.id.btn_download)
         tvStatus = findViewById(R.id.tv_status)
 
-        btnDownload.setOnClickListener { onDownloadClicked() }
+        btnDownload.setOnClickListener { viewModel.startDownload() }
 
         lifecycleScope.launch {
             viewModel.state.collect { state -> renderState(state) }
-        }
-    }
-
-    private fun onDownloadClicked() {
-        if (viewModel.isOnCellularOnly()) {
-            AlertDialog.Builder(this)
-                .setTitle("Using Cellular Data")
-                .setMessage("The transcription model is ${SettingsRepository.getModel(this).sizeBytes / 1_048_576} MB. Download on cellular data?")
-                .setPositiveButton("Download anyway") { _, _ -> viewModel.startDownload(allowCellular = true) }
-                .setNegativeButton("Wait for WiFi") { _, _ -> }
-                .show()
-        } else {
-            viewModel.startDownload(allowCellular = false)
         }
     }
 

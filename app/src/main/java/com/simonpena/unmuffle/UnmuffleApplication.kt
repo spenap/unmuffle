@@ -7,5 +7,6 @@ class UnmuffleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         DynamicColors.applyToActivitiesIfAvailable(this)
+        AudioCopier.clear(AudioCopier.dir(this))
     }
 }
