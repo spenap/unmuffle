@@ -19,7 +19,7 @@ private const val TAG = "Whisper"
  * A loaded whisper model. Native calls run one at a time on its own thread:
  * whisper.cpp isn't thread-safe.
  */
-class Whisper private constructor(private val handle: Long) {
+class Whisper private constructor(private val handle: Long) : Recognizer {
     private val executor = Executors.newSingleThreadExecutor()
     private val thread = executor.asCoroutineDispatcher()
     private var poller: Job? = null
@@ -30,13 +30,13 @@ class Whisper private constructor(private val handle: Long) {
      * Reports progress (0–100) and each segment's words as they are decoded,
      * from one thread at a time.
      */
-    suspend fun transcribe(
+    override suspend fun transcribe(
         pcm: FloatArray,
         language: String,
-        audioCtx: Int = 0,
-        onProgress: (Int) -> Unit = {},
-        onSegment: (List<Word>) -> Unit = {},
-    ) = withContext(thread) {
+        audioCtx: Int,
+        onProgress: (Int) -> Unit,
+        onSegment: (List<Word>) -> Unit,
+    ): Unit = withContext(thread) {
         fun takeSegments() = TokenWords.parse(WhisperLib.takeNewSegments(handle)).forEach(onSegment)
         val startMs = SystemClock.elapsedRealtime()
         Log.i(TAG, "Starting transcription of ${pcm.size} samples, $language")
@@ -59,8 +59,7 @@ class Whisper private constructor(private val handle: Long) {
         Log.i(TAG, "Transcription complete in ${SystemClock.elapsedRealtime() - startMs}ms")
     }
 
-    /** The last transcription's language: the one given, or the one detected. */
-    suspend fun language(): String = withContext(thread) { WhisperLib.getLanguage(handle) }
+    override suspend fun language(): String = withContext(thread) { WhisperLib.getLanguage(handle) }
 
     /** Frees the model once any transcription running, and its poller, have finished. */
     fun close() {
