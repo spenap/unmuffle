@@ -39,6 +39,7 @@ class Whisper private constructor(private val handle: Long) {
     ) = withContext(thread) {
         fun takeSegments() = TokenWords.parse(WhisperLib.takeNewSegments(handle)).forEach(onSegment)
         val startMs = SystemClock.elapsedRealtime()
+        Log.i(TAG, "Starting transcription of ${pcm.size} samples, $language")
         // The native call blocks this thread; another one reports while it runs.
         val poller = launch(Dispatchers.Default) {
             while (isActive) {
