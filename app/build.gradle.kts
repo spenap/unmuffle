@@ -32,6 +32,10 @@ android {
                 // -O3 in every build: debug builds unoptimised take minutes, and
                 // release builds default to -O2.
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
+                // No build folder paths in the libraries, for reproducible builds
+                val noPaths = "-ffile-prefix-map=${rootDir.path}=."
+                cFlags += noPaths
+                cppFlags += noPaths
             }
         }
     }
@@ -53,6 +57,12 @@ android {
             keyAlias = "transchat"
             keyPassword = System.getenv("UNMUFFLE_KEYSTORE_PASSWORD")
         }
+    }
+
+    // No dependency list encrypted for Google Play: it differs on every build
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     buildTypes {
