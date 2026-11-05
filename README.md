@@ -4,6 +4,10 @@ Read your voice messages instead of listening to them. Share a voice
 message from WhatsApp, Telegram or any app to Unmuffle, and it transcribes
 it on your phone with [whisper.cpp](https://github.com/ggml-org/whisper.cpp).
 
+Written with AI: [Claude Code](https://claude.com/claude-code) writes the
+code, I direct it and test it on my phones. Each release can be rebuilt
+from its tag and compared (`scripts/repro-check.sh`).
+
 | Home | Transcribing | Transcript |
 |:-:|:-:|:-:|
 | <img src="docs/screenshots/home.png" width="200"/> | <img src="docs/screenshots/transcribing.png" width="200"/> | <img src="docs/screenshots/transcript.png" width="200"/> |

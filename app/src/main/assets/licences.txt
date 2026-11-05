@@ -77,6 +77,8 @@ Apache License 2.0
 https://developer.android.com/jetpack/androidx
 https://github.com/material-components/material-components-android
 https://kotlinlang.org
+Also under it: Guava (listenablefuture), Error Prone annotations, JSpecify
+and JetBrains annotations.
 
 
                                  Apache License

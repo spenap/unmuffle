@@ -6,10 +6,17 @@ detail lives.
 - Add an entry when a decision constrains later work: a rule, a choice
   between real alternatives, something ruled out. Not for every UI tweak;
   commits cover those.
-- Entries aren't rewritten. A reversal is a new entry that says what it
+- Entries aren't rewritten, except to drop what shouldn't be public. A reversal is a new entry that says what it
   supersedes and what changed our minds; the old entry only gains a
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
+
+## 2026-11-05 · Public with its history; issues, not pull requests
+A review before going public found no secrets and nothing private worth
+rewriting history for, so the history stays as it is. Contributions are
+issues: bugs and ideas, prompts included; no pull requests, since the
+code is written by an agent under the maintainer's direction. Detail:
+CONTRIBUTING.md, SECURITY.md.
 
 Entries before 2026-11-03 were recovered from `.planning/` (removed in
 the commit that added this file) and commits.
@@ -30,8 +37,7 @@ Settings holds the transcription language: auto-detect (default) or one
 language. Fixing it is about 20% faster and avoids misdetection
 (Galician-accented Spanish read as Portuguese). There is no "ask each
 time": the transcript shows its language, and a wrong guess is one tap
-to transcribe again in another. Designs: the "Unmuffle settings" canvas
-(A, C, G).
+to transcribe again in another.
 Superseded (the default) by "The phone's language by default; a
 preview".
 
@@ -62,8 +68,8 @@ recognizer.
 
 ## 2026-11-03 · Releases signed on the laptop, not in CI
 `scripts/release.sh` signs with the key in `~/.config/unmuffle`, backed
-up in Bitwarden; CI builds with the debug key. Why: the same as Makofi,
-and the key stays out of CI. The S25 has a debug build, so Obtainium's
+up off the laptop; CI builds with the debug key. Why: the key stays out
+of CI. The S25 has a debug build, so Obtainium's
 first install needs an uninstall. Supersedes the 2026-02-28 decision's
 release signing. Detail: `scripts/release.sh`.
 
@@ -78,8 +84,8 @@ Detail: ROADMAP.md, "Ideas and not doing".
 Superseded on the recognizer by 2026-11-03, "No closed-source recognizer".
 
 ## 2026-11-03 · AGENTS.md and docs/ replace .planning/
-Why: the same conventions as Makofi, readable by any agent; the GSD
-milestone files duplicated what commits record. CLAUDE.md imports
+Why: readable by any agent; the milestone files duplicated what commits
+record. CLAUDE.md imports
 AGENTS.md. Detail: AGENTS.md, ROADMAP.md.
 
 ## 2026-03-01 · Settings in SharedPreferences
