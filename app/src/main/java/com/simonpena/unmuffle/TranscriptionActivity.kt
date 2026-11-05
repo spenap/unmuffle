@@ -5,14 +5,14 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.os.Build
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.os.SystemClock
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -21,8 +21,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.R as MR
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -53,7 +55,8 @@ class TranscriptionActivity : AppCompatActivity() {
     private val tvStatus by lazy { findViewById<TextView>(R.id.tv_status) }
     private val progressBar by lazy { findViewById<LinearProgressIndicator>(R.id.progress_bar) }
     private val languageGroup by lazy { findViewById<View>(R.id.language_group) }
-    private val buttons by lazy { findViewById<View>(R.id.buttons) }
+    private val actions by lazy { findViewById<View>(R.id.actions) }
+    private val btnCopy by lazy { findViewById<MaterialButton>(R.id.btn_copy) }
 
     // What the text view shows, to redraw it only when it changes
     private var shownPartial: String? = null
@@ -86,7 +89,8 @@ class TranscriptionActivity : AppCompatActivity() {
             viewModel.cancelInference()
             finish()
         }
-        findViewById<MaterialButton>(R.id.btn_copy).setOnClickListener { copy() }
+        btnCopy.setOnClickListener { copy() }
+        copyAtRest = btnCopy.iconTint to btnCopy.backgroundTintList
         findViewById<MaterialButton>(R.id.btn_share).setOnClickListener {
             val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, transcript)
             startActivity(Intent.createChooser(send, null))
@@ -118,7 +122,7 @@ class TranscriptionActivity : AppCompatActivity() {
     private fun showProcessing(state: UiState.Processing) {
         showOnly(mainGroup)
         languageGroup.visibility = View.GONE
-        buttons.visibility = View.GONE
+        actions.visibility = View.GONE
         tvStatus.visibility = View.VISIBLE
         progressBar.visibility = View.VISIBLE
         if (state.progress < 0) {
@@ -156,7 +160,7 @@ class TranscriptionActivity : AppCompatActivity() {
         tvText.setTextIsSelectable(true)
         tvStatus.visibility = View.GONE
         progressBar.visibility = View.GONE
-        buttons.visibility = View.VISIBLE
+        actions.visibility = View.VISIBLE
     }
 
     /** The transcript's language, and chips to transcribe again in another. */
@@ -198,10 +202,29 @@ class TranscriptionActivity : AppCompatActivity() {
         // Kept out of the clipboard preview and suggestions
         clip.description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
         getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
-        // Android 13+ confirms a copy itself
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+        showCopied(true)
+        btnCopy.removeCallbacks(resetCopy)
+        btnCopy.postDelayed(resetCopy, 1_500)
+    }
+
+    private val resetCopy = Runnable { showCopied(false) }
+    private lateinit var copyAtRest: Pair<ColorStateList?, ColorStateList?>
+
+    /** Copy confirms in place: a check on a tonal circle. */
+    private fun showCopied(copied: Boolean) {
+        val label = if (copied) "Copied" else "Copy"
+        btnCopy.contentDescription = label
+        btnCopy.tooltipText = label
+        btnCopy.setIconResource(if (copied) R.drawable.ic_check else R.drawable.ic_copy)
+        val (icon, background) = if (copied) {
+            ColorStateList.valueOf(MaterialColors.getColor(btnCopy, MR.attr.colorOnSecondaryContainer)) to
+                ColorStateList.valueOf(MaterialColors.getColor(btnCopy, MR.attr.colorSecondaryContainer))
+        } else {
+            copyAtRest
         }
+        btnCopy.iconTint = icon
+        btnCopy.backgroundTintList = background
+        if (copied) btnCopy.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
     }
 
     /** Placeholders twinkle while the screen is visible, unless animations are off. */

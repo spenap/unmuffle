@@ -1,5 +1,6 @@
 package com.simonpena.unmuffle
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -70,7 +72,7 @@ class ShareTranscriptTest {
                         shown(R.id.error_group) ->
                             "Error: " + activity.findViewById<TextView>(R.id.tv_error).text
                         shown(R.id.no_speech_group) -> "No speech found"
-                        shown(R.id.buttons) -> ""
+                        shown(R.id.actions) -> ""
                         else -> null
                     }
                 }
@@ -84,6 +86,26 @@ class ShareTranscriptTest {
                 "Transcript: $transcript",
                 transcript.contains("ask not what your country can do for you", ignoreCase = true),
             )
+
+            // Copy and Share sit under the bubble; Copy confirms in place, then resets
+            instrumentation.runOnMainSync {
+                val actions = activity.findViewById<View>(R.id.actions)
+                assertTrue("Actions aren't under the bubble", actions.top >= activity.findViewById<View>(R.id.bubble).bottom)
+                activity.findViewById<View>(R.id.btn_copy).performClick()
+            }
+            var copied = ""
+            var clip = ""
+            instrumentation.runOnMainSync {
+                copied = activity.findViewById<View>(R.id.btn_copy).contentDescription.toString()
+                clip = activity.getSystemService(ClipboardManager::class.java).primaryClip!!.getItemAt(0).text.toString()
+            }
+            assertEquals("Copied", copied)
+            assertEquals(transcript, clip)
+            SystemClock.sleep(2_000)
+            instrumentation.runOnMainSync {
+                copied = activity.findViewById<View>(R.id.btn_copy).contentDescription.toString()
+            }
+            assertEquals("Copy", copied)
         } finally {
             activity.finish()
             wav.delete()
