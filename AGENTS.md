@@ -76,11 +76,11 @@ For any agent (Claude Code, Codex…) and any person.
   `app/.cxx`: `gradlew clean` keeps it, and stale `.so` files get packaged.
 - Run long jobs (benchmarks, model downloads) in the background and stay
   reachable.
-- The phones and speakers are shared: one agent at a time, nothing plays
+- The phones are shared: one agent at a time, nothing plays
   unless asked, volume and settings left as found. Device runs keep the
   screen on while plugged in (`stay_on_while_plugged_in` 15, restored
   after); a PIN lock needs the user, so check it before starting.
 - Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
-  the key in `~/.config/unmuffle` (backed up in Bitwarden) and publishes a
+  the key in `~/.config/unmuffle` (backed up off the laptop) and publishes a
   GitHub Release. Release builds without the key use the debug key.
 - Never commit models, keystores, tokens or users' audio and transcripts.
