@@ -18,8 +18,8 @@
         android:layout_weight="1">
 
     <!-- Main group, while transcribing and after: the voice message as an
-         incoming chat bubble (player above, transcript below), and under it
-         the progress, then the buttons. -->
+         incoming chat bubble (player above, transcript below) with Copy and
+         Share under it; at the bottom, the progress or the language. -->
     <LinearLayout
         android:id="@+id/main_group"
         android:layout_width="match_parent"
@@ -35,6 +35,11 @@
             android:paddingHorizontal="16dp"
             android:paddingTop="8dp"
             android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/bubble"
@@ -100,6 +105,37 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Actions on the transcript, like those under a chat message -->
+            <LinearLayout
+                android:id="@+id/actions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_copy"
+                    style="?attr/materialIconButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Copy"
+                    android:tooltipText="Copy"
+                    app:icon="@drawable/ic_copy" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_share"
+                    style="?attr/materialIconButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Share"
+                    android:tooltipText="Share"
+                    app:icon="@drawable/ic_share" />
+
+            </LinearLayout>
+
+            </LinearLayout>
+
         </ScrollView>
 
         <LinearLayout
@@ -147,33 +183,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:indeterminate="true" />
-
-            <LinearLayout
-                android:id="@+id/buttons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_copy"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="Copy" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_share"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:text="Share" />
-
-            </LinearLayout>
 
         </LinearLayout>
 
