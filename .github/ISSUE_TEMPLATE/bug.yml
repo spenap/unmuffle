@@ -1,0 +1,28 @@
+name: Bug
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please don't attach voice messages or transcripts of real conversations. Describe the problem instead (language, length, what went wrong).
+  - type: textarea
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Phone and Android version
+      placeholder: Pixel 8, Android 16
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Unmuffle version
+      description: Settings › About
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Language of the message

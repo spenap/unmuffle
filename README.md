@@ -12,6 +12,11 @@ from its tag and compared (`scripts/repro-check.sh`).
 |:-:|:-:|:-:|
 | <img src="docs/screenshots/home.png" width="200"/> | <img src="docs/screenshots/transcribing.png" width="200"/> | <img src="docs/screenshots/transcript.png" width="200"/> |
 
+## Install
+Download the APK from [Releases](https://github.com/spenap/unmuffle/releases/latest),
+or add this repository to [Obtainium](https://github.com/ImranR98/Obtainium)
+for updates. Needs Android 8 or later on a 64-bit ARM phone.
+
 ## How it works
 1. The first time, Unmuffle downloads the Whisper model, or takes it from
    a file you pick, and checks it.
