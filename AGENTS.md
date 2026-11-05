@@ -13,6 +13,8 @@ Audio never leaves the device.
   (what the app is, how it works, privacy, building); versions, sizes and
   speeds live in `docs/`. A change updates the docs and screenshots that
   reference what it changed, in the same PR.
+- Diagrams (flows, states, sequences) in Markdown are Mermaid code
+  blocks: GitHub renders them, and they diff and edit as text.
 
 ## Layout (one repo, single `app` module)
 - `app/src/main/java/com/simonpena/unmuffle/`: Kotlin, XML Views,
