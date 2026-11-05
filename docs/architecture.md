@@ -2,13 +2,16 @@
 
 One flow: a shared voice message becomes text on the screen.
 
-```
-share ──▶ ShareReceiverActivity ──▶ TranscriptionActivity ◀── TranscriptionViewModel
-          copy to cache                one function per state     │
-                                                                  ▼
-                AudioDecoder ─▶ PcmResampler ─▶ Transcription ─▶ Whisper ─▶ whisper_jni.cpp ─▶ whisper.cpp
-                (MediaCodec)    (16 kHz mono)   (preview, whole,  (one thread)
-                                                 speech check)
+```mermaid
+flowchart LR
+    share([Share]) --> receiver["ShareReceiverActivity<br/>copy to cache"]
+    receiver --> activity["TranscriptionActivity<br/>one function per state"]
+    vm[TranscriptionViewModel] -- state --> activity
+    vm --> decoder["AudioDecoder<br/>MediaCodec"]
+    decoder --> resampler["PcmResampler<br/>16 kHz mono"]
+    resampler --> transcription["Transcription<br/>preview, whole, speech check"]
+    transcription --> whisper["Whisper<br/>one thread"]
+    whisper --> jni[whisper_jni.cpp] --> cpp[(whisper.cpp)]
 ```
 
 Words reach the screen as whisper decodes them: the native callback
