@@ -85,7 +85,12 @@ android {
 
     // ggml finds its CPU backends by listing the native library directory,
     // so the libraries are extracted on install.
-    packaging { jniLibs { useLegacyPackaging = true } }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            excludes += "**/libparakeet.so"  // whisper.cpp builds it; not used
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
