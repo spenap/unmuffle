@@ -1,9 +1,26 @@
 # Transcription measurements
 
 Two real voice messages in Spanish (70 s and 82 s, about 190 and 225
-words), kept outside the repo. whisper.cpp v1.8.3 `whisper-cli`.
+words), kept outside the repo. whisper.cpp v1.8.3 `whisper-cli` unless
+stated.
 "Changed" counts words that differ from the first row, ignoring case and
 punctuation.
+
+## 2026-11-05 · whisper.cpp v1.8.3 → v1.9.5
+The app's release build, small q8_0, Spanish. Whole message / first
+words; two runs each, none throttled below 93% or asleep.
+
+| Run | 70 s | 82 s |
+|---|---|---|
+| Pixel 5, v1.8.3 | 79.9 / 74.2 s, 4.8 s | 98.1 / 92.4 s, 5.6–5.7 s |
+| Pixel 5, v1.9.5 | 44.1 / 43.8 s, 4.0 s | 52.8 / 52.7 s, 4.2–4.7 s |
+| S25, v1.8.3 (2026-11-04) | 8.9 / 8.9 s, 0.6 s | 11.8 / 12.1 s, 0.65 s |
+| S25, v1.9.5 | 7.0 / 7.1 s, 0.6 s | 8.6 / 8.9 s, 0.6 s |
+
+- Whole message: Pixel 5 about 43% faster, S25 about 23%. First words:
+  the same on the S25, 0.8 s sooner on the Pixel 5.
+- Text: the same on both phones and every run; 15 and 7 words changed
+  from v1.8.3, neither better nor worse overall.
 
 ## 2026-11-04 · Time to first word
 Pixel 5, q8_0, 6 threads, `-l es` unless stated. "First" is the first
