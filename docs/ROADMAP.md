@@ -54,7 +54,8 @@ Written test-first; measured on the S25.
       faster with the same text.
 - [x] GPU spike: ggml's OpenCL and Vulkan backends. Done when time and
       text vs the CPU are measured on the S25. (CPU stays: OpenCL 4×
-      slower on the S25; neither runs on the Pixel 5. decisions.md.)
+      slower on the S25, Vulkan doesn't run there; neither runs on the
+      Pixel 5. decisions.md.)
 - [ ] Locking the phone pauses a transcription (S25: no progress for
       20 s with the screen locked). Keep transcribing in the background.
 
