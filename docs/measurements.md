@@ -83,6 +83,19 @@ first):
    messages) with the same text.
 5. Uninstall the bench GPU apps; `stay_on_while_plugged_in` as found.
 
+### S25 results (2026-11-06)
+Same message (70 s, Galician), small q8_0, one guarded share each.
+- CPU: 6.4 s (load 0.35 s; encoder 1.17 s per pass; 7.5 ms per token).
+- OpenCL (Adreno kernels): 26.6 s after a 11.9 s load (kernel compiles);
+  encoder 0.43 s per pass, 81 ms per token. No hang.
+- Vulkan (driver 0800.64.8, Vulkan 1.4): aborts at the first
+  transcription: the driver can't create `mul_mat_vec_q8_0_q8_1_f32`
+  (`createComputePipeline: ErrorUnknown`). The same with shaders from the
+  NDK's glslc 2022.3 (then `mul_mat_vec_q8_0_f32_f32`), with every
+  `GGML_VK_DISABLE_*` switch tried (set via `debug.unmuffle.env`), and
+  retried without full subgroups or the required subgroup size 64
+  (`docs/spike/ggml-vulkan-pipeline-retry.patch`, on the submodule).
+
 ## 2026-11-05 · whisper.cpp v1.8.3 → v1.9.5
 The app's release build, small q8_0, Spanish. Whole message / first
 words; two runs each, none throttled below 93% or asleep.

@@ -55,7 +55,7 @@ elseif (UNMUFFLE_GPU STREQUAL "vulkan")
     # The NDK's glslc (2022.3) lacks the integer dot product and cooperative
     # matrix extensions ggml uses on newer GPUs (Adreno 7xx/8xx): a newer
     # glslc on PATH comes first.
-    find_program(UNMUFFLE_GLSLC glslc PATHS ${ANDROID_NDK}/shader-tools/linux-x86_64 NO_CMAKE_FIND_ROOT_PATH)
+    find_program(UNMUFFLE_GLSLC glslc PATHS ${ANDROID_NDK}/shader-tools/linux-x86_64 NO_DEFAULT_PATH)
     set(Vulkan_GLSLC_EXECUTABLE ${UNMUFFLE_GLSLC} CACHE FILEPATH "" FORCE)
     message(STATUS "glslc: ${UNMUFFLE_GLSLC}")
     # ggml only checks SPIRV-Headers is there; the include path above serves it.

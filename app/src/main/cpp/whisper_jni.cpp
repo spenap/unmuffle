@@ -7,6 +7,8 @@
 #include <mutex>
 #include <android/log.h>
 #include <dlfcn.h>
+#include <cstdlib>
+#include <sys/system_properties.h>
 #include "whisper.cpp/include/whisper.h"
 #include "whisper.cpp/ggml/include/ggml-backend.h"
 
@@ -172,6 +174,22 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getLanguages(JNIEnv * env,
 // best one this phone supports before whisper asks for a CPU device.
 JNIEXPORT jint JNI_OnLoad(JavaVM *, void *) {
     whisper_log_set(on_log, nullptr);
+    // Spike: ggml switches from `adb shell setprop debug.unmuffle.env
+    // COOPMAT,INTEGER_DOT_PRODUCT` (each becomes GGML_VK_DISABLE_<name>=1)
+    char env[PROP_VALUE_MAX] = {};
+    if (__system_property_get("debug.unmuffle.env", env) > 0) {
+        std::string list(env);
+        for (size_t start = 0; start < list.size();) {
+            size_t end = list.find(',', start);
+            if (end == std::string::npos) end = list.size();
+            std::string name = "GGML_VK_DISABLE_" + list.substr(start, end - start);
+            if (end > start) {
+                setenv(name.c_str(), "1", 1);
+                __android_log_print(ANDROID_LOG_INFO, "WhisperJNI", "env %s=1", name.c_str());
+            }
+            start = end + 1;
+        }
+    }
     Dl_info info;
     if (dladdr(reinterpret_cast<void *>(&JNI_OnLoad), &info) && info.dli_fname) {
         std::string dir(info.dli_fname);
