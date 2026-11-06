@@ -76,6 +76,9 @@ For any agent (Claude Code, Codex…) and any person.
   `app/.cxx`: `gradlew clean` keeps it, and stale `.so` files get packaged.
 - Run long jobs (benchmarks, model downloads) in the background and stay
   reachable.
+- A spike is time-boxed research: its output is the findings and a pushed
+  reference branch, never merged. No tests, PR or docs; if the answer is
+  yes, the feature is written test-first and the decision recorded then.
 - The phones are shared: one agent at a time, nothing plays
   unless asked, volume and settings left as found. Device runs keep the
   screen on while plugged in (`stay_on_while_plugged_in` 15, restored
