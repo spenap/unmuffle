@@ -11,6 +11,7 @@ import android.os.PersistableBundle
 import android.os.SystemClock
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.addCallback
@@ -22,8 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.R as MR
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.flow.collectLatest
@@ -163,23 +163,38 @@ class TranscriptionActivity : AppCompatActivity() {
         actions.visibility = View.VISIBLE
     }
 
-    /** The transcript's language, and chips to transcribe again in another. */
+    /** The transcript's language, and Change to transcribe again in another. */
     private fun showLanguage(state: UiState.Success) {
         languageGroup.visibility = View.VISIBLE
         findViewById<TextView>(R.id.tv_language).text =
             Languages.resultLine(Languages.nativeName(state.language), state.detected)
-        val chips = findViewById<ChipGroup>(R.id.redo_chips)
-        chips.removeAllViews()
-        fun chip(label: String, onClick: () -> Unit) = chips.addView(Chip(this).apply {
-            text = label
-            setOnClickListener { onClick() }
-        })
-        for (code in Languages.redoOptions(Languages.phone(), state.language)) {
-            chip("Redo in ${Languages.nativeName(code)}") { viewModel.retranscribe(code) }
+        findViewById<View>(R.id.btn_change_language).setOnClickListener { showRedoSheet(state.language) }
+    }
+
+    /** The phone's other languages, one tap each, then the full list. */
+    private fun showRedoSheet(used: String) {
+        val sheet = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.sheet_redo_language, null)
+        val options = view.findViewById<LinearLayout>(R.id.redo_options)
+        val codes = Languages.redoOptions(Languages.phone(), used)
+        for (code in codes) {
+            val row = layoutInflater.inflate(R.layout.item_language, options, false)
+            row.findViewById<TextView>(R.id.name).text = Languages.nativeName(code)
+            row.findViewById<TextView>(R.id.english).text = Languages.englishName(code)
+            row.findViewById<View>(R.id.check).visibility = View.GONE
+            row.setOnClickListener {
+                sheet.dismiss()
+                viewModel.retranscribe(code)
+            }
+            options.addView(row)
         }
-        chip("Other language") {
-            pickRedoLanguage.launch(LanguagePickerActivity.intent(this, state.language, withAuto = false))
+        if (codes.isEmpty()) view.findViewById<View>(R.id.redo_divider).visibility = View.GONE
+        view.findViewById<View>(R.id.redo_more).setOnClickListener {
+            sheet.dismiss()
+            pickRedoLanguage.launch(LanguagePickerActivity.intent(this, used, withAuto = false))
         }
+        sheet.setContentView(view)
+        sheet.show()
     }
 
     private val pickRedoLanguage = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Change on a transcript: the phone's other languages, then the full list -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="Transcribe again in"
+        android:textAppearance="?attr/textAppearanceTitleLarge" />
+
+    <LinearLayout
+        android:id="@+id/redo_options"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/redo_divider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="8dp"
+        app:dividerInsetStart="24dp"
+        app:dividerInsetEnd="24dp" />
+
+    <TextView
+        android:id="@+id/redo_more"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:background="?attr/selectableItemBackground"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="16dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="24dp"
+        android:text="More languages"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+</LinearLayout>

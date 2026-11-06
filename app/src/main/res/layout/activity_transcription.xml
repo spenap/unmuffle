@@ -19,7 +19,7 @@
 
     <!-- Main group, while transcribing and after: the voice message as an
          incoming chat bubble (player above, transcript below) with Copy and
-         Share under it; at the bottom, the progress or the language. -->
+         Share and the language under it; at the bottom, the progress. -->
     <LinearLayout
         android:id="@+id/main_group"
         android:layout_width="match_parent"
@@ -134,23 +134,14 @@
 
             </LinearLayout>
 
-            </LinearLayout>
-
-        </ScrollView>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="24dp"
-            android:paddingBottom="24dp">
-
+            <!-- The transcript's language; Change transcribes it again in another -->
             <LinearLayout
                 android:id="@+id/language_group"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:orientation="vertical"
+                android:layout_marginStart="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:visibility="gone">
 
                 <TextView
@@ -163,12 +154,25 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/redo_chips"
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_change_language"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp" />
+                    android:layout_marginStart="4dp"
+                    android:text="Change" />
             </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="24dp">
 
             <TextView
                 android:id="@+id/tv_status"
