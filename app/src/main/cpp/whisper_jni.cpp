@@ -62,7 +62,14 @@ extern "C" {
 // A session for the model at modelPath; 0 if it doesn't load
 JNIEXPORT jlong JNICALL
 Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(JNIEnv * env, jobject, jstring modelPath) {
-    whisper_log_set(on_log, nullptr);
+    // ggml's OpenCL backend sets up its device on first use, but whisper
+    // asks for the buffer alignment before that: set it up first.
+    for (size_t i = 0; i < ggml_backend_dev_count(); i++) {
+        ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+        if (ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_GPU) {
+            ggml_backend_dev_supports_buft(dev, ggml_backend_dev_buffer_type(dev));
+        }
+    }
     const char * path = env->GetStringUTFChars(modelPath, nullptr);
     whisper_context * ctx = whisper_init_from_file_with_params(path, whisper_context_default_params());
     env->ReleaseStringUTFChars(modelPath, path);
@@ -160,6 +167,7 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_getLanguages(JNIEnv * env,
 // ggml's CPU backends sit next to this library, one per ARM level; load the
 // best one this phone supports before whisper asks for a CPU device.
 JNIEXPORT jint JNI_OnLoad(JavaVM *, void *) {
+    whisper_log_set(on_log, nullptr);
     Dl_info info;
     if (dladdr(reinterpret_cast<void *>(&JNI_OnLoad), &info) && info.dli_fname) {
         std::string dir(info.dli_fname);
