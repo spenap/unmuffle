@@ -33,6 +33,8 @@ android {
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 // Spike: -Pgpu=opencl or -Pgpu=vulkan adds that ggml backend
                 arguments += "-DUNMUFFLE_GPU=${providers.gradleProperty("gpu").getOrElse("off")}"
+                // Spike: -PflashAttn=off turns whisper's flash attention off
+                arguments += "-DUNMUFFLE_FLASH_ATTN=${providers.gradleProperty("flashAttn").getOrElse("on")}"
             }
         }
     }

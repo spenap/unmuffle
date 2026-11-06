@@ -71,7 +71,11 @@ Java_com_simonpena_unmuffle_WhisperLib_00024Companion_initContext(JNIEnv * env, 
         }
     }
     const char * path = env->GetStringUTFChars(modelPath, nullptr);
-    whisper_context * ctx = whisper_init_from_file_with_params(path, whisper_context_default_params());
+    whisper_context_params cparams = whisper_context_default_params();
+#ifdef UNMUFFLE_NO_FLASH_ATTN
+    cparams.flash_attn = false;  // spike: -PflashAttn=off
+#endif
+    whisper_context * ctx = whisper_init_from_file_with_params(path, cparams);
     env->ReleaseStringUTFChars(modelPath, path);
     if (ctx == nullptr) {
         LOGE("Model didn't load");

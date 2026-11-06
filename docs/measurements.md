@@ -6,40 +6,84 @@ stated.
 "Changed" counts words that differ from the first row, ignoring case and
 punctuation.
 
-## 2026-11-06 · GPU spike: OpenCL and Vulkan (Pixel 5)
-whisper.cpp v1.9.5, small q8_0, release builds (`./gradlew assembleRelease
--Pbench -Pgpu=opencl|opencl-generic|vulkan`; branch `spike/gpu`). No time
-or text yet: no GPU run finished.
+## 2026-11-06 · GPU spike: OpenCL and Vulkan
+Branch `spike/gpu`, never merged: whisper.cpp v1.9.5, small q8_0,
+release builds, `./gradlew assembleRelease -Pbench -Pgpu=X` (a separate
+app, `com.simonpena.unmuffle.bench.X`; `-PflashAttn=off` turns whisper's
+flash attention off). No GPU run finished on any phone, so no time or
+text.
 
-| Build | APK | Native libraries added (installed) |
+| Build (`-Pgpu=`) | APK | Native libraries added (installed) |
 |---|---|---|
-| CPU (as today) | 5.19 MB | |
-| OpenCL | 5.91 MB | 3.0 MB `libggml-opencl.so`, 10 KB loader |
-| OpenCL, generic kernels only | 5.63 MB | |
-| Vulkan, NDK's glslc (2022.3) | 11.56 MB | 21 MB `libggml-vulkan.so` |
-| Vulkan, glslc 2026.1 | 16.11 MB | 35 MB |
+| CPU (none) | 5.19 MB | |
+| `opencl` | 5.91 MB | 3.0 MB `libggml-opencl.so`, 10 KB loader |
+| `opencl-generic` (no Adreno kernels) | 5.63 MB | |
+| `vulkan`, NDK's glslc (2022.3) | 11.56 MB | 21 MB `libggml-vulkan.so` |
+| `vulkan`, glslc 2026.1 | 16.11 MB | 35 MB |
 
-- Both build for arm64-v8a with NDK r27c. OpenCL needs the Khronos
-  headers and a loader for the phone's driver; Vulkan needs Vulkan's C++
-  and SPIR-V headers (the NDK has neither) and links Android 9's
-  libvulkan. The NDK's glslc lacks the cooperative-matrix and integer
-  dot product extensions ggml uses on Adreno 7xx/8xx.
-- Pixel 5 (Adreno 620, OpenCL 2.0, LineageOS 24): the vendor
-  `libOpenCL.so` isn't open to apps; `libOpenCL-pixel.so` is, and ggml
-  found the GPU through it. Then:
-  1. The app crashed loading the model: whisper asks the OpenCL buffer
-     type for its alignment before ggml has set up the device (null
-     pointer). Fixed by setting GPU devices up first.
-  2. The driver lacks `clGetKernelSubGroupInfo` (OpenCL 2.1); calling it
-     crashed. Its `cl_khr_subgroups` twin stands in.
-  3. The driver refused to compile ggml's Adreno flash-attention kernel
-     (`cl_khr_3d_image_writes` missing) and ggml exited the app.
-  4. Without the Adreno kernels, the run hung the GPU (kgsl "gpu
-     syncpoint deadlock") and System UI stopped responding. Runs on the
-     Pixel stopped there.
-- Vulkan didn't run on any phone.
+Builds (arm64-v8a, NDK r27c):
+- OpenCL: Khronos headers fetched at a fixed hash, and a small loader
+  (`opencl_loader.c`) that forwards to the phone's `libOpenCL.so`, or
+  Pixels' `libOpenCL-pixel.so`, declared with `uses-native-library`.
+- Vulkan: Vulkan's C++ and SPIR-V headers fetched (the NDK has neither);
+  links Android 9's libvulkan (ggml calls Vulkan 1.1 functions). The
+  NDK's glslc lacks the cooperative-matrix and integer dot product
+  extensions ggml uses on Adreno 7xx/8xx; a newer glslc on PATH is used
+  first, and is what the 16 MB build had.
 
+Pixel 5 (Adreno 620, OpenCL 2.0 and Vulkan 1.1 driver from 2020,
+LineageOS 24), one 70 s message per run:
+1. OpenCL: the vendor `libOpenCL.so` isn't open to apps;
+   `libOpenCL-pixel.so` is, and ggml found the GPU. The app crashed
+   loading the model: whisper asks the OpenCL buffer type for its
+   alignment before ggml has set the device up. Fixed in the JNI by
+   setting GPU devices up first.
+2. OpenCL: the driver lacks `clGetKernelSubGroupInfo` (OpenCL 2.1);
+   calling it crashed. The loader now gives `cl_khr_subgroups`' twin.
+3. OpenCL: the driver refused to compile ggml's Adreno flash-attention
+   kernel (`cl_khr_3d_image_writes` missing); ggml exited the app.
+4. OpenCL, generic kernels: the GPU hung (kgsl "possible gpu syncpoint
+   deadlock") and System UI stopped responding.
+5. Vulkan: crashed loading the model, calling a null
+   `vkGetBufferDeviceAddress`. The device is Vulkan 1.1 with
+   `VK_KHR_buffer_device_address`; ggml calls the Vulkan 1.2 function.
+   No hang.
+6. OpenCL, generic kernels, no flash attention: the model loaded on the
+   GPU; 24 s in, the GPU hung again (same kgsl message), stopped at once.
+   The hang messages stopped with the app.
 
+So neither backend runs on the Pixel 5 without patching ggml, and
+OpenCL can hang its GPU. ggml's OpenCL kernels target Adreno 7xx/8xx
+and its Vulkan backend Vulkan 1.2 devices; the S25 (Adreno 830) is both.
+
+To run on the S25 (the user present; one backend at a time, OpenCL
+first):
+1. `adb shell grep -i opencl /vendor/etc/public.libraries.txt` lists
+   `libOpenCL.so`; `adb shell cmd gpu vkjson | grep -m2 apiVersion`
+   shows the device's Vulkan version.
+2. On `spike/gpu`: `rm -rf app/.cxx`, then for each build install the
+   APK before the next (they share `app-release.apk`):
+   `./gradlew assembleRelease -Pbench` (`.bench`),
+   `./gradlew assembleRelease -Pbench -Pgpu=opencl` (`.bench.opencl`),
+   `./gradlew assembleRelease -Pbench -Pgpu=vulkan` (`.bench.vulkan`; a
+   glslc newer than the NDK's on PATH). `adb install -r
+   app/build/outputs/apk/release/app-release.apk`, then
+   `scripts/bench.sh --model com.simonpena.unmuffle.bench.opencl` (and
+   each other package).
+3. One share first: `scripts/gpu-trial.sh PKG $BENCH_DIR/MESSAGE.opus`
+   watches the kernel and main logs for kgsl "deadlock", "gpu fault",
+   "hang" and "ANR in com.android.systemui", force-stops the app on the
+   first hit or after 240 s, deletes the message copy and restores
+   stay-on. Its log should show "OpenCL driver loaded (libOpenCL.so)",
+   "using GPUOpenCL backend" (or Vulkan's) and no "kernel compile error".
+4. If it finishes: `scripts/bench.sh 2 com.simonpena.unmuffle.bench
+   com.simonpena.unmuffle.bench.opencl` (bench.sh has no hang watch: stay
+   by the phone), and compare the texts in `$BENCH_DIR/results/`.
+   Worth keeping only if clearly faster than the CPU (7–9 s for these
+   messages) with the same text.
+5. Uninstall the bench GPU apps; `stay_on_while_plugged_in` as found.
+
+## 2026-11-05 · whisper.cpp v1.8.3 → v1.9.5
 The app's release build, small q8_0, Spanish. Whole message / first
 words; two runs each, none throttled below 93% or asleep.
 

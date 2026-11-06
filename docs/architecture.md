@@ -34,7 +34,6 @@ Transcription
 - `TokenWords`: the native segment bytes as words with their certainty.
 - `HallucinationFilter`: tells speech from whisper's output on silence.
 - `Whisper`, `WhisperLib`, `cpp/whisper_jni.cpp`: the model, its thread, the JNI.
-- `cpp/opencl_loader.c`: the phone's OpenCL driver for ggml's OpenCL backend (spike, `-Pgpu=opencl`).
 - `WhisperCpuConfig`: how many threads.
 
 Audio

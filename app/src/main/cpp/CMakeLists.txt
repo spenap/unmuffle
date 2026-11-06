@@ -69,3 +69,7 @@ add_subdirectory(whisper.cpp)
 add_library(whisper_jni SHARED whisper_jni.cpp)
 find_library(LOG_LIB log)
 target_link_libraries(whisper_jni whisper ggml ${LOG_LIB})
+# Spike: gradle -PflashAttn=off turns whisper's flash attention off
+if (UNMUFFLE_FLASH_ATTN STREQUAL "off")
+    target_compile_definitions(whisper_jni PRIVATE UNMUFFLE_NO_FLASH_ATTN)
+endif()
