@@ -10,7 +10,7 @@
     <string name="close">Close</string>
 
     <!-- Home -->
-    <string name="home_needs_model">Unmuffle needs the Whisper transcription model to work.\n\nTranscription on this phone: audio and transcripts never leave it.</string>
+    <string name="home_needs_model">Unmuffle needs the Whisper transcription model to work.\n\nEverything is transcribed on your phone, offline.</string>
     <string name="download_size">Download (%d MB)</string>
     <string name="use_model_file">Use a model file</string>
     <string name="download_stalled">The download hasn\'t started. Pick a model file instead?</string>

@@ -8,7 +8,7 @@
     <string name="close">Pechar</string>
 
     <!-- Home -->
-    <string name="home_needs_model">Unmuffle precisa o modelo de transcrición Whisper para funcionar.\n\nTranscrición neste teléfono: o audio e as transcricións nunca saen del.</string>
+    <string name="home_needs_model">Unmuffle precisa o modelo de transcrición Whisper para funcionar.\n\nTodo se transcribe no teu teléfono, sen conexión.</string>
     <string name="download_size">Descargar (%d MB)</string>
     <string name="use_model_file">Usar un ficheiro de modelo</string>
     <string name="download_stalled">A descarga non comezou. Prefires escoller un ficheiro de modelo?</string>
