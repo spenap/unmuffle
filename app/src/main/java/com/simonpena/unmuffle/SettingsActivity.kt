@@ -33,11 +33,9 @@ class SettingsActivity : AppCompatActivity() {
             pickLanguage.launch(LanguagePickerActivity.intent(this, SettingsRepository.getLanguage(this), withAuto = true))
         }
 
-        val model = SettingsRepository.getModel(this)
-        findViewById<TextView>(R.id.model_value).text =
-            "Whisper ${model.name.lowercase()} · ${megabytes(model.sizeBytes)} MB · on this phone"
+        findViewById<TextView>(R.id.model_value).text = SettingsRepository.getModel(this).summary()
         findViewById<TextView>(R.id.version_value).text =
-            "${packageManager.getPackageInfo(packageName, 0).versionName} · works offline"
+            packageManager.getPackageInfo(packageName, 0).versionName
 
         findViewById<View>(R.id.licences_row).setOnClickListener {
             MaterialAlertDialogBuilder(this)

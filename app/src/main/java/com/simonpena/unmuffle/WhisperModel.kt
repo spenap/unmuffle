@@ -19,7 +19,10 @@ enum class WhisperModel(
         url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q8_0.bin",
         sha256 = "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
         sizeBytes = 264_464_607L,
-    )
+    );
+
+    /** Name and size, as Settings shows it: "Whisper small · 264 MB". */
+    fun summary(): String = "Whisper ${name.lowercase()} · ${megabytes(sizeBytes)} MB"
 }
 
 /** Whole megabytes in [bytes], decimal, as Android shows file sizes. */
