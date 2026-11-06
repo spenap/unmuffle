@@ -16,10 +16,10 @@ set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-# Spike: a GPU backend next to the CPU ones (gradle -Pgpu=opencl).
+# Spike: a GPU backend next to the CPU ones (gradle -Pgpu=opencl|vulkan).
 # ggml loads it like the CPU ones; without a driver it isn't registered and
 # whisper runs on the CPU.
-set(UNMUFFLE_GPU "off" CACHE STRING "GPU backend: off, opencl or opencl-generic")
+set(UNMUFFLE_GPU "off" CACHE STRING "GPU backend: off, opencl, opencl-generic or vulkan")
 include(FetchContent)
 if (UNMUFFLE_GPU MATCHES "^opencl")
     # opencl-generic: without the Adreno kernels, which need OpenCL
@@ -37,6 +37,31 @@ if (UNMUFFLE_GPU MATCHES "^opencl")
     set(OpenCL_INCLUDE_DIR ${opencl_headers_SOURCE_DIR} CACHE PATH "" FORCE)
     set(OpenCL_LIBRARY unmuffle_opencl CACHE STRING "" FORCE)
     set(GGML_OPENCL ON CACHE BOOL "" FORCE)
+elseif (UNMUFFLE_GPU STREQUAL "vulkan")
+    # The NDK has Vulkan's C headers and loader, not the C++ or SPIR-V headers.
+    FetchContent_Declare(vulkan_headers
+        URL https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.341.tar.gz
+        URL_HASH SHA256=8876aad926b2e72bdefddc34885472d5332e2d20aa3ed57313466f0bc982cf3f)
+    FetchContent_Declare(spirv_headers
+        URL https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/vulkan-sdk-1.4.341.0.tar.gz
+        URL_HASH SHA256=cab0a654c4917e16367483296b44cdb1d614e3120c721beafcd37e3a8580486c)
+    FetchContent_Populate(vulkan_headers)
+    FetchContent_Populate(spirv_headers)
+    include_directories(BEFORE ${vulkan_headers_SOURCE_DIR}/include ${spirv_headers_SOURCE_DIR}/include)
+    set(Vulkan_INCLUDE_DIR ${vulkan_headers_SOURCE_DIR}/include CACHE PATH "" FORCE)
+    # ggml calls Vulkan 1.1 functions directly, which libvulkan exports from
+    # Android 9 (API 28); on older phones the backend doesn't load.
+    set(Vulkan_LIBRARY ${CMAKE_SYSROOT}/usr/lib/aarch64-linux-android/28/libvulkan.so CACHE FILEPATH "" FORCE)
+    # The NDK's glslc (2022.3) lacks the integer dot product and cooperative
+    # matrix extensions ggml uses on newer GPUs (Adreno 7xx/8xx): a newer
+    # glslc on PATH comes first.
+    find_program(UNMUFFLE_GLSLC glslc PATHS ${ANDROID_NDK}/shader-tools/linux-x86_64 NO_CMAKE_FIND_ROOT_PATH)
+    set(Vulkan_GLSLC_EXECUTABLE ${UNMUFFLE_GLSLC} CACHE FILEPATH "" FORCE)
+    message(STATUS "glslc: ${UNMUFFLE_GLSLC}")
+    # ggml only checks SPIRV-Headers is there; the include path above serves it.
+    file(WRITE ${CMAKE_BINARY_DIR}/spirv/SPIRV-HeadersConfig.cmake "")
+    set(SPIRV-Headers_DIR ${CMAKE_BINARY_DIR}/spirv CACHE PATH "" FORCE)
+    set(GGML_VULKAN ON CACHE BOOL "" FORCE)
 endif()
 
 add_subdirectory(whisper.cpp)

@@ -31,7 +31,7 @@ android {
                 // -O3 in every build: debug builds unoptimised take minutes, and
                 // release builds default to -O2.
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
-                // Spike: -Pgpu=opencl adds ggml's OpenCL backend
+                // Spike: -Pgpu=opencl or -Pgpu=vulkan adds that ggml backend
                 arguments += "-DUNMUFFLE_GPU=${providers.gradleProperty("gpu").getOrElse("off")}"
             }
         }
@@ -72,7 +72,7 @@ android {
         release {
             // scripts/bench.sh: a release build next to the real app, debug-signed
             if (providers.gradleProperty("bench").isPresent) {
-                // With -Pgpu, a third app: .bench.opencl
+                // With -Pgpu, a third app: .bench.opencl or .bench.vulkan
                 val gpu = providers.gradleProperty("gpu").orNull
                 applicationIdSuffix = ".bench" + (gpu?.let { "." + it.replace("-", "_") } ?: "")
                 manifestPlaceholders["appLabel"] = "Unmuffle bench" + (gpu?.let { " $it" } ?: "")
