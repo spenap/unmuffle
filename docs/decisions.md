@@ -11,6 +11,15 @@ detail lives.
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
 
+## 2026-11-06 · Transcription stays on the CPU
+A spike built ggml's OpenCL (+0.7 MB) and Vulkan (+6–11 MB) backends.
+On the S25, OpenCL transcribed a 70 s message in 26.6 s after a 12 s
+load (kernel compiles), against 6.4 s on the CPU: the encoder is faster
+(0.43 s vs 1.17 s per pass) but each decoded token takes 81 ms instead
+of 7.5 ms. On the Pixel 5 neither backend runs: Vulkan needs 1.2, and
+OpenCL hung the GPU and System UI. Vulkan wasn't tried on the S25.
+Detail: branch `spike/gpu`, `docs/measurements.md`.
+
 ## 2026-11-06 · The app in English, Spanish and Galician
 Every user-facing text is a string resource, and lint enforces it:
 hard-coded text in layouts or `setText` and a string missing from a

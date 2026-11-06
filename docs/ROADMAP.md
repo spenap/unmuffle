@@ -52,7 +52,9 @@ Written test-first; measured on the S25.
       encoder, decoder) in `docs/measurements.md`, and a shorter first
       chunk and detection on the first seconds are measured and kept if
       faster with the same text.
-- [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
+- [x] GPU spike: ggml's OpenCL and Vulkan backends. Done when time and
+      text vs the CPU are measured on the S25. (CPU stays: OpenCL 4×
+      slower on the S25; neither runs on the Pixel 5. decisions.md.)
 - [ ] Locking the phone pauses a transcription (S25: no progress for
       20 s with the screen locked). Keep transcribing in the background.
 
@@ -122,7 +124,9 @@ Proof for privacy-minded users, run privately until the repo is public.
       Android 17: no longer granted).
 
 ## Ideas and not doing
-- Ideas: words appear as they are decoded (branch `feat/word-streaming`,
+- Ideas: the encoder alone on the GPU (OpenCL on the S25: 0.43 s per
+  pass vs 1.17 s on the CPU; only with the 12 s kernel compile cached);
+  words appear as they are decoded (branch `feat/word-streaming`,
   #28: the first word only ~4 s sooner on the Pixel 5); CI runs the
   instrumented tests on an emulator (needs an x86_64
   build alongside arm64); F-Droid (Fastlane metadata, fdroiddata recipe); a GitHub Pages
