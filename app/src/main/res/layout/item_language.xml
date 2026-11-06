@@ -23,7 +23,7 @@
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         <TextView
-            android:id="@+id/english"
+            android:id="@+id/ui_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodyMedium"

@@ -2,6 +2,7 @@ package com.simonpena.unmuffle
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class LanguagesTest {
     private val names = mapOf("en" to "English", "es" to "Spanish", "gl" to "Galician",
@@ -26,6 +27,19 @@ class LanguagesTest {
     fun redoOffersThePhoneLanguagesNotUsed() {
         assertEquals(listOf("gl", "es", "en"), Languages.redoOptions(listOf("gl", "es", "en", "de"), used = "pt"))
         assertEquals(listOf("gl", "en"), Languages.redoOptions(listOf("gl", "es", "en"), used = "es"))
+    }
+
+    @Test
+    fun accentsSortWithTheirLetter() {
+        val names = mapOf("ar" to "Árabe", "bg" to "Búlgaro", "af" to "Afrikáans")
+        assertEquals(listOf("af", "ar", "bg"), Languages.ordered(listOf("bg", "ar", "af"), emptyList(), { names.getValue(it) }))
+    }
+
+    @Test
+    fun namesInTheUiLanguage() {
+        assertEquals("Spanish", Languages.nameIn("es", Locale.ENGLISH))
+        assertEquals("Inglés", Languages.nameIn("en", Locale.forLanguageTag("es")))
+        assertEquals("Inglés", Languages.nameIn("en", Locale.forLanguageTag("gl")))
     }
 
     @Test

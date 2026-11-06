@@ -176,11 +176,11 @@ class TranscriptionActivity : AppCompatActivity() {
         val sheet = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.sheet_redo_language, null)
         val options = view.findViewById<LinearLayout>(R.id.redo_options)
-        val codes = Languages.redoOptions(Languages.phone(), used)
+        val codes = Languages.redoOptions(Languages.phone(this), used)
         for (code in codes) {
             val row = layoutInflater.inflate(R.layout.item_language, options, false)
             row.findViewById<TextView>(R.id.name).text = Languages.nativeName(code)
-            row.findViewById<TextView>(R.id.english).text = Languages.englishName(code)
+            row.findViewById<TextView>(R.id.ui_name).text = Languages.nameIn(code, resources.configuration.locales[0])
             row.findViewById<View>(R.id.check).visibility = View.GONE
             row.setOnClickListener {
                 sheet.dismiss()

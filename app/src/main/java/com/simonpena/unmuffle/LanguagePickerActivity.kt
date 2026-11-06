@@ -17,13 +17,14 @@ import com.google.android.material.appbar.MaterialToolbar
 
 /**
  * Picks a language: auto-detect (optional), the phone's languages, then all
- * of whisper's, each by its own name, with search. Returns [EXTRA_CODE].
+ * of whisper's, each by its own name and its name in the app's language,
+ * with search. Returns [EXTRA_CODE].
  */
 class LanguagePickerActivity : AppCompatActivity() {
 
     private sealed class Row {
         data class Header(val title: String) : Row()
-        data class Language(val code: String, val name: String, val english: String) : Row()
+        data class Language(val code: String, val name: String, val uiName: String) : Row()
     }
 
     private lateinit var rows: List<Row>
@@ -36,12 +37,13 @@ class LanguagePickerActivity : AppCompatActivity() {
         findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
         selected = intent.getStringExtra(EXTRA_SELECTED)
 
-        val phone = Languages.phone()
-        fun language(code: String) = Row.Language(code, Languages.nativeName(code), Languages.englishName(code))
+        val phone = Languages.phone(this)
+        val ui = resources.configuration.locales[0]
+        fun language(code: String) = Row.Language(code, Languages.nativeName(code), Languages.nameIn(code, ui))
         val top = if (intent.getBooleanExtra(EXTRA_WITH_AUTO, false)) {
             listOf(Row.Language(Languages.AUTO, getString(R.string.auto_detect), ""))
         } else emptyList()
-        val all = Languages.forPhone().drop(phone.size)
+        val all = Languages.forPhone(this, ui).drop(phone.size)
         rows = top + Row.Header(getString(R.string.phone_languages)) + phone.map(::language) +
             Row.Header(getString(R.string.all_languages)) + all.map(::language)
 
@@ -54,7 +56,7 @@ class LanguagePickerActivity : AppCompatActivity() {
         findViewById<EditText>(R.id.search).doAfterTextChanged { text ->
             val q = text.toString().trim().lowercase()
             adapter.show(if (q.isEmpty()) rows else rows.filterIsInstance<Row.Language>().filter {
-                it.code != Languages.AUTO && (it.name.lowercase().contains(q) || it.english.lowercase().contains(q))
+                it.code != Languages.AUTO && (it.name.lowercase().contains(q) || it.uiName.lowercase().contains(q))
             })
         }
     }
@@ -86,9 +88,9 @@ class LanguagePickerActivity : AppCompatActivity() {
                 is Row.Header -> (view as TextView).text = row.title
                 is Row.Language -> {
                     view.findViewById<TextView>(R.id.name).text = row.name
-                    view.findViewById<TextView>(R.id.english).apply {
-                        text = row.english
-                        visibility = if (row.english.isEmpty() || row.english == row.name) View.GONE else View.VISIBLE
+                    view.findViewById<TextView>(R.id.ui_name).apply {
+                        text = row.uiName
+                        visibility = if (row.uiName.isEmpty() || row.uiName == row.name) View.GONE else View.VISIBLE
                     }
                     view.findViewById<View>(R.id.check).visibility =
                         if (row.code == selected) View.VISIBLE else View.INVISIBLE
