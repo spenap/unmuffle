@@ -29,6 +29,9 @@ for updates. Needs Android 8 or later on a 64-bit ARM phone.
 The transcription language is the phone's own unless you choose another,
 or auto-detect, in Settings.
 
+The app itself is in English, Spanish and Galician, following the phone's
+language or the one set for it in Android's App languages.
+
 ## Privacy
 - Audio and transcripts stay on the phone. The audio is deleted when you
   leave the transcript; transcripts are never written to disk or logged.
