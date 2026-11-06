@@ -1,6 +1,7 @@
 package com.simonpena.unmuffle
 
 import android.os.LocaleList
+import androidx.annotation.StringRes
 import java.util.Locale
 
 /** The transcription language: auto-detect or a whisper code. */
@@ -20,9 +21,9 @@ object Languages {
     fun redoOptions(phoneFirst: List<String>, used: String, max: Int = 3): List<String> =
         phoneFirst.filter { it != used }.take(max)
 
-    /** Under a transcript: the language it was transcribed in. */
-    fun resultLine(name: String, detected: Boolean): String =
-        if (detected) "Detected $name" else "Transcribed in $name"
+    /** Under a transcript: the language it was transcribed in, a format taking its name. */
+    @StringRes
+    fun resultLine(detected: Boolean): Int = if (detected) R.string.language_detected else R.string.language_chosen
 
     /** The phone's languages whisper supports, in the phone's order. */
     fun phone(): List<String> = phoneCodes().map { OLD_CODES[it] ?: it }.filter { it in supported }.distinct()

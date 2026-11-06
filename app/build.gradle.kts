@@ -92,6 +92,11 @@ android {
         }
     }
 
+    // User-facing text lives in strings.xml, translated into every language
+    lint {
+        error += listOf("HardcodedText", "SetTextI18n", "MissingTranslation", "ExtraTranslation")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

@@ -30,7 +30,8 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         data class Checking(val bytes: Long, val total: Long) : State()
         object WrongFile : State()
         object Complete : State()
-        data class Failed(val reason: String) : State()
+        /** [code]: DownloadManager's reason; null when the file didn't match its SHA-256. */
+        data class Failed(val code: Int? = null) : State()
     }
 
     private val _state = MutableStateFlow<State>(State.Idle)
@@ -47,8 +48,8 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         if (target.exists()) target.delete()
         val model = SettingsRepository.getModel(context)
         val request = DownloadManager.Request(Uri.parse(model.url))
-            .setTitle("Unmuffle — Whisper Model")
-            .setDescription("Downloading transcription model (${megabytes(model.sizeBytes)} MB)...")
+            .setTitle(context.getString(R.string.download_title))
+            .setDescription(context.getString(R.string.download_description, megabytes(model.sizeBytes)))
             .setDestinationInExternalFilesDir(context, null, "models/${model.filename}")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         val id = downloads.enqueue(request)
@@ -109,7 +110,7 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
                             val reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
                             Log.e(TAG, "Download failed: $reason")
                             ModelManager.deleteModel(context)
-                            _state.value = State.Failed("Download failed (code $reason). Tap Retry.")
+                            _state.value = State.Failed(reason)
                             return
                         }
                         else -> _state.value = State.Downloading(
@@ -129,7 +130,7 @@ class DownloadViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             Log.e(TAG, "SHA-256 mismatch")
             ModelManager.deleteModel(context)
-            _state.value = State.Failed("Download corrupt. SHA256 mismatch. Tap Retry.")
+            _state.value = State.Failed()
         }
     }
 }

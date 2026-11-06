@@ -39,11 +39,11 @@ class LanguagePickerActivity : AppCompatActivity() {
         val phone = Languages.phone()
         fun language(code: String) = Row.Language(code, Languages.nativeName(code), Languages.englishName(code))
         val top = if (intent.getBooleanExtra(EXTRA_WITH_AUTO, false)) {
-            listOf(Row.Language(Languages.AUTO, "Auto-detect", ""))
+            listOf(Row.Language(Languages.AUTO, getString(R.string.auto_detect), ""))
         } else emptyList()
         val all = Languages.forPhone().drop(phone.size)
-        rows = top + Row.Header("Your phone's languages") + phone.map(::language) +
-            Row.Header("All languages") + all.map(::language)
+        rows = top + Row.Header(getString(R.string.phone_languages)) + phone.map(::language) +
+            Row.Header(getString(R.string.all_languages)) + all.map(::language)
 
         adapter = Adapter()
         findViewById<RecyclerView>(R.id.list).apply {

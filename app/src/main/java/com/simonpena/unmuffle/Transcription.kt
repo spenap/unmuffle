@@ -2,6 +2,7 @@ package com.simonpena.unmuffle
 
 import android.os.SystemClock
 import android.util.Log
+import androidx.annotation.StringRes
 
 private const val TAG = "Transcription"
 
@@ -28,8 +29,9 @@ sealed class UiState {
         val language: String = Languages.AUTO,
         val detected: Boolean = false,
     ) : UiState()
-    data class NoSpeech(val message: String) : UiState()
-    data class Error(val message: String) : UiState()
+    object NoSpeech : UiState()
+    /** [message] a string resource, formatted with [detail] if it takes one. */
+    data class Error(@StringRes val message: Int, val detail: String? = null) : UiState()
 }
 
 /** What [Transcription] needs from whisper; [Whisper] in the app, a fake in tests. */
@@ -92,7 +94,7 @@ class Transcription(
 
         val text = streaming.state
         if (!HallucinationFilter.isSpeech(text.partial)) {
-            show(UiState.NoSpeech("No speech detected"))
+            show(UiState.NoSpeech)
             return
         }
         val used = recognizer.language()

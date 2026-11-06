@@ -39,15 +39,15 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.licences_row).setOnClickListener {
             MaterialAlertDialogBuilder(this)
-                .setTitle("Licences")
+                .setTitle(R.string.licences)
                 .setMessage(assets.open("licences.txt").bufferedReader().use { it.readText() })
-                .setPositiveButton("Close", null)
+                .setPositiveButton(R.string.close, null)
                 .show()
         }
     }
 
     private fun showLanguage() {
         val code = SettingsRepository.getLanguage(this)
-        languageValue.text = if (code == Languages.AUTO) "Auto-detect" else Languages.nativeName(code)
+        languageValue.text = if (code == Languages.AUTO) getString(R.string.auto_detect) else Languages.nativeName(code)
     }
 }

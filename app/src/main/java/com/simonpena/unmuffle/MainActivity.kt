@@ -56,31 +56,33 @@ class MainActivity : AppCompatActivity() {
         tvProgress.visibility = View.VISIBLE
         when (state) {
             is DownloadViewModel.State.Idle, is DownloadViewModel.State.WrongFile -> {
-                offerDownload("Download (${megabytes(model.sizeBytes)} MB)") { viewModel.startDownload() }
+                offerDownload(getString(R.string.download_size, megabytes(model.sizeBytes))) { viewModel.startDownload() }
                 if (state is DownloadViewModel.State.WrongFile) {
-                    showStatus("That file isn't the model. Pick ${model.filename}.")
+                    showStatus(getString(R.string.wrong_file, model.filename))
                 }
             }
             is DownloadViewModel.State.Downloading -> {
-                btnDownload.text = "Downloading..."
+                btnDownload.setText(R.string.downloading)
                 progressBar.progress = percent(state.bytes, state.total)
-                tvProgress.text = if (state.bytes > 0) of(state.bytes, state.total) else "Waiting to start…"
+                tvProgress.text = if (state.bytes > 0) of(state.bytes, state.total) else getString(R.string.waiting_to_start)
                 if (state.stalled) stalledCard.visibility = View.VISIBLE
             }
             is DownloadViewModel.State.Verifying -> {
-                btnDownload.text = "Verifying..."
+                btnDownload.setText(R.string.verifying)
                 progressBar.progress = 100
-                tvProgress.text = "Verifying download integrity..."
+                tvProgress.setText(R.string.verifying_download)
             }
             is DownloadViewModel.State.Checking -> {
-                btnDownload.text = "Checking the model..."
+                btnDownload.setText(R.string.checking_model)
                 progressBar.progress = percent(state.bytes, state.total)
-                tvProgress.text = "${model.filename} · ${of(state.bytes, state.total)}"
+                tvProgress.text = getString(
+                    R.string.checking_progress, model.filename, megabytes(state.bytes), megabytes(state.total),
+                )
             }
             is DownloadViewModel.State.Complete -> showReady()
             is DownloadViewModel.State.Failed -> {
-                offerDownload("Retry") { viewModel.retryDownload() }
-                showStatus(state.reason)
+                offerDownload(getString(R.string.retry)) { viewModel.retryDownload() }
+                showStatus(state.code?.let { getString(R.string.download_failed, it) } ?: getString(R.string.download_corrupt))
             }
         }
     }
@@ -107,6 +109,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.ready_group).visibility = View.VISIBLE
     }
 
-    private fun of(bytes: Long, total: Long) = "${megabytes(bytes)} of ${megabytes(total)} MB"
+    private fun of(bytes: Long, total: Long) = getString(R.string.megabytes_of, megabytes(bytes), megabytes(total))
     private fun percent(bytes: Long, total: Long) = if (total > 0) (bytes * 100 / total).toInt() else 0
 }

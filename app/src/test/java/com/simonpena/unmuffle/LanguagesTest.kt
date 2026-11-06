@@ -30,8 +30,8 @@ class LanguagesTest {
 
     @Test
     fun resultLineSaysWhetherDetected() {
-        assertEquals("Detected Português", Languages.resultLine("Português", detected = true))
-        assertEquals("Transcribed in Español", Languages.resultLine("Español", detected = false))
+        assertEquals(R.string.language_detected, Languages.resultLine(detected = true))
+        assertEquals(R.string.language_chosen, Languages.resultLine(detected = false))
     }
 
     @Test

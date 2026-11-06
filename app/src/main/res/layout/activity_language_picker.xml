@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationContentDescription="Back"
-        app:title="Language" />
+        app:navigationContentDescription="@string/back"
+        app:title="@string/language" />
 
     <EditText
         android:id="@+id/search"
@@ -23,7 +23,7 @@
         android:background="@drawable/bg_search"
         android:drawableStart="@drawable/ic_search"
         android:drawablePadding="12dp"
-        android:hint="Search languages"
+        android:hint="@string/search_languages"
         android:importantForAutofill="no"
         android:inputType="text"
         android:paddingHorizontal="16dp"
