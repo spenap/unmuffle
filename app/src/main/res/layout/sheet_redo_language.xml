@@ -13,7 +13,7 @@
         android:paddingHorizontal="24dp"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:text="Transcribe again in"
+        android:text="@string/transcribe_again_in"
         android:textAppearance="?attr/textAppearanceTitleLarge" />
 
     <LinearLayout
@@ -40,6 +40,6 @@
         android:drawablePadding="16dp"
         android:gravity="center_vertical"
         android:paddingHorizontal="24dp"
-        android:text="More languages"
+        android:text="@string/more_languages"
         android:textAppearance="?attr/textAppearanceBodyLarge" />
 </LinearLayout>

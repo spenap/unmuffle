@@ -15,7 +15,7 @@ object SettingsRepository {
 
     /** The language setting: [Languages.AUTO] or a whisper code; by default the phone's language. */
     fun getLanguage(context: Context): String =
-        prefs(context).getString(KEY_LANGUAGE, null) ?: Languages.defaultFor(Languages.phone())
+        prefs(context).getString(KEY_LANGUAGE, null) ?: Languages.defaultFor(Languages.phone(context))
 
     /** Stores the language setting. */
     fun setLanguage(context: Context, languageCode: String) {

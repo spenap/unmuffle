@@ -79,7 +79,7 @@ class TranscriptionActivity : AppCompatActivity() {
                         is UiState.NoSpeech -> showOnly(noSpeechGroup)
                         is UiState.Error -> {
                             showOnly(errorGroup)
-                            findViewById<TextView>(R.id.tv_error).text = state.message
+                            findViewById<TextView>(R.id.tv_error).text = getString(state.message, state.detail)
                         }
                     }
                 }
@@ -113,7 +113,7 @@ class TranscriptionActivity : AppCompatActivity() {
         waveform.onSeek = { player.seekTo(it) }
         player.state.collect { s ->
             btnPlay.setIconResource(if (s.playing) R.drawable.ic_pause else R.drawable.ic_play)
-            btnPlay.contentDescription = if (s.playing) "Pause" else "Play"
+            btnPlay.contentDescription = getString(if (s.playing) R.string.pause else R.string.play)
             waveform.progress = if (s.duration > 0f) s.position / s.duration else 0f
             tvTime.text = Waveform.time(if (s.playing || s.position > 0f) s.position else s.duration)
         }
@@ -167,7 +167,12 @@ class TranscriptionActivity : AppCompatActivity() {
     private fun showLanguage(state: UiState.Success) {
         languageGroup.visibility = View.VISIBLE
         findViewById<TextView>(R.id.tv_language).text =
-            Languages.resultLine(Languages.nativeName(state.language), state.detected)
+            getString(
+                Languages.resultLine(state.detected),
+                Languages.nameInSentence(
+                    state.language, resources.configuration.locales[0], resources.getBoolean(R.bool.language_names_lowercase),
+                ),
+            )
         findViewById<View>(R.id.btn_change_language).setOnClickListener { showRedoSheet(state.language) }
     }
 
@@ -176,11 +181,11 @@ class TranscriptionActivity : AppCompatActivity() {
         val sheet = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.sheet_redo_language, null)
         val options = view.findViewById<LinearLayout>(R.id.redo_options)
-        val codes = Languages.redoOptions(Languages.phone(), used)
+        val codes = Languages.redoOptions(Languages.phone(this), used)
         for (code in codes) {
             val row = layoutInflater.inflate(R.layout.item_language, options, false)
             row.findViewById<TextView>(R.id.name).text = Languages.nativeName(code)
-            row.findViewById<TextView>(R.id.english).text = Languages.englishName(code)
+            row.findViewById<TextView>(R.id.ui_name).text = Languages.nameIn(code, resources.configuration.locales[0])
             row.findViewById<View>(R.id.check).visibility = View.GONE
             row.setOnClickListener {
                 sheet.dismiss()
@@ -227,7 +232,7 @@ class TranscriptionActivity : AppCompatActivity() {
 
     /** Copy confirms in place: a check on a tonal circle. */
     private fun showCopied(copied: Boolean) {
-        val label = if (copied) "Copied" else "Copy"
+        val label = getString(if (copied) R.string.copied else R.string.copy)
         btnCopy.contentDescription = label
         btnCopy.tooltipText = label
         btnCopy.setIconResource(if (copied) R.drawable.ic_check else R.drawable.ic_copy)

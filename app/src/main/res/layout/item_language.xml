@@ -23,7 +23,7 @@
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         <TextView
-            android:id="@+id/english"
+            android:id="@+id/ui_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodyMedium"
@@ -34,6 +34,6 @@
         android:id="@+id/check"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:contentDescription="Selected"
+        android:contentDescription="@string/selected"
         android:src="@drawable/ic_check" />
 </LinearLayout>

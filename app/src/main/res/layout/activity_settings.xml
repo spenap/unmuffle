@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationContentDescription="Back"
-        app:title="Settings" />
+        app:navigationContentDescription="@string/back"
+        app:title="@string/settings" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -25,7 +25,7 @@
 
             <TextView
                 style="@style/Unmuffle.SettingsSection"
-                android:text="Transcription" />
+                android:text="@string/settings_transcription" />
 
             <LinearLayout
                 android:id="@+id/language_row"
@@ -37,7 +37,7 @@
                 <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_language" />
 
                 <LinearLayout style="@style/Unmuffle.SettingsText">
-                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Language" />
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="@string/language" />
                     <TextView android:id="@+id/language_value" style="@style/Unmuffle.SettingsValue" />
                 </LinearLayout>
 
@@ -50,7 +50,7 @@
                 android:paddingStart="64dp"
                 android:paddingEnd="24dp"
                 android:paddingBottom="16dp"
-                android:text="Choosing a language is faster than auto-detect and avoids mix-ups."
+                android:text="@string/settings_language_hint"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -62,12 +62,12 @@
 
             <TextView
                 style="@style/Unmuffle.SettingsSection"
-                android:text="About" />
+                android:text="@string/settings_about" />
 
             <LinearLayout style="@style/Unmuffle.SettingsRow">
                 <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_model" />
                 <LinearLayout style="@style/Unmuffle.SettingsText">
-                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Model" />
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="@string/settings_model" />
                     <TextView android:id="@+id/model_value" style="@style/Unmuffle.SettingsValue" />
                 </LinearLayout>
             </LinearLayout>
@@ -82,8 +82,8 @@
                 <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_licences" />
 
                 <LinearLayout style="@style/Unmuffle.SettingsText">
-                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Licences" />
-                    <TextView style="@style/Unmuffle.SettingsValue" android:text="whisper.cpp, the Whisper model, Android libraries" />
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="@string/licences" />
+                    <TextView style="@style/Unmuffle.SettingsValue" android:text="@string/licences_summary" />
                 </LinearLayout>
 
                 <ImageView style="@style/Unmuffle.SettingsChevron" />
@@ -92,7 +92,7 @@
             <LinearLayout style="@style/Unmuffle.SettingsRow">
                 <ImageView style="@style/Unmuffle.SettingsIcon" android:src="@drawable/ic_info" />
                 <LinearLayout style="@style/Unmuffle.SettingsText">
-                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="Version" />
+                    <TextView style="@style/Unmuffle.SettingsTitle" android:text="@string/version" />
                     <TextView android:id="@+id/version_value" style="@style/Unmuffle.SettingsValue" />
                 </LinearLayout>
             </LinearLayout>
@@ -108,7 +108,7 @@
                 android:drawableStart="@drawable/ic_lock"
                 android:drawablePadding="8dp"
                 android:gravity="center_vertical"
-                android:text="Audio and transcripts never leave this phone."
+                android:text="@string/privacy"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 

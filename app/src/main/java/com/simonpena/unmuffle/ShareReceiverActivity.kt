@@ -16,7 +16,7 @@ class ShareReceiverActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!ModelManager.isModelPresentFast(this)) {
-            Toast.makeText(this, "Model needed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.model_needed, Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, MainActivity::class.java))
             finish()
             return
@@ -29,9 +29,9 @@ class ShareReceiverActivity : AppCompatActivity() {
                     .putExtra(TranscriptionActivity.EXTRA_AUDIO_PATH, result.file.absolutePath)
             )
             is AudioCopier.CopyResult.TooLarge -> Toast.makeText(
-                this, "File too large (25MB max). Unmuffle works best with voice messages.", Toast.LENGTH_LONG,
+                this, getString(R.string.file_too_large, AudioCopier.MAX_FILE_SIZE_BYTES / (1024 * 1024)), Toast.LENGTH_LONG,
             ).show()
-            else -> Toast.makeText(this, "Could not process this file.", Toast.LENGTH_SHORT).show()
+            else -> Toast.makeText(this, R.string.file_unreadable, Toast.LENGTH_SHORT).show()
         }
         finish()
     }

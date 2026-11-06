@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="back">Atrás</string>
+    <string name="settings">Ajustes</string>
+    <string name="language">Idioma</string>
+    <string name="auto_detect">Detección automática</string>
+    <string name="close">Cerrar</string>
+
+    <!-- Home -->
+    <string name="home_needs_model">Unmuffle necesita el modelo de transcripción Whisper para funcionar.\n\nTodo se transcribe en tu teléfono, sin conexión.</string>
+    <string name="download_size">Descargar (%d MB)</string>
+    <string name="use_model_file">Usar un archivo de modelo</string>
+    <string name="download_stalled">La descarga no ha empezado. ¿Prefieres elegir un archivo de modelo?</string>
+    <string name="pick_file">Elegir archivo</string>
+    <string name="wrong_file">Ese archivo no es el modelo. Elige %s.</string>
+    <string name="downloading">Descargando…</string>
+    <string name="waiting_to_start">Esperando para empezar…</string>
+    <string name="megabytes_of">%1$d de %2$d MB</string>
+    <string name="verifying">Verificando…</string>
+    <string name="verifying_download">Comprobando la integridad de la descarga…</string>
+    <string name="checking_model">Comprobando el modelo…</string>
+    <string name="checking_progress">%1$s · %2$d de %3$d MB</string>
+    <string name="retry">Reintentar</string>
+    <string name="download_failed">No se ha podido descargar (código %d). Toca Reintentar.</string>
+    <string name="download_corrupt">La descarga está dañada: el SHA256 no coincide. Toca Reintentar.</string>
+    <string name="download_title">Unmuffle: modelo Whisper</string>
+    <string name="download_description">Descargando el modelo de transcripción (%d MB)…</string>
+    <string name="ready_title">Unmuffle está listo.</string>
+    <string name="ready_hint">Comparte un mensaje de voz desde WhatsApp o Telegram para transcribirlo.</string>
+
+    <!-- Sharing -->
+    <string name="model_needed">Falta el modelo</string>
+    <string name="file_too_large">Archivo demasiado grande (máx. %d MB). Unmuffle funciona mejor con mensajes de voz.</string>
+    <string name="file_unreadable">No se ha podido procesar este archivo.</string>
+
+    <!-- Transcription -->
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="copy">Copiar</string>
+    <string name="copied">Copiado</string>
+    <string name="share">Compartir</string>
+    <string name="change">Cambiar</string>
+    <string name="transcribing">Transcribiendo…</string>
+    <string name="no_speech">No se ha detectado voz</string>
+    <string name="no_speech_detail">El audio no contiene voz reconocible.</string>
+    <string name="language_detected">Detectado: %s</string>
+    <string name="language_chosen">Transcrito en %s</string>
+    <string name="transcribe_again_in">Transcribir de nuevo en</string>
+    <string name="more_languages">Más idiomas</string>
+    <string name="error_load_model">No se ha podido cargar el modelo</string>
+    <string name="error_audio">No se ha podido procesar este audio</string>
+    <string name="error_transcription">Error al transcribir: %s</string>
+
+    <!-- Language picker -->
+    <string name="search_languages">Buscar idiomas</string>
+    <string name="phone_languages">Idiomas del teléfono</string>
+    <string name="all_languages">Todos los idiomas</string>
+    <string name="selected">Seleccionado</string>
+
+    <!-- Settings -->
+    <string name="settings_transcription">Transcripción</string>
+    <string name="settings_language_hint">Elegir un idioma es más rápido que la detección automática y evita confusiones.</string>
+    <string name="settings_about">Información</string>
+    <string name="settings_model">Modelo</string>
+    <string name="licences">Licencias</string>
+    <string name="licences_summary">whisper.cpp, el modelo Whisper, bibliotecas de Android</string>
+    <string name="version">Versión</string>
+    <string name="privacy">El audio y las transcripciones nunca salen de este teléfono.</string>
+</resources>

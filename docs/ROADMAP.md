@@ -63,6 +63,15 @@ Written test-first; measured on the S25.
 - [x] The transcript shows its language (detected or chosen) and can be
       transcribed again in another.
 
+## Track L: Languages of the app
+- [x] Every user-facing text in `strings.xml`. Done when lint fails on
+      hard-coded text and on a missing translation.
+- [x] Spanish and Galician. Done when `values-es` and `values-gl`
+      translate every string and language names' second line is in the
+      app's language.
+- [x] Per-app language. Done when the app is listed in Settings › App
+      languages (Android 13+) with English, Spanish and Galician.
+
 ## Track C: Trim
 A smaller, simpler app its owner can read. Done for each item when
 behaviour is unchanged apart from the trims named (unit and device tests
@@ -127,7 +136,7 @@ Proof for privacy-minded users, run privately until the repo is public.
   (whisper's last segment ends early).
 - Not doing: Android's on-device recognizer (closed source; see
   decisions.md); whisper.cpp VAD (no faster on real messages, dropped
-  speech; see decisions.md); Galician; transcript history (transcripts are ephemeral);
+  speech; see decisions.md); Galician transcription; transcript history (transcripts are ephemeral);
   cloud transcription; live microphone transcription; speaker
   diarization; medium/large models (too big and slow on a phone); iOS;
   Compose (Views are enough for four screens).

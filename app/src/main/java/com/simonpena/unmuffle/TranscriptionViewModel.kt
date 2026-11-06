@@ -60,20 +60,20 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 val modelPath = ModelManager.modelFile(getApplication()).absolutePath
                 whisper = Whisper.load(modelPath)
                 if (whisper == null) {
-                    _uiState.value = UiState.Error("Could not load model")
+                    _uiState.value = UiState.Error(R.string.error_load_model)
                     return@launch
                 }
 
                 val decoded = withContext(Dispatchers.Default) { AudioDecoder.decode(audioPath) }
                 if (decoded == null) {
-                    _uiState.value = UiState.Error("Could not decode audio")
+                    _uiState.value = UiState.Error(R.string.error_audio)
                     return@launch
                 }
                 Log.i(TAG, "Decoded: ${decoded.samples.size} samples, ${decoded.sampleRate}Hz, ${decoded.channels}ch")
 
                 val pcm = withContext(Dispatchers.Default) { PcmResampler.toWhisperFormat(decoded) }
                 if (pcm == null) {
-                    _uiState.value = UiState.Error("Could not resample audio")
+                    _uiState.value = UiState.Error(R.string.error_audio)
                     return@launch
                 }
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")
@@ -88,7 +88,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Transcription failed: ${e.message}", e)
-                _uiState.value = UiState.Error("Transcription failed: ${e.message}")
+                _uiState.value = UiState.Error(R.string.error_transcription, e.message.toString())
             }
         }
     }
@@ -104,7 +104,7 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Transcription failed: ${e.message}", e)
-                _uiState.value = UiState.Error("Transcription failed: ${e.message}")
+                _uiState.value = UiState.Error(R.string.error_transcription, e.message.toString())
             }
         }
     }

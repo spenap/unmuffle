@@ -2,6 +2,7 @@ package com.simonpena.unmuffle
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class LanguagesTest {
     private val names = mapOf("en" to "English", "es" to "Spanish", "gl" to "Galician",
@@ -29,9 +30,29 @@ class LanguagesTest {
     }
 
     @Test
+    fun accentsSortWithTheirLetter() {
+        val names = mapOf("ar" to "Árabe", "bg" to "Búlgaro", "af" to "Afrikáans")
+        assertEquals(listOf("af", "ar", "bg"), Languages.ordered(listOf("bg", "ar", "af"), emptyList(), { names.getValue(it) }))
+    }
+
+    @Test
+    fun namesInTheUiLanguage() {
+        assertEquals("Spanish", Languages.nameIn("es", Locale.ENGLISH))
+        assertEquals("Inglés", Languages.nameIn("en", Locale.forLanguageTag("es")))
+        assertEquals("Inglés", Languages.nameIn("en", Locale.forLanguageTag("gl")))
+    }
+
+    @Test
+    fun namesMidSentenceAsTheUiLanguageWritesThem() {
+        assertEquals("Spanish", Languages.nameInSentence("es", Locale.ENGLISH, lowercase = false))
+        assertEquals("inglés", Languages.nameInSentence("en", Locale.forLanguageTag("es"), lowercase = true))
+        assertEquals("inglés", Languages.nameInSentence("en", Locale.forLanguageTag("gl"), lowercase = true))
+    }
+
+    @Test
     fun resultLineSaysWhetherDetected() {
-        assertEquals("Detected Português", Languages.resultLine("Português", detected = true))
-        assertEquals("Transcribed in Español", Languages.resultLine("Español", detected = false))
+        assertEquals(R.string.language_detected, Languages.resultLine(detected = true))
+        assertEquals(R.string.language_chosen, Languages.resultLine(detected = false))
     }
 
     @Test

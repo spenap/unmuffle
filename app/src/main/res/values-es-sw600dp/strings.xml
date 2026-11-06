@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_needs_model">Unmuffle necesita el modelo de transcripción Whisper para funcionar.\n\nTodo se transcribe en tu tableta, sin conexión.</string>
+    <string name="phone_languages">Idiomas de la tableta</string>
+    <string name="privacy">El audio y las transcripciones nunca salen de esta tableta.</string>
+</resources>

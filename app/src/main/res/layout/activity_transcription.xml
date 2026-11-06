@@ -10,7 +10,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:title="Unmuffle" />
+        app:title="@string/app_name" />
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -69,7 +69,7 @@
                             style="?attr/materialIconButtonFilledStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription="Play"
+                            android:contentDescription="@string/play"
                             app:icon="@drawable/ic_play" />
 
                         <com.simonpena.unmuffle.WaveformView
@@ -119,8 +119,8 @@
                     style="?attr/materialIconButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:contentDescription="Copy"
-                    android:tooltipText="Copy"
+                    android:contentDescription="@string/copy"
+                    android:tooltipText="@string/copy"
                     app:icon="@drawable/ic_copy" />
 
                 <com.google.android.material.button.MaterialButton
@@ -128,8 +128,8 @@
                     style="?attr/materialIconButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:contentDescription="Share"
-                    android:tooltipText="Share"
+                    android:contentDescription="@string/share"
+                    android:tooltipText="@string/share"
                     app:icon="@drawable/ic_share" />
 
             </LinearLayout>
@@ -160,7 +160,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="Change" />
+                    android:text="@string/change" />
             </LinearLayout>
 
             </LinearLayout>
@@ -178,7 +178,7 @@
                 android:id="@+id/tv_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Transcribing..."
+                android:text="@string/transcribing"
                 android:textAppearance="?attr/textAppearanceBodyMedium" />
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -205,7 +205,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No speech detected"
+            android:text="@string/no_speech"
             android:textAppearance="?attr/textAppearanceTitleLarge"
             android:textAlignment="center"
             android:layout_marginBottom="8dp" />
@@ -213,7 +213,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="The audio did not contain recognizable speech."
+            android:text="@string/no_speech_detail"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textAlignment="center" />
 
