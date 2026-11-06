@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- On screens at least 600 dp wide (tablets), "phone" reads "tablet". -->
+<resources>
+    <string name="home_needs_model">Unmuffle needs the Whisper transcription model to work.\n\nEverything is transcribed on your tablet, offline.</string>
+    <string name="phone_languages">Your tablet\'s languages</string>
+    <string name="privacy">Audio and transcripts never leave this tablet.</string>
+</resources>

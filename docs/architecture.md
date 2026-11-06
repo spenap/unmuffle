@@ -52,6 +52,8 @@ Text
   `values-gl` translate it. Lint fails on hard-coded text and on a string
   missing from a language. Log messages stay in code, in English.
   `bools.xml`: whether a language lowercases language names mid-sentence.
+  `values-sw600dp`, `values-xx-sw600dp`: the strings that say "phone",
+  saying "tablet" on screens at least 600 dp wide.
 - `res/resources.properties`: English is the default; AGP generates the
   locale config for App languages from the `values-xx` folders.
 

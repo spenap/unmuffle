@@ -19,8 +19,9 @@ are the maintainer's languages. Android picks the language, per app on
 13+ (AGP's generated locale config). Language names show their own name
 and their name in the app's language, lowercase mid-sentence where the
 language writes it so. To add a language: a `values-xx/strings.xml` with
-every string, and `bools.xml` if it lowercases language names; the locale
-config follows.
+every string, `values-xx-sw600dp` for those that say "phone" (tablets
+read "tablet"), and `bools.xml` if it lowercases language names; the
+locale config follows.
 The licences text stays in English. Detail: `docs/architecture.md`.
 
 ## 2026-11-06 · Redo from one Change, not chips
