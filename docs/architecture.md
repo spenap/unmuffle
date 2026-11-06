@@ -51,6 +51,7 @@ Text
 - `res/values/strings.xml`: every text the user sees; `values-es` and
   `values-gl` translate it. Lint fails on hard-coded text and on a string
   missing from a language. Log messages stay in code, in English.
+  `bools.xml`: whether a language lowercases language names mid-sentence.
 - `res/resources.properties`: English is the default; AGP generates the
   locale config for App languages from the `values-xx` folders.
 
