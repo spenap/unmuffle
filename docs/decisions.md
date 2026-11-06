@@ -11,6 +11,13 @@ detail lives.
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
 
+## 2026-11-06 · Redo from one Change, not chips
+Supersedes the "one tap" in "A language setting and a redo, no asking".
+Under Copy and Share, the transcript says its language with a Change
+button, like translation and caption menus; Change opens a sheet with
+the phone's other languages and "More languages". A redo is two taps;
+the screen loses a row of chips and the odd "Other language".
+
 ## 2026-11-05 · Public with its history; issues, not pull requests
 A review before going public found no secrets and nothing private worth
 rewriting history for, so the history stays as it is. Contributions are

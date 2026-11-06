@@ -22,7 +22,7 @@ object Languages {
 
     /** Under a transcript: the language it was transcribed in. */
     fun resultLine(name: String, detected: Boolean): String =
-        if (detected) "Detected: $name. Not right?" else "Transcribed in $name"
+        if (detected) "Detected $name" else "Transcribed in $name"
 
     /** The phone's languages whisper supports, in the phone's order. */
     fun phone(): List<String> = phoneCodes().map { OLD_CODES[it] ?: it }.filter { it in supported }.distinct()

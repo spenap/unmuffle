@@ -87,6 +87,17 @@ class ShareTranscriptTest {
                 transcript.contains("ask not what your country can do for you", ignoreCase = true),
             )
 
+            // The language and Change sit right under the actions
+            var languageLine = ""
+            instrumentation.runOnMainSync {
+                val actions = activity.findViewById<View>(R.id.actions)
+                val language = activity.findViewById<View>(R.id.language_group)
+                assertEquals("Language line isn't next to the actions", actions.bottom, language.top)
+                assertTrue("No Change button", activity.findViewById<View>(R.id.btn_change_language).isShown)
+                languageLine = activity.findViewById<TextView>(R.id.tv_language).text.toString()
+            }
+            assertEquals("Detected English", languageLine)
+
             // Copy and Share sit under the bubble; Copy confirms in place, then resets
             instrumentation.runOnMainSync {
                 val actions = activity.findViewById<View>(R.id.actions)
