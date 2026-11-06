@@ -96,7 +96,12 @@ class ShareTranscriptTest {
                 assertTrue("No Change button", activity.findViewById<View>(R.id.btn_change_language).isShown)
                 languageLine = activity.findViewById<TextView>(R.id.tv_language).text.toString()
             }
-            assertEquals("Detected English", languageLine)
+            // In the app's language: "Detected English", "Detectado: inglés"…
+            val res = activity.resources
+            val english = Languages.nameInSentence(
+                "en", res.configuration.locales[0], res.getBoolean(R.bool.language_names_lowercase),
+            )
+            assertEquals(res.getString(R.string.language_detected, english), languageLine)
 
             // Copy and Share sit under the bubble; Copy confirms in place, then resets
             instrumentation.runOnMainSync {
@@ -110,13 +115,13 @@ class ShareTranscriptTest {
                 copied = activity.findViewById<View>(R.id.btn_copy).contentDescription.toString()
                 clip = activity.getSystemService(ClipboardManager::class.java).primaryClip!!.getItemAt(0).text.toString()
             }
-            assertEquals("Copied", copied)
+            assertEquals(activity.getString(R.string.copied), copied)
             assertEquals(transcript, clip)
             SystemClock.sleep(2_000)
             instrumentation.runOnMainSync {
                 copied = activity.findViewById<View>(R.id.btn_copy).contentDescription.toString()
             }
-            assertEquals("Copy", copied)
+            assertEquals(activity.getString(R.string.copy), copied)
         } finally {
             activity.finish()
             wav.delete()
