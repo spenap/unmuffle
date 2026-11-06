@@ -86,4 +86,8 @@ For any agent (Claude Code, Codex…) and any person.
 - Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
   the key in `~/.config/unmuffle` (backed up off the laptop) and publishes a
   GitHub Release. Release builds without the key use the debug key.
+- After a release, publish it to the F-Droid repo in `../fdroid`
+  (spenap/fdroid): `./add.sh spenap/unmuffle vX.Y.Z`, then push. Its
+  screenshots in `metadata/` mirror `docs/screenshots/`; update them when
+  those change.
 - Never commit models, keystores, tokens or users' audio and transcripts.
