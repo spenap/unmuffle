@@ -97,6 +97,21 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/privacy_note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="64dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:drawableStart="@drawable/ic_lock"
+                android:drawablePadding="8dp"
+                android:gravity="center_vertical"
+                android:text="Audio and transcripts never leave this phone."
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
