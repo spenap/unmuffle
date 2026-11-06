@@ -52,7 +52,29 @@ Written test-first; measured on the S25.
       encoder, decoder) in `docs/measurements.md`, and a shorter first
       chunk and detection on the first seconds are measured and kept if
       faster with the same text.
-- [ ] GPU spike: ggml's OpenCL backend (Adreno 7xx/8xx) on the S25.
+- [ ] GPU spike: ggml's OpenCL and Vulkan backends on the S25 (Adreno
+      830). Done when both messages' time and text with each backend
+      that runs are in `docs/measurements.md` against the CPU, and a
+      backend is kept (faster, same text, CPU when it's missing or fails)
+      or dropped. Branch `spike/gpu`: both build (OpenCL +0.7 MB, Vulkan
+      +6–11 MB). Pixel 5 (Adreno 620): OpenCL crashed, then hung the GPU
+      and System UI; Vulkan not run. On the S25, with the user present,
+      one backend at a time, OpenCL first:
+      1. `adb shell grep -i opencl /vendor/etc/public.libraries.txt`
+         (`libOpenCL.so` should be listed).
+      2. `./gradlew assembleRelease -Pbench`, install
+         (`com.simonpena.unmuffle.bench`); then `-Pbench -Pgpu=opencl`
+         (`.bench.opencl`); for Vulkan, `-Pbench -Pgpu=vulkan` with a
+         glslc newer than the NDK's on PATH (`.bench.vulkan`). Install
+         each APK before the next build; `scripts/bench.sh --model PKG`
+         for each.
+      3. One share first, watching `adb logcat -s whisper`: "OpenCL
+         driver loaded", "ggml_opencl: device" or "ggml_vulkan", and no
+         "kernel compile error". If the screen stutters or the app
+         hangs, `adb shell am force-stop PKG` and stop.
+      4. `scripts/bench.sh 2 com.simonpena.unmuffle.bench
+         com.simonpena.unmuffle.bench.opencl`, and the texts compared in
+         `$BENCH_DIR/results/`.
 - [ ] Locking the phone pauses a transcription (S25: no progress for
       20 s with the screen locked). Keep transcribing in the background.
 

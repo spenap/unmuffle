@@ -11,6 +11,17 @@ detail lives.
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
 
+## 2026-11-06 · GPU: try OpenCL on the S25 once; the app stays on the CPU
+ggml's OpenCL and Vulkan backends both build for the app (branch
+`spike/gpu`, behind `-Pgpu`); neither is in a release. OpenCL adds
+0.7 MB to the APK, Vulkan 6–11 MB. On the Pixel 5 (Adreno 620) OpenCL
+crashed, then hung the GPU and System UI: a GPU backend can take the
+phone down, which no CPU fallback catches. ggml's OpenCL kernels target
+Adreno 7xx/8xx, so one supervised OpenCL run on the S25 (Adreno 830)
+decides; Vulkan only if OpenCL fails there. Kept only if clearly faster
+than the CPU (7–9 s for 70–82 s) with the same text. Numbers in
+`docs/measurements.md`; steps in ROADMAP.md, Track P.
+
 ## 2026-11-06 · Redo from one Change, not chips
 Supersedes the "one tap" in "A language setting and a redo, no asking".
 Under Copy and Share, the transcript says its language with a Change

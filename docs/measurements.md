@@ -6,7 +6,40 @@ stated.
 "Changed" counts words that differ from the first row, ignoring case and
 punctuation.
 
-## 2026-11-05 · whisper.cpp v1.8.3 → v1.9.5
+## 2026-11-06 · GPU spike: OpenCL and Vulkan (Pixel 5)
+whisper.cpp v1.9.5, small q8_0, release builds (`./gradlew assembleRelease
+-Pbench -Pgpu=opencl|opencl-generic|vulkan`; branch `spike/gpu`). No time
+or text yet: no GPU run finished.
+
+| Build | APK | Native libraries added (installed) |
+|---|---|---|
+| CPU (as today) | 5.19 MB | |
+| OpenCL | 5.91 MB | 3.0 MB `libggml-opencl.so`, 10 KB loader |
+| OpenCL, generic kernels only | 5.63 MB | |
+| Vulkan, NDK's glslc (2022.3) | 11.56 MB | 21 MB `libggml-vulkan.so` |
+| Vulkan, glslc 2026.1 | 16.11 MB | 35 MB |
+
+- Both build for arm64-v8a with NDK r27c. OpenCL needs the Khronos
+  headers and a loader for the phone's driver; Vulkan needs Vulkan's C++
+  and SPIR-V headers (the NDK has neither) and links Android 9's
+  libvulkan. The NDK's glslc lacks the cooperative-matrix and integer
+  dot product extensions ggml uses on Adreno 7xx/8xx.
+- Pixel 5 (Adreno 620, OpenCL 2.0, LineageOS 24): the vendor
+  `libOpenCL.so` isn't open to apps; `libOpenCL-pixel.so` is, and ggml
+  found the GPU through it. Then:
+  1. The app crashed loading the model: whisper asks the OpenCL buffer
+     type for its alignment before ggml has set up the device (null
+     pointer). Fixed by setting GPU devices up first.
+  2. The driver lacks `clGetKernelSubGroupInfo` (OpenCL 2.1); calling it
+     crashed. Its `cl_khr_subgroups` twin stands in.
+  3. The driver refused to compile ggml's Adreno flash-attention kernel
+     (`cl_khr_3d_image_writes` missing) and ggml exited the app.
+  4. Without the Adreno kernels, the run hung the GPU (kgsl "gpu
+     syncpoint deadlock") and System UI stopped responding. Runs on the
+     Pixel stopped there.
+- Vulkan didn't run on any phone.
+
+
 The app's release build, small q8_0, Spanish. Whole message / first
 words; two runs each, none throttled below 93% or asleep.
 
