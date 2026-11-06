@@ -8,7 +8,7 @@
     <string name="close">Cerrar</string>
 
     <!-- Home -->
-    <string name="home_needs_model">Unmuffle necesita el modelo de transcripción Whisper para funcionar.\n\nSin cuentas · Se queda en tu dispositivo · Nunca sale de tu teléfono</string>
+    <string name="home_needs_model">Unmuffle necesita el modelo de transcripción Whisper para funcionar.\n\nTranscripción en este teléfono: el audio y las transcripciones nunca salen de él.</string>
     <string name="download_size">Descargar (%d MB)</string>
     <string name="use_model_file">Usar un archivo de modelo</string>
     <string name="download_stalled">La descarga no ha empezado. ¿Prefieres elegir un archivo de modelo?</string>
@@ -44,13 +44,12 @@
     <string name="transcribing">Transcribiendo…</string>
     <string name="no_speech">No se ha detectado voz</string>
     <string name="no_speech_detail">El audio no contiene voz reconocible.</string>
-    <string name="language_detected">Idioma detectado: %s</string>
-    <string name="language_chosen">Idioma: %s</string>
+    <string name="language_detected">Detectado: %s</string>
+    <string name="language_chosen">Transcrito en %s</string>
     <string name="transcribe_again_in">Transcribir de nuevo en</string>
     <string name="more_languages">Más idiomas</string>
     <string name="error_load_model">No se ha podido cargar el modelo</string>
-    <string name="error_decode">No se ha podido decodificar el audio</string>
-    <string name="error_resample">No se ha podido remuestrear el audio</string>
+    <string name="error_audio">No se ha podido procesar este audio</string>
     <string name="error_transcription">Error al transcribir: %s</string>
 
     <!-- Language picker -->

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Language names mid-sentence: lowercase ("inglés") or as is ("English") -->
+    <bool name="language_names_lowercase">false</bool>
+</resources>

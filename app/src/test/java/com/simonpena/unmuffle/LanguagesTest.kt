@@ -43,6 +43,13 @@ class LanguagesTest {
     }
 
     @Test
+    fun namesMidSentenceAsTheUiLanguageWritesThem() {
+        assertEquals("Spanish", Languages.nameInSentence("es", Locale.ENGLISH, lowercase = false))
+        assertEquals("inglés", Languages.nameInSentence("en", Locale.forLanguageTag("es"), lowercase = true))
+        assertEquals("inglés", Languages.nameInSentence("en", Locale.forLanguageTag("gl"), lowercase = true))
+    }
+
+    @Test
     fun resultLineSaysWhetherDetected() {
         assertEquals(R.string.language_detected, Languages.resultLine(detected = true))
         assertEquals(R.string.language_chosen, Languages.resultLine(detected = false))

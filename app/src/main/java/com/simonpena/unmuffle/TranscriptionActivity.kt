@@ -167,7 +167,12 @@ class TranscriptionActivity : AppCompatActivity() {
     private fun showLanguage(state: UiState.Success) {
         languageGroup.visibility = View.VISIBLE
         findViewById<TextView>(R.id.tv_language).text =
-            getString(Languages.resultLine(state.detected), Languages.nativeName(state.language))
+            getString(
+                Languages.resultLine(state.detected),
+                Languages.nameInSentence(
+                    state.language, resources.configuration.locales[0], resources.getBoolean(R.bool.language_names_lowercase),
+                ),
+            )
         findViewById<View>(R.id.btn_change_language).setOnClickListener { showRedoSheet(state.language) }
     }
 

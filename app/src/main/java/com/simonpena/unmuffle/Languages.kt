@@ -46,6 +46,10 @@ object Languages {
     fun nameIn(code: String, ui: Locale): String =
         Locale.forLanguageTag(code).getDisplayLanguage(ui).replaceFirstChar { it.titlecase(ui) }
 
+    /** The name as [ui] writes it mid-sentence: lowercase in Spanish ("inglés"), as is in English. */
+    fun nameInSentence(code: String, ui: Locale, lowercase: Boolean): String =
+        nameIn(code, ui).let { if (lowercase) it.lowercase(ui) else it }
+
     private val supported by lazy { Whisper.languages() }
 
     // The system's languages, not the app's own (Settings › App languages, Android 13+)

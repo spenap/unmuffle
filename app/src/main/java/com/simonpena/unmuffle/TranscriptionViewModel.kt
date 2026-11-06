@@ -66,14 +66,14 @@ class TranscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
                 val decoded = withContext(Dispatchers.Default) { AudioDecoder.decode(audioPath) }
                 if (decoded == null) {
-                    _uiState.value = UiState.Error(R.string.error_decode)
+                    _uiState.value = UiState.Error(R.string.error_audio)
                     return@launch
                 }
                 Log.i(TAG, "Decoded: ${decoded.samples.size} samples, ${decoded.sampleRate}Hz, ${decoded.channels}ch")
 
                 val pcm = withContext(Dispatchers.Default) { PcmResampler.toWhisperFormat(decoded) }
                 if (pcm == null) {
-                    _uiState.value = UiState.Error(R.string.error_resample)
+                    _uiState.value = UiState.Error(R.string.error_audio)
                     return@launch
                 }
                 Log.i(TAG, "Resampled: ${pcm.size} samples (${pcm.size / 16000f}s)")

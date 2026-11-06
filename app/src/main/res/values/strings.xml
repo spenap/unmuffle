@@ -10,7 +10,7 @@
     <string name="close">Close</string>
 
     <!-- Home -->
-    <string name="home_needs_model">Unmuffle needs the Whisper transcription model to work.\n\nNo account needed · Stays on your device · Never leaves your phone</string>
+    <string name="home_needs_model">Unmuffle needs the Whisper transcription model to work.\n\nTranscription on this phone: audio and transcripts never leave it.</string>
     <string name="download_size">Download (%d MB)</string>
     <string name="use_model_file">Use a model file</string>
     <string name="download_stalled">The download hasn\'t started. Pick a model file instead?</string>
@@ -51,8 +51,7 @@
     <string name="transcribe_again_in">Transcribe again in</string>
     <string name="more_languages">More languages</string>
     <string name="error_load_model">Could not load model</string>
-    <string name="error_decode">Could not decode audio</string>
-    <string name="error_resample">Could not resample audio</string>
+    <string name="error_audio">Couldn\'t process this audio</string>
     <string name="error_transcription">Transcription failed: %s</string>
 
     <!-- Language picker -->
