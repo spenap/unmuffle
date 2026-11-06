@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="back">Atrás</string>
+    <string name="settings">Configuración</string>
+    <string name="language">Idioma</string>
+    <string name="auto_detect">Detección automática</string>
+    <string name="close">Pechar</string>
+
+    <!-- Home -->
+    <string name="home_needs_model">Unmuffle precisa o modelo de transcrición Whisper para funcionar.\n\nSen contas · Queda no teu dispositivo · Nunca sae do teu teléfono</string>
+    <string name="download_size">Descargar (%d MB)</string>
+    <string name="use_model_file">Usar un ficheiro de modelo</string>
+    <string name="download_stalled">A descarga non comezou. Prefires escoller un ficheiro de modelo?</string>
+    <string name="pick_file">Escoller ficheiro</string>
+    <string name="wrong_file">Ese ficheiro non é o modelo. Escolle %s.</string>
+    <string name="downloading">Descargando…</string>
+    <string name="waiting_to_start">Agardando para comezar…</string>
+    <string name="megabytes_of">%1$d de %2$d MB</string>
+    <string name="verifying">Verificando…</string>
+    <string name="verifying_download">Comprobando a integridade da descarga…</string>
+    <string name="checking_model">Comprobando o modelo…</string>
+    <string name="checking_progress">%1$s · %2$d de %3$d MB</string>
+    <string name="retry">Tentar de novo</string>
+    <string name="download_failed">Non se puido descargar (código %d). Toca Tentar de novo.</string>
+    <string name="download_corrupt">A descarga está danada: o SHA256 non coincide. Toca Tentar de novo.</string>
+    <string name="download_title">Unmuffle: modelo Whisper</string>
+    <string name="download_description">Descargando o modelo de transcrición (%d MB)…</string>
+    <string name="ready_title">Unmuffle está listo.</string>
+    <string name="ready_hint">Comparte unha mensaxe de voz desde WhatsApp ou Telegram para transcribila.</string>
+
+    <!-- Sharing -->
+    <string name="model_needed">Falta o modelo</string>
+    <string name="file_too_large">Ficheiro demasiado grande (máx. %d MB). Unmuffle funciona mellor con mensaxes de voz.</string>
+    <string name="file_unreadable">Non se puido procesar este ficheiro.</string>
+
+    <!-- Transcription -->
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="copy">Copiar</string>
+    <string name="copied">Copiado</string>
+    <string name="share">Compartir</string>
+    <string name="change">Cambiar</string>
+    <string name="transcribing">Transcribindo…</string>
+    <string name="no_speech">Non se detectou voz</string>
+    <string name="no_speech_detail">O audio non contén voz recoñecible.</string>
+    <string name="language_detected">Idioma detectado: %s</string>
+    <string name="language_chosen">Idioma: %s</string>
+    <string name="transcribe_again_in">Transcribir de novo en</string>
+    <string name="more_languages">Máis idiomas</string>
+    <string name="error_load_model">Non se puido cargar o modelo</string>
+    <string name="error_decode">Non se puido descodificar o audio</string>
+    <string name="error_resample">Non se puido remostrar o audio</string>
+    <string name="error_transcription">Erro ao transcribir: %s</string>
+
+    <!-- Language picker -->
+    <string name="search_languages">Buscar idiomas</string>
+    <string name="phone_languages">Idiomas do teléfono</string>
+    <string name="all_languages">Todos os idiomas</string>
+    <string name="selected">Seleccionado</string>
+
+    <!-- Settings -->
+    <string name="settings_transcription">Transcrición</string>
+    <string name="settings_language_hint">Escoller un idioma é máis rápido que a detección automática e evita confusións.</string>
+    <string name="settings_about">Información</string>
+    <string name="settings_model">Modelo</string>
+    <string name="licences">Licenzas</string>
+    <string name="licences_summary">whisper.cpp, o modelo Whisper, bibliotecas de Android</string>
+    <string name="version">Versión</string>
+    <string name="privacy">O audio e as transcricións nunca saen deste teléfono.</string>
+</resources>
