@@ -11,6 +11,15 @@ detail lives.
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
 
+## 2026-11-09 · `main` is protected and linear
+A ruleset on `main` blocks direct pushes, force pushes and deletion,
+and requires a pull request, a passing `build` and linear history:
+PRs merge by rebase, or by squash to tidy a branch. CI always reports
+`build`; a `changes` job skips it when only Markdown or `docs/`
+changed. No merge queue: GitHub offers it only to organization-owned
+repos, and PRs here land one at a time.
+Detail: `.github/workflows/build.yml`, the ruleset in the repo settings.
+
 ## 2026-11-06 · Transcription stays on the CPU
 A spike built ggml's OpenCL (+0.7 MB) and Vulkan (+6–11 MB) backends.
 On the S25, OpenCL transcribed a 70 s message in 26.6 s after a 12 s
