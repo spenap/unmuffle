@@ -1,20 +1,40 @@
 name: Build
 
-# Skipped when only Markdown or docs/ changed.
+# `build` is a required check. When only Markdown or docs/ changed it is
+# skipped, which counts as passing.
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**']
   pull_request:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**']
 
 # Read-only token; actions pinned to commits.
 permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            code=$(git diff --name-only "$BASE" HEAD | grep -vE '\.md$|^docs/' || true)
+          else
+            code=unknown-base
+          fi
+          echo "code=$([ -n "$code" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
 
     steps:
