@@ -58,9 +58,11 @@ Audio never leaves the device.
 
 ## Working on this repo
 For any agent (Claude Code, Codex…) and any person.
-- One branch and pull request per change. Merge only when CI passes, or
-  CI didn't run because only Markdown or `docs/` changed. Push and merge
-  when the user asks.
+- One branch and pull request per change; `main` takes no direct
+  pushes and keeps a linear history. Merge when CI passes (`build` is
+  required, and skipped when only Markdown or `docs/` changed) and the
+  user asks, with `gh pr merge --rebase`, or `--squash` to tidy a
+  branch's commits instead of rewriting and force-pushing it.
 - Commits: atomic, Conventional Commits, ending with a `Co-Authored-By:`
   line that names the agent and model.
 - Fail fast. Before an expensive run (device tests, benchmarks, a CI
