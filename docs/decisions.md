@@ -14,6 +14,8 @@ detail lives.
 ## 2026-11-13 · Release versions come from the commits
 `scripts/release.sh` takes the next version from git-cliff: `feat`
 bumps the minor, a breaking change the major, anything else the patch.
+`docs`, `ci`, `test`, `style`, `chore` and `audit` commits don't
+release; `build` does, since it can change the APK.
 Why: commits already follow Conventional Commits, so the version
 follows from them; an explicit `vX.Y.Z` still overrides it. Detail:
 `cliff.toml`.

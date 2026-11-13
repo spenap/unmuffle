@@ -1,9 +1,13 @@
 # git-cliff: scripts/release.sh takes the next version from the commits
 # since the last vX.Y.Z tag (feat: minor, fix and others: patch, !: major).
+# Commits that don't change the app don't release one.
 [git]
 conventional_commits = true
 filter_unconventional = true
 tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+commit_parsers = [
+    { message = "^(docs|ci|test|style|chore|audit)(\\(.*\\))?:", skip = true },
+]
 
 [bump]
 features_always_bump_minor = true
