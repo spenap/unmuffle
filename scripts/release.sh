@@ -15,6 +15,7 @@ key=${UNMUFFLE_KEY_DIR:-$HOME/.config/unmuffle}
 if [ -z "$v" ]; then
     command -v git-cliff >/dev/null || { echo "git-cliff not found"; exit 1; }
     v=$(git-cliff --bumped-version 2>/dev/null)
+    git rev-parse -q --verify "refs/tags/$v" >/dev/null && { echo "Nothing to release since $v"; exit 1; }
     echo "Releasing $v"
 fi
 echo "$v" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Usage: $0 [vX.Y.Z]"; exit 1; }
