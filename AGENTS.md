@@ -85,7 +85,8 @@ For any agent (Claude Code, Codex…) and any person.
   unless asked, volume and settings left as found. Device runs keep the
   screen on while plugged in (`stay_on_while_plugged_in` 15, restored
   after); a PIN lock needs the user, so check it before starting.
-- Releases: `scripts/release.sh vX.Y.Z` tags a green `main`, signs with
+- Releases: `scripts/release.sh` tags a green `main` with the version
+  git-cliff computes from the commits (`cliff.toml`), signs with
   the key in `~/.config/unmuffle` (backed up off the laptop) and publishes a
   GitHub Release. Release builds without the key use the debug key.
 - After a release, make sure it reaches every place the app is

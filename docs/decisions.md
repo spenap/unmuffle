@@ -11,6 +11,13 @@ detail lives.
   "Superseded by" line.
 - Ideas not yet decided go to ROADMAP.md, "Ideas and not doing".
 
+## 2026-11-13 · Release versions come from the commits
+`scripts/release.sh` takes the next version from git-cliff: `feat`
+bumps the minor, a breaking change the major, anything else the patch.
+Why: commits already follow Conventional Commits, so the version
+follows from them; an explicit `vX.Y.Z` still overrides it. Detail:
+`cliff.toml`.
+
 ## 2026-11-09 · `main` is protected and linear
 A ruleset on `main` blocks direct pushes, force pushes and deletion,
 and requires a pull request, a passing `build` and linear history:

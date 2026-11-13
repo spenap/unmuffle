@@ -1,0 +1,10 @@
+# git-cliff: scripts/release.sh takes the next version from the commits
+# since the last vX.Y.Z tag (feat: minor, fix and others: patch, !: major).
+[git]
+conventional_commits = true
+filter_unconventional = true
+tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true

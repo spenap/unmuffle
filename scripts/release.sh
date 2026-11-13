@@ -1,15 +1,23 @@
 #!/bin/sh
 # Tag main, build the APK signed with the release key, and publish it as a
 # GitHub Release (installed on the S25 through Obtainium).
-# Needs: a clean main equal to origin/main, CI green on it, `gh` logged in,
-# and the key in ~/.config/unmuffle (release.jks, release.pass).
-# Usage: scripts/release.sh v1.3.0
+# The version is the next one git-cliff computes from the Conventional
+# Commits since the last tag (cliff.toml); vX.Y.Z overrides it.
+# Needs: a clean main equal to origin/main, CI green on it, `gh` and
+# `git-cliff` installed, and the key in ~/.config/unmuffle (release.jks,
+# release.pass).
+# Usage: scripts/release.sh [vX.Y.Z]
 set -eu
 cd "$(dirname "$0")/.."
 v=${1:-}
 key=${UNMUFFLE_KEY_DIR:-$HOME/.config/unmuffle}
 
-echo "$v" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Usage: $0 vX.Y.Z"; exit 1; }
+if [ -z "$v" ]; then
+    command -v git-cliff >/dev/null || { echo "git-cliff not found"; exit 1; }
+    v=$(git-cliff --bumped-version 2>/dev/null)
+    echo "Releasing $v"
+fi
+echo "$v" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Usage: $0 [vX.Y.Z]"; exit 1; }
 [ -r "$key/release.jks" ] && [ -r "$key/release.pass" ] || { echo "No release key in $key"; exit 1; }
 [ "$(git branch --show-current)" = main ] || { echo "Not on main"; exit 1; }
 [ -z "$(git status --porcelain)" ] || { echo "Uncommitted changes"; exit 1; }
